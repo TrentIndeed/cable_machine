@@ -52,14 +52,20 @@
 
 <script type="module">
 const diag = document.getElementById('diag');
-function log(msg){ diag.textContent += msg + "\\n"; diag.scrollTop = diag.scrollHeight; }
-window.addEventListener('error', (e)=>{ log('[window.error] '+ (e.message||e.error)); });
-window.addEventListener('unhandledrejection', (e)=>{ log('[promise] '+ e.reason); });
+function log(msg){ diag.textContent += msg + "\n"; diag.scrollTop = diag.scrollHeight; }
+window.addEventListener('error', (e)=>{
+  log('[window.error] '+ (e.message||e.error));
+});
+window.addEventListener('unhandledrejection', (e)=>{
+  log('[promise] '+ e.reason);
+});
 
 // Since we provide an import map, we can use bare specifiers directly:
 import * as THREE from 'three';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
+import { FontLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/geometries/TextGeometry.js';
 
 log('✔ Imports resolved via import map');
 
@@ -101,6 +107,12 @@ const materials = {
   drum:  new THREE.MeshStandardMaterial({ color:0xd7dde4, metalness:0.55, roughness:0.35 }),
   cable: new THREE.MeshStandardMaterial({ color:0xdc2626, metalness:0.7, roughness:0.2 }),
   glass: new THREE.MeshPhysicalMaterial({ color:0x7fb0ff, metalness:0, roughness:0.08, transmission:0.9, transparent:true, opacity:0.2, side:THREE.DoubleSide, clearcoat:1, clearcoatRoughness:0.02 }),
+  transformer: new THREE.MeshStandardMaterial({ color: 0x2d3748, metalness: 0.6, roughness: 0.4 }),
+  resistor: new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.2, roughness: 0.7 }),
+  loadcell: new THREE.MeshStandardMaterial({ color: 0xd1d5db, metalness: 0.9, roughness: 0.2 }),
+  screenBody: new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.3, roughness: 0.8 }),
+  screenFace: new THREE.MeshStandardMaterial({ color: 0x2dd4bf, metalness: 0.1, roughness: 0.2 }),
+  text: new THREE.MeshStandardMaterial({ color: 0xe6eef8, metalness: 0.5, roughness: 0.4 }),
 };
 
 // Parameters for the vertically rotated layout, with motor mounted to the side
@@ -185,6 +197,55 @@ function buildShaft(x_start, x_end, y, z, radius = 15) {
   return shaft;
 }
 
+function buildElectronics(xDivider) {
+  const elecBayX = (xDivider + P.encW) / 2;
+
+  // Transformer (large, on the floor)
+  const tfW = 160, tfH = 180, tfD = 150;
+  const transformer = new THREE.Mesh(new THREE.BoxGeometry(tfW, tfH, tfD), materials.transformer);
+  transformer.position.set(elecBayX, tfH/2, P.encD - tfD/2 - 20);
+  mech.add(transformer);
+
+  // Braking Resistor (smaller, mounted higher)
+  const resW = 180, resH = 40, resD = 80;
+  const resistor = new THREE.Mesh(new THREE.BoxGeometry(resW, resH, resD), materials.resistor);
+  resistor.position.set(elecBayX, P.encH - resH/2 - 20, P.zJack);
+  mech.add(resistor);
+
+  // Load Cell (small, near the cable exit)
+  const lcW = 30, lcH = 30, lcD = 80;
+  const loadcell = new THREE.Mesh(new THREE.BoxGeometry(lcW, lcH, lcD), materials.loadcell);
+  loadcell.position.set(xDivider + 30, P.shaftY, 40);
+  mech.add(loadcell);
+
+  // Rotary Screen (M5Dial)
+  const dialGroup = new THREE.Group();
+  const dialRadius = 35, dialDepth = 15;
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(dialRadius, dialRadius, dialDepth, 64), materials.screenBody);
+  const face = new THREE.Mesh(new THREE.CylinderGeometry(dialRadius * 0.8, dialRadius * 0.8, 1, 64), materials.screenFace);
+  face.position.y = dialDepth/2 + 0.5; // Cylinder is built along Y, so move face along Y
+  dialGroup.add(body, face);
+  dialGroup.rotation.x = Math.PI/2; // Rotate to make it face forward (along Z)
+  dialGroup.position.set(xDivider + 80, P.shaftY, dialDepth/2); // Position on front face
+  mech.add(dialGroup);
+
+  // Add Text if font is loaded
+  if (font) {
+      const textGeo = new TextGeometry('150 lb', {
+          font: font,
+          size: 20,
+          height: 3,
+          curveSegments: 12,
+      });
+      textGeo.center(); // Center the text geometry
+      const textMesh = new THREE.Mesh(textGeo, materials.text);
+      textMesh.position.set(xDivider + 80, P.shaftY - 55, 5); // Position below the dial
+      mech.add(textMesh);
+  }
+}
+
+let font;
+
 function rebuild(){
   mech.clear(); belts.clear();
   scene.children = scene.children.filter(obj => !(obj.userData && obj.userData.isEnclosure));
@@ -197,6 +258,7 @@ function rebuild(){
   const xDivider = xDrum + P.drumFace/2 + clearance;
 
   buildEnclosure(xDivider, xDrum);
+  buildElectronics(xDivider);
 
   // Mount motor back to enclosure wall (X=0)
   const motor = new THREE.Group();
@@ -310,8 +372,8 @@ function animate(now){
     p22A.rotation.x += theta;
     p60.rotation.x  += theta*r1;
     p22B.rotation.x += theta*r1;
-    p48.rotation.x  += theta*r1*r2;
-    drum.rotation.x += theta*r1*r2;
+    p48.rotation.x  -= theta*r1*r2; // Flipped direction
+    drum.rotation.x -= theta*r1*r2; // Flipped direction
   }
   renderer.render(scene,camera); labelRenderer.render(scene,camera); requestAnimationFrame(animate);
 }
@@ -329,12 +391,19 @@ function bindUI(){
   });
   gi('start').onclick=()=>{ P.running=true; };
   gi('stop').onclick =()=>{ P.running=false; };
-  gi('reset').onclick=()=>{ camera.position.set(P.encW + 400, P.encH + 200, P.encD/2); controls.target.set(P.encW/2, P.encH/2, P.encD/2); controls.update(); };
+  gi('reset').onclick=()=>{ camera.position.set(P.encW + 400, encH + 200, encD/2); controls.target.set(P.encW/2, P.encH/2, P.encD/2); controls.update(); };
 }
-rebuild(); bindUI(); requestAnimationFrame(animate);
+
+const loader = new FontLoader();
+loader.load('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', function (loadedFont) {
+    font = loadedFont;
+    rebuild(); // Initial build once font is loaded
+});
+
+bindUI(); 
+requestAnimationFrame(animate);
 
 window.addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); labelRenderer.setSize(innerWidth, innerHeight); });
 </script>
 </body>
 </html>
-

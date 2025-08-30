@@ -2,15 +2,15 @@
 
 > **Coordinate system** (for all positions below):
 > Origin at **inside left–back–bottom** of the enclosure.
-> **X** left→right, **Y** bottom→top, **Z** back (−) → front (+).
+> **X** left→right, **Y** bottom→top, **Z** back → front.
 > Enclosure internal clear volume used for coordinates.
 
 ## Enclosure
 
-* **External**: 650 (W) × 360 (H) × 220 (D) mm (nominal).
+* **External**: 650 (W) × 360 (H) × 380 (D) mm (nominal).
 * **Wall/door**: 2–3 mm steel or 4–6 mm aluminum equivalent.
-* **Divider panel**: at **X = 460 mm** (6 mm thick) → **Left bay** (mechanics) and **Right bay** (electronics).
-* **Front slot (fairlead window)**: 70 × 25 mm centered at **(X = 460 mm, Y = 200 mm, Z = +110 mm)**.
+* **Divider panel**: at **X ≈ 475.5 mm** (6 mm thick) → **Left bay** (mechanics) and **Right bay** (electronics).
+* **Front slot (fairlead window)**: 70 × 25 mm centered at **(X ≈ 425.5 mm, Y = 200 mm, Z = 5 mm)**.
 
 ### Mounting to rack
 
@@ -24,22 +24,22 @@
 
 * OD **100 mm**, face **80 mm** (machine from 6061‑T6 tube).
 * Cable groove: light crown (≈0.5–1 mm) or shallow helical lay; 3/16″ wire rope.
-* Drum center **(X = 438.4 mm, Y = 200 mm, Z = +35 mm)**.
+* Drum center **(X ≈ 425.5 mm, Y = 200 mm, Z = 120.8 mm)**.
 * Shaft **Ø20 mm** keyed (DIN 6885 key 6×6 mm), through‑shaft across left and right side plates.
 
 **Pulleys & belts (HTD‑8M, 30 mm wide)**
 
 * Stage‑1: **22T → 60T**
-  • 22T (motor shaft) center **(X = 130.0, Y = 200.0, Z = −35.0)**
-  • 60T (jackshaft) center **(X = 269.6, Y = 200.0, Z = −35.0)**
+  • 22T (motor shaft) center **(X = 307.0, Y = 200.0, Z = 150.0)**
+  • 60T (jackshaft) center **(X = 307.0, Y = 200.0, Z = 289.6)**
   • Belt: **624‑8M‑30** (nominal). **Center distance C ≈ 139.6 mm**.
 * Stage‑2: **22T → 48T** (shared jackshaft → drum shaft)
-  • 22T (jackshaft) center **(X = 269.6, Y = 200.0, Z = +35.0)**
-  • 48T (drum shaft) center **(X = 438.4, Y = 200.0, Z = +35.0)**
+  • 22T (jackshaft) center **(X = 332.0, Y = 200.0, Z = 289.6)**
+  • 48T (drum shaft) center **(X = 332.0, Y = 200.0, Z = 120.8)**
   • Belt: **624‑8M‑30** (nominal). **Center distance C ≈ 168.8 mm**.
-* **Plane separation (depth)**: Stage‑1 at **Z = −35 mm**, Stage‑2 at **Z = +35 mm** → **70 mm** gap.
+* **Plane separation (X)**: Stage‑1 at **X = 307.0 mm**, Stage‑2 at **X = 332.0 mm**.
 * **Pulley pitch diameters** (mm): 22T ≈ **56.0**; 48T ≈ **122.2**; 60T ≈ **152.8**.
-* **Overall ratio (22→60, 22→48)**: **\~5.95 : 1**.
+* **Overall ratio (22→60, 22→48)**: **	~5.95 : 1**.
 * **Alternate**: if 60T is out of stock, use **64T** (PD ≈ 163.0 mm), belt 624‑8M‑30 with **C ≈ 128.9 mm**; new overall ratio ≈ **6.35 : 1**.
 
 **Motor** (left bay)
@@ -47,18 +47,18 @@
 * 2000 W AC servo, with brake & 17‑bit absolute encoder.
 * Frame: **130×130 mm**, body length with brake **279 mm**.
 * Shaft **Ø22 mm**, length **57 mm**, keyway **40 mm**.
-* Mount base such that shaft axis is at **(X = 130.0, Y = 200.0, Z = −35.0)** aligned to the 22T pulley.
+* Mount base to left enclosure wall (X=0). Shaft axis is at **(Y = 200.0, Z = 150.0)**.
 * Provide ≥ **15 mm** clearance rear and underside for airflow/cable bend radius.
 
 **Jackshaft**
 
-* Through‑shaft **Ø20 mm** keyed, center at **(X = 269.6, Y = 200.0)**.
-* Axial positions: 60T at **Z = −35**; 22T at **Z = +35**.
+* Through‑shaft **Ø20 mm** keyed, center at **(Y = 200.0, Z = 289.6)**.
+* Axial positions: 60T at **X = 307.0**; 22T at **X = 332.0**.
 * Supported by **two 20 mm ID bearings** in the left and right side plates (see Bearings section).
 
 **Drum shaft**
 
-* Through‑shaft **Ø20 mm** keyed, center at **(X = 438.4, Y = 200.0, Z = +35.0)**.
+* Through‑shaft **Ø20 mm** keyed, center at **(Y = 200.0, Z = 120.8)**.
 * Two bearings in side plates.
 
 **Belts**
@@ -73,25 +73,25 @@
 * Bearing style: **UCFL204‑20 (flange)** or **UCP204‑20 (pillow block)** for Ø20 mm; for motor shaft, use motor’s own front bearing only (no external).
 * Seat positions:
 
-  * Motor pulley (no external bearing): **(X = 130.0, Y = 200.0)**
-  * Jackshaft bearings: **(X = 269.6, Y = 200.0)** on **both** side plates.
-  * Drum shaft bearings: **(X = 438.4, Y = 200.0)** on **both** side plates.
+  * Motor pulley (no external bearing): **(Y = 200.0, Z = 150.0)**
+  * Jackshaft bearings: **(Y = 200.0, Z = 289.6)** on **both** side plates.
+  * Drum shaft bearings: **(Y = 200.0, Z = 120.8)** on **both** side plates.
 
 ## Cable path
 
-* **Drum** → front **roller fairlead** at **(X ≈ 460, Y = 200, Z = +110)** → external **swivel sheave** (double‑sheave for 2:1 reeve as needed).
+* **Drum** → front **roller fairlead** at **(X ≈ 425.5, Y = 200, Z = 5)** → external **swivel sheave** (double‑sheave for 2:1 reeve as needed).
 * Cable: **3/16″ (7×19) galvanized**; use proper **thimble + swage** at hooks/anchors.
 * **Load cell (500 lbf S‑beam)** inline at the exit or on a short link before the swivel; mount so the tension axis is colinear with cable pull.
 
 ## Electronics bay (right)
 
-* Divider at **X = 460 mm**. Right‑bay keep‑outs: X ∈ \[460..650], Y ∈ \[0..360], Z ∈ \[−110..+110].
-* **Transformer (3 kVA)**: place **(X center ≈ 540, Y center ≈ 80, Z ≈ −30)**, 220×120×140 mm block.
-* **Servo drive**: **(X ≈ 600, Y ≈ 190, Z ≈ −40)**, 140×220×70 mm.
-* **Braking resistor (500 W/100 Ω)**: **(X ≈ 610, Y ≈ 310, Z ≈ +60)**, 200×40×40 mm; vent path top/right.
+* Divider at **X ≈ 475.5 mm**. Right‑bay keep‑outs: X ∈ [475.5..650], Y ∈ [0..360], Z ∈ [0..380].
+* **Transformer (3 kVA)**: place **(X center ≈ 560, Y center ≈ 90, Z ≈ 300)**, 160×180×150 mm block.
+* **Servo drive**: **(X ≈ 600, Y ≈ 190, Z ≈ 150)**, 140×220×70 mm.
+* **Braking resistor (500 W/100 Ω)**: **(X ≈ 560, Y ≈ 340, Z ≈ 290)**, 180×40×80 mm; vent path top/right.
 * **Main power button (22 mm)** on front panel at **(X = 630, Y = 180)**.
 * **E‑stop (22 mm, maintained)** on front panel at **(X = 630, Y = 220)**.
-* **UI dial/screen** on left side panel (projecting through): center **(X = 10 mm from left wall, Y = 220 mm, Z = 0)**; use gasket.
+* **UI dial/screen** on left side panel (projecting through): center **(X = 10 mm from left wall, Y = 220 mm, Z = 190)**; use gasket.
 
 ## Parts & interfaces (sizing)
 
@@ -165,10 +165,10 @@
 
 * With **100 mm OD** drum and **5.95:1** ratio:
 
-  * \~**5.9 mph** cable at **3000 RPM** (no‑load).
-  * \~**3.9 mph** cable at **2000 RPM** (rated).
+  * 	~**5.9 mph** cable at **3000 RPM** (no‑load).
+  * 	~**3.9 mph** cable at **2000 RPM** (rated).
 * Using **2:1 reeve** halves speed and doubles available force.
-* Switching to **64T** raises ratio \~**+6%**, slightly slower/firmer feel.
+* Switching to **64T** raises ratio 	~**+6%**, slightly slower/firmer feel.
 
 ## Tolerances & adjustments
 
@@ -188,7 +188,7 @@
 * Load cell 500 lbf S‑beam + conditioner.
 * Transformer (≥3 kVA), braking resistor 100 Ω/500 W.
 * UI (M5Dial), power button (22 mm), E‑stop (22 mm).
-* Enclosure 650×360×220 mm with divider at X=460 mm, front slot 70×25 mm.
+* Enclosure 650×360×380 mm with divider at X≈475.5 mm, front slot 70×25 mm.
 * Hardware, wiring, guards, and mount kit.
 
 ---
@@ -197,22 +197,22 @@
 
 | Item                     | Value                              |
 | ------------------------ | ---------------------------------- |
-| Enclosure (W×H×D)        | 650×360×220 mm                     |
-| Divider X                | 460 mm                             |
-| Belt planes Z            | −35 mm (Stage‑1), +35 mm (Stage‑2) |
-| Pulley centers Y         | 200 mm                             |
-| Motor 22T center (X,Y,Z) | (130.0, 200.0, −35.0)              |
-| Jack 60T center (X,Y,Z)  | (269.6, 200.0, −35.0)              |
-| Jack 22T center (X,Y,Z)  | (269.6, 200.0, +35.0)              |
-| Drum 48T center (X,Y,Z)  | (438.4, 200.0, +35.0)              |
-| Drum center (X,Y,Z)      | (438.4, 200.0, +35.0)              |
+| Enclosure (W×H×D)        | 650×360×380 mm                     |
+| Divider X                | ~475.5 mm                          |
+| Belt planes X            | 307.0 mm (Stage‑1), 332.0 mm (Stage‑2) |
+| Shaft centers Y          | 200 mm                             |
+| Motor 22T center (X,Y,Z) | (307.0, 200.0, 150.0)              |
+| Jack 60T center (X,Y,Z)  | (307.0, 200.0, 289.6)              |
+| Jack 22T center (X,Y,Z)  | (332.0, 200.0, 289.6)              |
+| Drum 48T center (X,Y,Z)  | (332.0, 200.0, 120.8)              |
+| Drum center (X,Y,Z)      | (~425.5, 200.0, 120.8)             |
 | Centers C (22↔60)        | 139.6 mm (belt 624‑8M‑30)          |
-| Centers C (22↔48)        | 168.8 mm (belt 624‑8M‑30)          |
+| Centers C (48↔22)        | 168.8 mm (belt 624‑8M‑30)          |
 | Drum OD × face           | 100 mm × 80 mm                     |
-| Overall ratio            | \~5.95 : 1 (22→60, 22→48)          |
-| Alt ratio                | \~6.35 : 1 (22→64, 22→48)          |
-| Cable speed @2000 RPM    | \~1.76 m/s (≈3.94 mph)             |
-| Cable speed @3000 RPM    | \~2.64 m/s (≈5.91 mph)             |
+| Overall ratio            | 	~5.95 : 1 (22→60, 22→48)          |
+| Alt ratio                | 	~6.35 : 1 (22→64, 22→48)          |
+| Cable speed @2000 RPM    | 	~1.76 m/s (≈3.94 mph)             |
+| Cable speed @3000 RPM    | 	~2.64 m/s (≈5.91 mph)             |
 
 > If you change pulley tooth counts or belt length, **recompute center distances**:
 > $L ≈ 2C + \tfrac{π}{2}(D+d) + \tfrac{(D-d)^2}{4C}$, where **L** is belt pitch length, **D/d** are pitch diameters.
