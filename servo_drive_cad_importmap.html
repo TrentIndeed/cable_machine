@@ -140,18 +140,49 @@ let p22A,p60,p22B,p48,drum,cable,belt1,belt2;
 function pulleyMesh(teeth, width){ const r=rT(teeth); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,width,96), materials.steel); m.rotation.z=Math.PI/2; m.userData={type:'pulley',teeth, PD:PD(teeth)}; return m; }
 function buildDrum(){ const r=P.drumOD/2; const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,P.drumFace,96), materials.drum); m.rotation.z=Math.PI/2; m.userData={type:'drum'}; return m; }
 function buildCable(xDrum){
-  const cableRadius = 4.75 / 2; // 3/16"
-  const startPoint = new THREE.Vector3(xDrum, P.shaftY, P.zDrum - P.drumOD/2); // From other side of drum
-  const fairleadX = xDrum; // Align with drum
-  const endPoint = new THREE.Vector3(fairleadX, P.shaftY, 0); // To the front
-  const path = new THREE.Line3(startPoint, endPoint);
-  const length = path.distance();
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(cableRadius, cableRadius, length, 16), materials.cable);
-  m.position.copy(startPoint).add(endPoint).multiplyScalar(0.5);
-  const direction = path.delta(new THREE.Vector3()).normalize();
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
-  m.userData = {type:'cable'};
-  return m;
+  const cableRadius = 4.75 / 2;
+  const drumRadius = P.drumOD / 2;
+  const pitch = cableRadius * 2.1; // Spacing between wraps
+  const numWraps = Math.floor((P.drumFace * 0.8) / pitch); // Use 80% of the drum face for wraps
+  const segmentsPerWrap = 32;
+  const points = [];
+
+  // 1. Create the spiral part on the drum.
+  // The cable unwinds from xDrum, so we spool away from that point.
+  for (let i = 0; i < numWraps * segmentsPerWrap; i++) {
+    const wrapFraction = i / segmentsPerWrap;
+    const angle = -Math.PI / 2 + (wrapFraction * 2 * Math.PI); // Wrap direction
+    const x = xDrum - (wrapFraction * pitch);
+
+    // Ensure we don't spool off the drum
+    if (Math.abs(x - xDrum) > P.drumFace / 2) continue;
+
+    const y = P.shaftY + drumRadius * Math.cos(angle);
+    const z = P.zDrum + drumRadius * Math.sin(angle);
+    points.push(new THREE.Vector3(x, y, z));
+  }
+  points.reverse(); // Make the path go from the inner wrap outwards
+
+  // 2. Add the straight part to the fairlead.
+  // This ensures a smooth exit from the drum towards the fairlead.
+  points.push(new THREE.Vector3(xDrum, P.shaftY, P.zDrum - drumRadius));
+  points.push(new THREE.Vector3(xDrum, P.shaftY, 0));
+
+  // 3. Create the tube geometry from the points.
+  const path = new THREE.CatmullRomCurve3(points);
+  const tubeGeo = new THREE.TubeGeometry(path, 256, cableRadius, 8, false);
+  const cable = new THREE.Mesh(tubeGeo, materials.cable);
+  cable.userData = {type:'cable'};
+  return cable;
+}
+
+function buildShaft(x_start, x_end, y, z, radius = 15) {
+  const length = Math.abs(x_end - x_start);
+  const shaftGeo = new THREE.CylinderGeometry(radius, radius, length, 32);
+  const shaft = new THREE.Mesh(shaftGeo, materials.steel);
+  shaft.rotation.z = Math.PI / 2; // Align with X-axis
+  shaft.position.set((x_start + x_end) / 2, y, z);
+  return shaft;
 }
 
 function rebuild(){
@@ -176,6 +207,12 @@ function rebuild(){
   motor.add(body,shaft);
   motor.position.set(P.motorL/2, P.shaftY, P.zMotor); // Motor center at L/2
   mech.add(motor);
+
+  // Add shafts
+  const jackShaft = buildShaft(0, xDivider, P.shaftY, P.zJack);
+  mech.add(jackShaft);
+  const drumShaft = buildShaft(xBelt2 - P.beltW, xDivider, P.shaftY, P.zDrum);
+  mech.add(drumShaft);
 
   p22A = pulleyMesh(P.T1,P.beltW); p22A.position.set(xBelt1, P.shaftY, P.zMotor); mech.add(p22A);
   p60  = pulleyMesh(P.T2,P.beltW); p60.position.set(xBelt1, P.shaftY, P.zJack);  mech.add(p60);
