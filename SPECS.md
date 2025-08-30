@@ -91,7 +91,7 @@
 * **Braking resistor (500 W/100 Ω)**: **(X ≈ 560, Y ≈ 340, Z ≈ 290)**, 180×40×80 mm; vent path top/right.
 * **Main power button (22 mm)** on front panel at **(X = 630, Y = 180)**.
 * **E‑stop (22 mm, maintained)** on front panel at **(X = 630, Y = 220)**.
-* **UI dial/screen** on left side panel (projecting through): center **(X = 10 mm from left wall, Y = 220 mm, Z = 190)**; use gasket.
+* **UI dial/screen** on front panel (projecting through): center **(X = 565 mm, Y = 220 mm, Z = 5 mm)**; use gasket.
 
 ## Parts & interfaces (sizing)
 

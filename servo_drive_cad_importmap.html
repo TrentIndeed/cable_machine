@@ -223,25 +223,29 @@ function buildElectronics(xDivider) {
   const dialRadius = 35, dialDepth = 15;
   const body = new THREE.Mesh(new THREE.CylinderGeometry(dialRadius, dialRadius, dialDepth, 64), materials.screenBody);
   const face = new THREE.Mesh(new THREE.CylinderGeometry(dialRadius * 0.8, dialRadius * 0.8, 1, 64), materials.screenFace);
-  face.position.y = dialDepth/2 + 0.5; // Cylinder is built along Y, so move face along Y
+  face.position.y = dialDepth/2 + 0.5; // Cylinder is built along Y, so move face to top
   dialGroup.add(body, face);
-  dialGroup.rotation.x = Math.PI/2; // Rotate to make it face forward (along Z)
-  dialGroup.position.set(xDivider + 80, P.shaftY, dialDepth/2); // Position on front face
-  mech.add(dialGroup);
 
   // Add Text if font is loaded
   if (font) {
-      const textGeo = new TextGeometry('150 lb', {
+      const textGeo = new TextGeometry('150lb', {
           font: font,
-          size: 20,
-          height: 3,
+          size: 10, // Smaller size to fit on screen
+          height: 2,
           curveSegments: 12,
       });
       textGeo.center(); // Center the text geometry
       const textMesh = new THREE.Mesh(textGeo, materials.text);
-      textMesh.position.set(xDivider + 80, P.shaftY - 55, 5); // Position below the dial
-      mech.add(textMesh);
+      textMesh.rotation.x = -Math.PI / 2; // Rotate text to lay flat on the screen
+      textMesh.position.y = dialDepth/2 + 2; // Position text on top of the screen face
+      dialGroup.add(textMesh);
   }
+
+  // Position and orient the entire dial group to be on the outside of the front panel
+  dialGroup.rotation.x = Math.PI/2; // Point the screen face outwards
+  dialGroup.rotation.z = Math.PI;   // Flip the screen 180 degrees to be upright
+  dialGroup.position.set(565, 220, 5 - dialDepth/2); // Position fully outside the front panel (fairlead face)
+  mech.add(dialGroup);
 }
 
 let font;
