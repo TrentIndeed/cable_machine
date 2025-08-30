@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Three.js CAD — Servo + 2-Stage Belts + Drum (import map fix)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Import map so example modules can resolve the bare 'three' specifier -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#0b0f14;color:#e6eef8;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  #hud{position:fixed;left:10px;top:10px;display:flex;gap:8px;z-index:10}
+  .btn{background:#1e293b;border:1px solid #334155;color:#e6eef8;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+  .btn:hover{background:#0f172a}
+  #panel{position:fixed;right:10px;bottom:10px;background:#0b1220cc;border:1px solid #334155;border-radius:10px;padding:10px 12px;z-index:10;min-width:280px}
+  #panel h3{margin:0 0 6px 0;font-size:14px}
+  #panel label{display:flex;justify-content:space-between;gap:8px;margin:4px 0;font-size:12px}
+  #panel input,#panel select{flex:1;background:#0f172a;color:#e6eef8;border:1px solid #334155;border-radius:6px;padding:4px 6px}
+  #readout{position:fixed;right:10px;top:10px;background:#0b1220cc;border:1px solid #334155;border-radius:10px;padding:10px 12px;z-index:10;min-width:260px;font-size:12px;line-height:1.35}
+  #diag{position:fixed;left:10px;bottom:10px;background:#111827cc;border:1px solid #374151;border-radius:8px;padding:8px 10px;max-width:46vw;max-height:28vh;overflow:auto;font:12px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; z-index:10}
+  #hint{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);font-size:12px;opacity:.85}
+  canvas{display:block;width:100%;height:100%}
+</style>
+</head>
+<body>
+<div id="hud">
+  <button id="start" class="btn">▶ Start</button>
+  <button id="stop" class="btn">⏸ Stop</button>
+  <button id="reset" class="btn">↺ Reset View</button>
+</div>
+<div id="readout"></div>
+<div id="panel">
+  <h3>Parameters</h3>
+  <label>Motor RPM <input type="number" id="rpm" value="3000" min="100" max="4000" step="10"></label>
+  <label>Stage1 small T <select id="T1"><option>18</option><option>20</option><option selected>22</option><option>24</option></select></label>
+  <label>Stage1 large T <select id="T2"><option>48</option><option>54</option><option selected>60</option><option>64</option></select></label>
+  <label>Stage2 small T <select id="T3"><option>18</option><option>20</option><option selected>22</option><option>24</option></select></label>
+  <label>Stage2 large T <select id="T4"><option>42</option><option selected>48</option><option>54</option><option>60</option></select></label>
+  <label>Drum OD (mm) <input type="number" id="drumOD" value="100" min="40" max="160"></label>
+  <label>Drum Face (mm) <input type="number" id="drumFace" value="75" min="30" max="120"></label>
+  <label>Plane1 Y <input type="number" id="p1y" value="60" min="40" max="100"></label>
+  <label>Plane2 Y <input type="number" id="p2y" value="130" min="110" max="160"></label>
+</div>
+<div id="diag"></div>
+<div id="hint">Drag = orbit • Wheel = zoom • Shift+Drag = pan • Click Start to animate</div>
+<canvas id="c"></canvas>
+
+<script type="module">
+const diag = document.getElementById('diag');
+function log(msg){ diag.textContent += msg + "\\n"; diag.scrollTop = diag.scrollHeight; }
+window.addEventListener('error', (e)=>{ log('[window.error] '+ (e.message||e.error)); });
+window.addEventListener('unhandledrejection', (e)=>{ log('[promise] '+ e.reason); });
+
+// Since we provide an import map, we can use bare specifiers directly:
+import * as THREE from 'three';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js';
+
+log('✔ Imports resolved via import map');
+
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0b0f14');
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 50000);
+const encW=500, encH=300, encD=190;
+camera.position.set(encW/2+600, 350, 600);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.position='fixed';
+labelRenderer.domElement.style.left='0';
+labelRenderer.domElement.style.top='0';
+labelRenderer.domElement.style.pointerEvents='none';
+document.body.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(encW/2+260,150,95); controls.update();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const hemi = new THREE.HemisphereLight(0xffffff, 0x223344, 0.8); hemi.position.set(0,1,0); scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffffff, 1.0); key.position.set(1200, 1200, 900); scene.add(key);
+const fill = new THREE.DirectionalLight(0xffffff, 0.6); fill.position.set(-800, 600, -900); scene.add(fill);
+
+const grid = new THREE.GridHelper(2000, 40, 0x64748b, 0x1f2937); grid.position.y=0; scene.add(grid);
+
+const materials = {
+  steel: new THREE.MeshStandardMaterial({ color:0xb9c0c7, metalness:0.75, roughness:0.35 }),
+  dark:  new THREE.MeshStandardMaterial({ color:0x3b4453, metalness:0.65, roughness:0.55 }),
+  belt:  new THREE.MeshStandardMaterial({ color:0x0a0f14, metalness:0.1, roughness:0.95 }),
+  drum:  new THREE.MeshStandardMaterial({ color:0xd7dde4, metalness:0.55, roughness:0.35 }),
+  cable: new THREE.MeshStandardMaterial({ color:0x94a3b8, metalness:0.7, roughness:0.2 }),
+  glass: new THREE.MeshPhysicalMaterial({ color:0x7fb0ff, metalness:0, roughness:0.08, transmission:0.9, transparent:true, opacity:0.2, side:THREE.DoubleSide, clearcoat:1, clearcoatRoughness:0.02 }),
+};
+
+const P = {
+  encW, encH, encD,
+  plane1Y: 60, plane2Y: 130, centerZ: 150,
+  xMotor: 90, xJack: 270, xDrum: 450,
+  pitch: 8, beltW: 30,
+  T1: 22, T2: 60, T3: 22, T4: 48,
+  drumOD: 100, drumFace: 75,
+  motorW: 130, motorH: 130, motorL: 279, motorRPM: 3000,
+  running:false
+};
+
+function PD(teeth){ return teeth * P.pitch / Math.PI; }
+function rT(t){ return PD(t)/2; }
+
+const mech = new THREE.Group(); scene.add(mech);
+const belts = new THREE.Group(); scene.add(belts);
+
+function buildEnclosure(){
+  const g = new THREE.BoxGeometry(P.encW, P.encH, P.encD);
+  const box = new THREE.Mesh(g, materials.glass); box.position.set(P.encW/2, P.encH/2, 0); box.userData.isEnclosure = true;
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({ color:0x60a5fa })); edges.position.copy(box.position); edges.userData.isEnclosure = true;
+  const divider = new THREE.Mesh(new THREE.BoxGeometry(2, P.encH, P.encD*0.95), materials.dark); divider.position.set(220, P.encH/2, 0); divider.userData.isEnclosure = true;
+  scene.add(box, edges, divider);
+}
+
+let p22A,p60,p22B,p48,drum,cable,belt1,belt2;
+
+function pulleyMesh(teeth, width){ const r=rT(teeth); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,width,96), materials.steel); m.rotation.x=Math.PI/2; m.userData={type:'pulley',teeth, PD:PD(teeth)}; return m; }
+function buildDrum(){ const r=P.drumOD/2; const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,P.drumFace,96), materials.drum); m.rotation.x=Math.PI/2; m.userData={type:'drum'}; return m; }
+function buildCable(){ const len=400; const m=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,len,16), materials.cable); m.rotation.z=Math.PI/2; m.position.set(P.encW/2 + P.xDrum + P.drumFace/2 + len/2 + 10, P.centerZ, P.plane2Y); m.userData={type:'cable'}; return m; }
+
+function rebuild(){
+  // clear old mech & belts
+  mech.clear(); belts.clear();
+  // remove previous enclosure
+  scene.children = scene.children.filter(obj => !(obj.userData && obj.userData.isEnclosure));
+  buildEnclosure();
+
+  const motor = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(P.motorL,P.motorH,P.motorW), materials.dark);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(11,11,60,32), materials.steel); shaft.rotation.z=Math.PI/2; shaft.position.set(P.motorL/2 + 30, P.motorH/2, 0);
+  motor.add(body,shaft); motor.position.set(P.xMotor - P.motorL/2 - 30 + P.encW/2, 0, P.plane1Y - P.motorW/2);
+  mech.add(motor);
+
+  p22A = pulleyMesh(P.T1,P.beltW); p22A.position.set(P.encW/2+P.xMotor, P.centerZ, P.plane1Y); mech.add(p22A);
+  p60  = pulleyMesh(P.T2,P.beltW); p60.position.set(P.encW/2+P.xJack,  P.centerZ, P.plane1Y); mech.add(p60);
+  p22B = pulleyMesh(P.T3,P.beltW); p22B.position.set(P.encW/2+P.xJack, P.centerZ, P.plane2Y); mech.add(p22B);
+  p48  = pulleyMesh(P.T4,P.beltW); p48.position.set(P.encW/2+P.xDrum,  P.centerZ, P.plane2Y); mech.add(p48);
+  drum = buildDrum(); drum.position.set(P.encW/2+P.xDrum, P.centerZ, P.plane2Y); mech.add(drum);
+  cable = buildCable(); mech.add(cable);
+
+  const beltThick=6;
+  const r1=rT(P.T1), r2=rT(P.T2), r3=rT(P.T3), r4=rT(P.T4);
+  const c1x=P.encW/2+P.xMotor, c2x=P.encW/2+P.xJack, c3x=P.encW/2+P.xDrum;
+  const len1 = Math.max(10, (c2x-c1x) - (r1+r2));
+  belt1 = new THREE.Mesh(new THREE.BoxGeometry(len1,beltThick,P.beltW), materials.belt);
+  belt1.position.set((c1x+c2x)/2, P.centerZ, P.plane1Y);
+  const len2 = Math.max(10, (c3x-c2x) - (r3+r4));
+  belt2 = new THREE.Mesh(new THREE.BoxGeometry(len2,beltThick,P.beltW), materials.belt);
+  belt2.position.set((c2x+c3x)/2, P.centerZ, P.plane2Y);
+  belts.add(belt1,belt2);
+
+  updateReadout();
+  controls.target.set(P.encW/2+260,150,95); controls.update();
+}
+
+function totalRatio(){ return (P.T2/P.T1)*(P.T4/P.T3); }
+function drumRPM(){ return P.motorRPM / totalRatio(); }
+function cableSpeedMps(){ return (Math.PI * P.drumOD/1000) * (drumRPM()/60); }
+function updateReadout(){ const mph=cableSpeedMps()*2.23694; document.getElementById('readout').innerHTML=`<b>Assembly</b><br>Ratio: <b>${totalRatio().toFixed(2)}:1</b><br>Motor RPM: <b>${P.motorRPM.toFixed(0)}</b><br>Drum RPM: <b>${drumRPM().toFixed(1)}</b><br>Cable speed: <b>${cableSpeedMps().toFixed(2)} m/s</b> (~<b>${mph.toFixed(2)} mph</b>)<br>Drum: <b>${P.drumOD} × ${P.drumFace} mm</b><br>Pulleys: <b>${P.T1}→${P.T2}</b> & <b>${P.T3}→${P.T4}</b>`; }
+
+let last = performance.now();
+function animate(now){
+  const dt=(now-last)/1000; last=now;
+  if(P.running){
+    const theta=(P.motorRPM/60)*2*Math.PI*dt;
+    const r1=P.T1/P.T2; const r2=P.T3/P.T4;
+    p22A.rotation.x += theta;
+    p60.rotation.x  += theta*r1;
+    p22B.rotation.x += theta*r1;
+    p48.rotation.x  += theta*r1*r2;
+    drum.rotation.x += theta*r1*r2;
+  }
+  renderer.render(scene,camera); labelRenderer.render(scene,camera); requestAnimationFrame(animate);
+}
+
+function bindUI(){
+  function gi(id){return document.getElementById(id);} function val(id){return parseInt(gi(id).value,10);}
+  ['rpm','T1','T2','T3','T4','drumOD','drumFace','p1y','p2y'].forEach(id=>gi(id).addEventListener('input',()=>{
+    P.motorRPM=val('rpm'); P.T1=val('T1'); P.T2=val('T2'); P.T3=val('T3'); P.T4=val('T4'); P.drumOD=val('drumOD'); P.drumFace=val('drumFace'); P.plane1Y=val('p1y'); P.plane2Y=val('p2y'); rebuild();
+  }));
+  gi('start').onclick=()=>{ P.running=true; };
+  gi('stop').onclick =()=>{ P.running=false; };
+  gi('reset').onclick=()=>{ camera.position.set(P.encW/2+600, 350, 600); controls.target.set(P.encW/2+260,150,95); controls.update(); };
+}
+rebuild(); bindUI(); requestAnimationFrame(animate);
+
+window.addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); labelRenderer.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>
