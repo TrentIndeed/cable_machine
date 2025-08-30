@@ -72,7 +72,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#0b0f14');
 
-const encW=650, encH=360, encD=670; // Increased depth for rotated mechanism
+const encW=650, encH=360, encD=380; // Compacted depth
 const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 50000);
 camera.position.set(encW + 400, encH + 200, encD/2); // Adjusted camera for new size
 
@@ -103,17 +103,14 @@ const materials = {
   glass: new THREE.MeshPhysicalMaterial({ color:0x7fb0ff, metalness:0, roughness:0.08, transmission:0.9, transparent:true, opacity:0.2, side:THREE.DoubleSide, clearcoat:1, clearcoatRoughness:0.02 }),
 };
 
-// Parameters for the vertically rotated layout, shifted left to mount motor
+// Parameters for the vertically rotated layout, with motor mounted to the side
 const P = {
   encW, encH, encD,
   shaftY: 200.0,
-  // X-coordinates for the two belt planes, shifted left
-  xPlane1: 307.0, // 377 - 70
-  xPlane2: 377.0,
-  // Z-coordinates calculated from center distances
+  // Z-coordinates for flipped Stage 2 to save space
   zMotor: 150.0,
   zJack: 150.0 + 139.6, // 289.6
-  zDrum: 289.6 + 168.8, // 458.4
+  zDrum: (150.0 + 139.6) - 168.8, // 120.8. Stage 2 is reversed.
   pitch: 8, beltW: 30,
   T1: 22, T2: 60, T3: 22, T4: 48,
   drumOD: 100, drumFace: 80,
@@ -127,13 +124,13 @@ function rT(t){ return PD(t)/2; }
 const mech = new THREE.Group(); scene.add(mech);
 const belts = new THREE.Group(); scene.add(belts);
 
-function buildEnclosure(){
+function buildEnclosure(xDivider, xFairlead){
   const g = new THREE.BoxGeometry(P.encW, P.encH, P.encD);
   const box = new THREE.Mesh(g, materials.glass); box.position.set(P.encW/2, P.encH/2, P.encD/2); box.userData.isEnclosure = true;
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({ color:0x60a5fa })); edges.position.copy(box.position); edges.userData.isEnclosure = true;
-  const divider = new THREE.Mesh(new THREE.BoxGeometry(6, P.encH, P.encD*0.95), materials.dark); divider.position.set(460, P.encH/2, P.encD/2); divider.userData.isEnclosure = true;
+  const divider = new THREE.Mesh(new THREE.BoxGeometry(6, P.encH, P.encD*0.95), materials.dark); divider.position.set(xDivider, P.encH/2, P.encD/2); divider.userData.isEnclosure = true;
   const fairlead = new THREE.Mesh(new THREE.BoxGeometry(70, 25, 10), materials.dark);
-  fairlead.position.set(460, 200, P.encD - 5);
+  fairlead.position.set(xFairlead, 200, 5); // Use calculated X
   scene.add(box, edges, divider, fairlead);
 }
 
@@ -142,11 +139,11 @@ let p22A,p60,p22B,p48,drum,cable,belt1,belt2;
 // Shafts are parallel to X-axis, so rotate geometry accordingly
 function pulleyMesh(teeth, width){ const r=rT(teeth); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,width,96), materials.steel); m.rotation.z=Math.PI/2; m.userData={type:'pulley',teeth, PD:PD(teeth)}; return m; }
 function buildDrum(){ const r=P.drumOD/2; const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,P.drumFace,96), materials.drum); m.rotation.z=Math.PI/2; m.userData={type:'drum'}; return m; }
-function buildCable(){
+function buildCable(xDrum){
   const cableRadius = 4.75 / 2; // 3/16"
-  const startPoint = new THREE.Vector3(P.xPlane2, P.shaftY, P.zDrum + P.drumOD/2);
-  const fairleadX = 460; // Fairlead is at a fixed X
-  const endPoint = new THREE.Vector3(fairleadX, P.shaftY, P.encD);
+  const startPoint = new THREE.Vector3(xDrum, P.shaftY, P.zDrum - P.drumOD/2); // From other side of drum
+  const fairleadX = xDrum; // Align with drum
+  const endPoint = new THREE.Vector3(fairleadX, P.shaftY, 0); // To the front
   const path = new THREE.Line3(startPoint, endPoint);
   const length = path.distance();
   const m = new THREE.Mesh(new THREE.CylinderGeometry(cableRadius, cableRadius, length, 16), materials.cable);
@@ -160,32 +157,42 @@ function buildCable(){
 function rebuild(){
   mech.clear(); belts.clear();
   scene.children = scene.children.filter(obj => !(obj.userData && obj.userData.isEnclosure));
-  buildEnclosure();
 
-  // Corrected motor geometry and position
+  // Calculate X positions for components, starting from motor
+  const clearance = 10;
+  const xBelt1 = P.motorL + 28; // Center of motor shaft pulley
+  const xBelt2 = xBelt1 + P.beltW/2 + clearance + P.beltW/2;
+  const xDrum = xBelt2 + P.beltW/2 + clearance + P.drumFace/2;
+  const xDivider = xDrum + P.drumFace/2 + clearance;
+
+  buildEnclosure(xDivider, xDrum);
+
+  // Mount motor back to enclosure wall (X=0)
   const motor = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(P.motorL, P.motorH, P.motorW), materials.dark);
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(11,11,57,32), materials.steel);
   shaft.rotation.z = Math.PI/2; // Align shaft with X-axis
   shaft.position.x = P.motorL/2 + 28;
   motor.add(body,shaft);
-  motor.position.set(P.xPlane1 - (P.motorL/2 + 28), P.shaftY, P.zMotor);
+  motor.position.set(P.motorL/2, P.shaftY, P.zMotor); // Motor center at L/2
   mech.add(motor);
 
-  p22A = pulleyMesh(P.T1,P.beltW); p22A.position.set(P.xPlane1, P.shaftY, P.zMotor); mech.add(p22A);
-  p60  = pulleyMesh(P.T2,P.beltW); p60.position.set(P.xPlane1, P.shaftY, P.zJack);  mech.add(p60);
-  p22B = pulleyMesh(P.T3,P.beltW); p22B.position.set(P.xPlane2, P.shaftY, P.zJack);  mech.add(p22B);
-  p48  = pulleyMesh(P.T4,P.beltW); p48.position.set(P.xPlane2, P.shaftY, P.zDrum);  mech.add(p48);
-  drum = buildDrum(); drum.position.set(P.xPlane2, P.shaftY, P.zDrum); mech.add(drum);
-  cable = buildCable(); mech.add(cable);
+  p22A = pulleyMesh(P.T1,P.beltW); p22A.position.set(xBelt1, P.shaftY, P.zMotor); mech.add(p22A);
+  p60  = pulleyMesh(P.T2,P.beltW); p60.position.set(xBelt1, P.shaftY, P.zJack);  mech.add(p60);
+  p22B = pulleyMesh(P.T3,P.beltW); p22B.position.set(xBelt2, P.shaftY, P.zJack);  mech.add(p22B);
+  p48  = pulleyMesh(P.T4,P.beltW); p48.position.set(xBelt2, P.shaftY, P.zDrum);  mech.add(p48);
+  drum = buildDrum(); drum.position.set(xDrum, P.shaftY, P.zDrum); mech.add(drum);
+  cable = buildCable(xDrum);
+  mech.add(cable);
 
   const beltThick = 6;
   belt1 = createBelt(rT(P.T1), P.zMotor, rT(P.T2), P.zJack, P.shaftY, P.beltW, beltThick);
-  belt1.position.x = P.xPlane1;
+  belt1.position.x = xBelt1;
   belts.add(belt1);
 
-  belt2 = createBelt(rT(P.T3), P.zJack, rT(P.T4), P.zDrum, P.shaftY, P.beltW, beltThick);
-  belt2.position.x = P.xPlane2;
+  // Swapped args so smaller Z-coordinate is first, ensuring correct belt wrap
+  belt2 = createBelt(rT(P.T4), P.zDrum, rT(P.T3), P.zJack, P.shaftY, P.beltW, beltThick);
+  belt2.position.x = xBelt2;
   belts.add(belt2);
 
   updateReadout();
