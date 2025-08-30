@@ -72,9 +72,9 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color('#0b0f14');
 
+const encW=650, encH=360, encD=670; // Increased depth for rotated mechanism
 const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 50000);
-const encW=500, encH=300, encD=190;
-camera.position.set(encW/2+600, 350, 600);
+camera.position.set(encW + 400, encH + 200, encD/2); // Adjusted camera for new size
 
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(innerWidth, innerHeight);
@@ -85,7 +85,7 @@ labelRenderer.domElement.style.pointerEvents='none';
 document.body.appendChild(labelRenderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(encW/2+260,150,95); controls.update();
+controls.target.set(encW/2, encH/2, encD/2); controls.update(); // Center target on enclosure
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 const hemi = new THREE.HemisphereLight(0xffffff, 0x223344, 0.8); hemi.position.set(0,1,0); scene.add(hemi);
@@ -99,17 +99,24 @@ const materials = {
   dark:  new THREE.MeshStandardMaterial({ color:0x3b4453, metalness:0.65, roughness:0.55 }),
   belt:  new THREE.MeshStandardMaterial({ color:0x0a0f14, metalness:0.1, roughness:0.95 }),
   drum:  new THREE.MeshStandardMaterial({ color:0xd7dde4, metalness:0.55, roughness:0.35 }),
-  cable: new THREE.MeshStandardMaterial({ color:0x94a3b8, metalness:0.7, roughness:0.2 }),
+  cable: new THREE.MeshStandardMaterial({ color:0xdc2626, metalness:0.7, roughness:0.2 }),
   glass: new THREE.MeshPhysicalMaterial({ color:0x7fb0ff, metalness:0, roughness:0.08, transmission:0.9, transparent:true, opacity:0.2, side:THREE.DoubleSide, clearcoat:1, clearcoatRoughness:0.02 }),
 };
 
+// Parameters for the vertically rotated layout, shifted left to mount motor
 const P = {
   encW, encH, encD,
-  plane1Y: 60, plane2Y: 130, centerZ: 150,
-  xMotor: 90, xJack: 270, xDrum: 450,
+  shaftY: 200.0,
+  // X-coordinates for the two belt planes, shifted left
+  xPlane1: 307.0, // 377 - 70
+  xPlane2: 377.0,
+  // Z-coordinates calculated from center distances
+  zMotor: 150.0,
+  zJack: 150.0 + 139.6, // 289.6
+  zDrum: 289.6 + 168.8, // 458.4
   pitch: 8, beltW: 30,
   T1: 22, T2: 60, T3: 22, T4: 48,
-  drumOD: 100, drumFace: 75,
+  drumOD: 100, drumFace: 80,
   motorW: 130, motorH: 130, motorL: 279, motorRPM: 3000,
   running:false
 };
@@ -122,51 +129,125 @@ const belts = new THREE.Group(); scene.add(belts);
 
 function buildEnclosure(){
   const g = new THREE.BoxGeometry(P.encW, P.encH, P.encD);
-  const box = new THREE.Mesh(g, materials.glass); box.position.set(P.encW/2, P.encH/2, 0); box.userData.isEnclosure = true;
+  const box = new THREE.Mesh(g, materials.glass); box.position.set(P.encW/2, P.encH/2, P.encD/2); box.userData.isEnclosure = true;
   const edges = new THREE.LineSegments(new THREE.EdgesGeometry(g), new THREE.LineBasicMaterial({ color:0x60a5fa })); edges.position.copy(box.position); edges.userData.isEnclosure = true;
-  const divider = new THREE.Mesh(new THREE.BoxGeometry(2, P.encH, P.encD*0.95), materials.dark); divider.position.set(220, P.encH/2, 0); divider.userData.isEnclosure = true;
-  scene.add(box, edges, divider);
+  const divider = new THREE.Mesh(new THREE.BoxGeometry(6, P.encH, P.encD*0.95), materials.dark); divider.position.set(460, P.encH/2, P.encD/2); divider.userData.isEnclosure = true;
+  const fairlead = new THREE.Mesh(new THREE.BoxGeometry(70, 25, 10), materials.dark);
+  fairlead.position.set(460, 200, P.encD - 5);
+  scene.add(box, edges, divider, fairlead);
 }
 
 let p22A,p60,p22B,p48,drum,cable,belt1,belt2;
 
-function pulleyMesh(teeth, width){ const r=rT(teeth); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,width,96), materials.steel); m.rotation.x=Math.PI/2; m.userData={type:'pulley',teeth, PD:PD(teeth)}; return m; }
-function buildDrum(){ const r=P.drumOD/2; const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,P.drumFace,96), materials.drum); m.rotation.x=Math.PI/2; m.userData={type:'drum'}; return m; }
-function buildCable(){ const len=400; const m=new THREE.Mesh(new THREE.CylinderGeometry(1.5,1.5,len,16), materials.cable); m.rotation.z=Math.PI/2; m.position.set(P.encW/2 + P.xDrum + P.drumFace/2 + len/2 + 10, P.centerZ, P.plane2Y); m.userData={type:'cable'}; return m; }
+// Shafts are parallel to X-axis, so rotate geometry accordingly
+function pulleyMesh(teeth, width){ const r=rT(teeth); const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,width,96), materials.steel); m.rotation.z=Math.PI/2; m.userData={type:'pulley',teeth, PD:PD(teeth)}; return m; }
+function buildDrum(){ const r=P.drumOD/2; const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,P.drumFace,96), materials.drum); m.rotation.z=Math.PI/2; m.userData={type:'drum'}; return m; }
+function buildCable(){
+  const cableRadius = 4.75 / 2; // 3/16"
+  const startPoint = new THREE.Vector3(P.xPlane2, P.shaftY, P.zDrum + P.drumOD/2);
+  const fairleadX = 460; // Fairlead is at a fixed X
+  const endPoint = new THREE.Vector3(fairleadX, P.shaftY, P.encD);
+  const path = new THREE.Line3(startPoint, endPoint);
+  const length = path.distance();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(cableRadius, cableRadius, length, 16), materials.cable);
+  m.position.copy(startPoint).add(endPoint).multiplyScalar(0.5);
+  const direction = path.delta(new THREE.Vector3()).normalize();
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+  m.userData = {type:'cable'};
+  return m;
+}
 
 function rebuild(){
-  // clear old mech & belts
   mech.clear(); belts.clear();
-  // remove previous enclosure
   scene.children = scene.children.filter(obj => !(obj.userData && obj.userData.isEnclosure));
   buildEnclosure();
 
+  // Corrected motor geometry and position
   const motor = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(P.motorL,P.motorH,P.motorW), materials.dark);
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(11,11,60,32), materials.steel); shaft.rotation.z=Math.PI/2; shaft.position.set(P.motorL/2 + 30, P.motorH/2, 0);
-  motor.add(body,shaft); motor.position.set(P.xMotor - P.motorL/2 - 30 + P.encW/2, 0, P.plane1Y - P.motorW/2);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(P.motorL, P.motorH, P.motorW), materials.dark);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(11,11,57,32), materials.steel);
+  shaft.rotation.z = Math.PI/2; // Align shaft with X-axis
+  shaft.position.x = P.motorL/2 + 28;
+  motor.add(body,shaft);
+  motor.position.set(P.xPlane1 - (P.motorL/2 + 28), P.shaftY, P.zMotor);
   mech.add(motor);
 
-  p22A = pulleyMesh(P.T1,P.beltW); p22A.position.set(P.encW/2+P.xMotor, P.centerZ, P.plane1Y); mech.add(p22A);
-  p60  = pulleyMesh(P.T2,P.beltW); p60.position.set(P.encW/2+P.xJack,  P.centerZ, P.plane1Y); mech.add(p60);
-  p22B = pulleyMesh(P.T3,P.beltW); p22B.position.set(P.encW/2+P.xJack, P.centerZ, P.plane2Y); mech.add(p22B);
-  p48  = pulleyMesh(P.T4,P.beltW); p48.position.set(P.encW/2+P.xDrum,  P.centerZ, P.plane2Y); mech.add(p48);
-  drum = buildDrum(); drum.position.set(P.encW/2+P.xDrum, P.centerZ, P.plane2Y); mech.add(drum);
+  p22A = pulleyMesh(P.T1,P.beltW); p22A.position.set(P.xPlane1, P.shaftY, P.zMotor); mech.add(p22A);
+  p60  = pulleyMesh(P.T2,P.beltW); p60.position.set(P.xPlane1, P.shaftY, P.zJack);  mech.add(p60);
+  p22B = pulleyMesh(P.T3,P.beltW); p22B.position.set(P.xPlane2, P.shaftY, P.zJack);  mech.add(p22B);
+  p48  = pulleyMesh(P.T4,P.beltW); p48.position.set(P.xPlane2, P.shaftY, P.zDrum);  mech.add(p48);
+  drum = buildDrum(); drum.position.set(P.xPlane2, P.shaftY, P.zDrum); mech.add(drum);
   cable = buildCable(); mech.add(cable);
 
-  const beltThick=6;
-  const r1=rT(P.T1), r2=rT(P.T2), r3=rT(P.T3), r4=rT(P.T4);
-  const c1x=P.encW/2+P.xMotor, c2x=P.encW/2+P.xJack, c3x=P.encW/2+P.xDrum;
-  const len1 = Math.max(10, (c2x-c1x) - (r1+r2));
-  belt1 = new THREE.Mesh(new THREE.BoxGeometry(len1,beltThick,P.beltW), materials.belt);
-  belt1.position.set((c1x+c2x)/2, P.centerZ, P.plane1Y);
-  const len2 = Math.max(10, (c3x-c2x) - (r3+r4));
-  belt2 = new THREE.Mesh(new THREE.BoxGeometry(len2,beltThick,P.beltW), materials.belt);
-  belt2.position.set((c2x+c3x)/2, P.centerZ, P.plane2Y);
-  belts.add(belt1,belt2);
+  const beltThick = 6;
+  belt1 = createBelt(rT(P.T1), P.zMotor, rT(P.T2), P.zJack, P.shaftY, P.beltW, beltThick);
+  belt1.position.x = P.xPlane1;
+  belts.add(belt1);
+
+  belt2 = createBelt(rT(P.T3), P.zJack, rT(P.T4), P.zDrum, P.shaftY, P.beltW, beltThick);
+  belt2.position.x = P.xPlane2;
+  belts.add(belt2);
 
   updateReadout();
-  controls.target.set(P.encW/2+260,150,95); controls.update();
+  controls.target.set(P.encW/2, P.encH/2, P.encD/2); controls.update();
+}
+
+function createBelt(r1, z1, r2, z2, y, width, thick) {
+  const d = z2 - z1;
+  const shape = new THREE.Shape();
+
+  // Angle for tangent points is the same for inner and outer paths
+  const alpha = Math.asin((r2 - r1) / d);
+
+  // --- Outer Path ---
+  const r1o = r1 + thick;
+  const r2o = r2 + thick;
+
+  const p1_upper = { x: z1 - r1o * Math.sin(alpha), y: y + r1o * Math.cos(alpha) };
+  const p2_upper = { x: z2 - r2o * Math.sin(alpha), y: y + r2o * Math.cos(alpha) };
+  const p1_lower = { x: z1 + r1o * Math.sin(alpha), y: y - r1o * Math.cos(alpha) };
+  const p2_lower = { x: z2 + r2o * Math.sin(alpha), y: y - r2o * Math.cos(alpha) };
+
+  const angle1_start_outer = Math.atan2(p1_lower.y - y, p1_lower.x - z1);
+  const angle1_end_outer = Math.atan2(p1_upper.y - y, p1_upper.x - z1);
+  const angle2_start_outer = Math.atan2(p2_upper.y - y, p2_upper.x - z2);
+  const angle2_end_outer = Math.atan2(p2_lower.y - y, p2_lower.x - z2);
+
+  shape.moveTo(p1_upper.x, p1_upper.y);
+  shape.lineTo(p2_upper.x, p2_upper.y);
+  shape.absarc(z2, y, r2o, angle2_start_outer, angle2_end_outer, true);
+  shape.lineTo(p1_lower.x, p1_lower.y);
+  shape.absarc(z1, y, r1o, angle1_start_outer, angle1_end_outer, true); // Corrected angle order
+
+  // --- Inner Path (Hole) ---
+  const hole = new THREE.Path();
+
+  const h_p1_upper = { x: z1 - r1 * Math.sin(alpha), y: y + r1 * Math.cos(alpha) };
+  const h_p2_upper = { x: z2 - r2 * Math.sin(alpha), y: y + r2 * Math.cos(alpha) };
+  const h_p1_lower = { x: z1 + r1 * Math.sin(alpha), y: y - r1 * Math.cos(alpha) };
+  const h_p2_lower = { x: z2 + r2 * Math.sin(alpha), y: y - r2 * Math.cos(alpha) };
+
+  const h_angle1_start = Math.atan2(h_p1_lower.y - y, h_p1_lower.x - z1);
+  const h_angle1_end = Math.atan2(h_p1_upper.y - y, h_p1_upper.x - z1);
+  const h_angle2_start = Math.atan2(h_p2_upper.y - y, h_p2_upper.x - z2);
+  const h_angle2_end = Math.atan2(h_p2_lower.y - y, h_p2_lower.x - z2);
+
+  hole.moveTo(h_p1_upper.x, h_p1_upper.y);
+  hole.lineTo(h_p2_upper.x, h_p2_upper.y);
+  hole.absarc(z2, y, r2, h_angle2_start, h_angle2_end, true);
+  hole.lineTo(h_p1_lower.x, h_p1_lower.y);
+  hole.absarc(z1, y, r1, h_angle1_start, h_angle1_end, true); // Corrected angle order
+  shape.holes.push(hole);
+
+  const extrudeSettings = { depth: width, bevelEnabled: false };
+  const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+  
+  // The shape is in the XY plane, but we need it in the YZ plane.
+  // We rotate it and then translate to center it.
+  geometry.rotateY(-Math.PI / 2);
+  geometry.translate(width / 2, 0, 0);
+  
+  return new THREE.Mesh(geometry, materials.belt);
 }
 
 function totalRatio(){ return (P.T2/P.T1)*(P.T4/P.T3); }
@@ -179,7 +260,9 @@ function animate(now){
   const dt=(now-last)/1000; last=now;
   if(P.running){
     const theta=(P.motorRPM/60)*2*Math.PI*dt;
-    const r1=P.T1/P.T2; const r2=P.T3/P.T4;
+    const r1=P.T1/P.T2;
+    const r2=P.T3/P.T4;
+    // Rotation is around the X axis
     p22A.rotation.x += theta;
     p60.rotation.x  += theta*r1;
     p22B.rotation.x += theta*r1;
@@ -191,12 +274,18 @@ function animate(now){
 
 function bindUI(){
   function gi(id){return document.getElementById(id);} function val(id){return parseInt(gi(id).value,10);}
-  ['rpm','T1','T2','T3','T4','drumOD','drumFace','p1y','p2y'].forEach(id=>gi(id).addEventListener('input',()=>{
-    P.motorRPM=val('rpm'); P.T1=val('T1'); P.T2=val('T2'); P.T3=val('T3'); P.T4=val('T4'); P.drumOD=val('drumOD'); P.drumFace=val('drumFace'); P.plane1Y=val('p1y'); P.plane2Y=val('p2y'); rebuild();
-  }));
+  ['rpm','T1','T2','T3','T4','drumOD','drumFace','p1y','p2y'].forEach(id=>{
+    const el = gi(id);
+    if (el) {
+      el.addEventListener('input',()=>{
+        P.motorRPM=val('rpm'); P.T1=val('T1'); P.T2=val('T2'); P.T3=val('T3'); P.T4=val('T4'); P.drumOD=val('drumOD'); P.drumFace=val('drumFace');
+        rebuild();
+      });
+    }
+  });
   gi('start').onclick=()=>{ P.running=true; };
   gi('stop').onclick =()=>{ P.running=false; };
-  gi('reset').onclick=()=>{ camera.position.set(P.encW/2+600, 350, 600); controls.target.set(P.encW/2+260,150,95); controls.update(); };
+  gi('reset').onclick=()=>{ camera.position.set(P.encW + 400, P.encH + 200, P.encD/2); controls.target.set(P.encW/2, P.encH/2, P.encD/2); controls.update(); };
 }
 rebuild(); bindUI(); requestAnimationFrame(animate);
 
@@ -204,3 +293,4 @@ window.addEventListener('resize', ()=>{ camera.aspect = innerWidth/innerHeight; 
 </script>
 </body>
 </html>
+
