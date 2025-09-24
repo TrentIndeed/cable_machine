@@ -54,43 +54,156 @@ body {
   width: min(100%, 1080px);
   min-height: 1920px;
   margin: 0 auto;
-  padding: 36px 28px 60px;
+  padding: 120px 28px 60px;
   display: flex;
   flex-direction: column;
   gap: 28px;
   position: relative;
 }
 
-.app-header {
+.system-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 24px;
   background: linear-gradient(135deg, rgba(18, 30, 55, 0.9), rgba(6, 13, 24, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
-  padding: 20px 24px;
+  padding: 22px 26px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
 
-.header-left {
+.logo-block {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.logo-image {
+  width: 108px;
+  height: auto;
+  filter: drop-shadow(0 0 26px rgba(83, 255, 106, 0.45));
+}
+
+.branding-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.branding-copy h1 {
+  font-family: "Rajdhani", sans-serif;
+  font-size: 2.2rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.branding-copy .eyebrow {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(166, 255, 184, 0.75);
+}
+
+.system-meta {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.header-right {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
+.power-toggle {
+  min-width: 140px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(83, 255, 106, 0.45);
+  background: rgba(20, 45, 24, 0.82);
+  color: rgba(180, 255, 196, 0.95);
+  font-family: "Rajdhani", sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  box-shadow: 0 0 24px rgba(83, 255, 106, 0.25);
 }
 
-.status-column {
-  display: grid;
-  gap: 10px;
+.power-toggle[data-state="on"] {
+  background: rgba(70, 18, 30, 0.82);
+  border-color: rgba(255, 105, 130, 0.6);
+  color: #ffd7df;
+  box-shadow: 0 0 28px rgba(255, 79, 109, 0.3);
 }
 
-.status-column .accent {
-  justify-self: start;
+.power-toggle:active {
+  transform: translateY(1px);
+}
+
+.status-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 168px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(62, 90, 118, 0.45);
+  background: rgba(8, 16, 28, 0.8);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+}
+
+.status-toggle[data-state="online"] {
+  border-color: rgba(83, 255, 106, 0.45);
+  background: rgba(20, 45, 24, 0.68);
+  color: rgba(166, 255, 184, 0.9);
+  box-shadow: 0 0 18px rgba(83, 255, 106, 0.25);
+}
+
+.status-toggle[data-state="offline"] {
+  border-color: rgba(255, 105, 130, 0.45);
+  background: rgba(45, 12, 18, 0.72);
+  color: rgba(255, 168, 182, 0.88);
+  box-shadow: 0 0 18px rgba(255, 79, 109, 0.22);
+}
+
+.status-toggle .status-line {
+  font-size: 0.92rem;
+  letter-spacing: 0.18em;
+}
+
+.status-toggle .action-line {
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  opacity: 0.7;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(70, 110, 140, 0.35);
+  background: rgba(12, 24, 40, 0.7);
+  font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-width: 190px;
+  text-align: center;
+}
+
+.status-pill.active {
+  color: rgba(166, 255, 184, 0.9);
+  border-color: rgba(83, 255, 106, 0.4);
+  background: rgba(20, 45, 24, 0.55);
 }
 
 .battery-indicator {
@@ -129,80 +242,6 @@ body {
   transition: width var(--transition);
 }
 
-.logo-block {
-  display: flex;
-  gap: 18px;
-  align-items: center;
-}
-
-.dragon-emblem {
-  width: 56px;
-  height: 56px;
-  background: conic-gradient(from 60deg, rgba(31, 139, 255, 0.12), rgba(31, 139, 255, 0.8), rgba(4, 7, 15, 0.9));
-  border-radius: 50%;
-  position: relative;
-  box-shadow: 0 0 24px rgba(31, 139, 255, 0.65);
-}
-
-.dragon-emblem::after {
-  content: "";
-  position: absolute;
-  inset: 10px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(127, 255, 212, 0.6) 0%, rgba(4, 7, 15, 0.2) 70%, rgba(4, 7, 15, 0.8) 100%);
-  mask-image: radial-gradient(circle at 55% 45%, transparent 36%, black 36%);
-}
-
-.app-header h1 {
-  font-family: "Rajdhani", sans-serif;
-  font-size: 2.4rem;
-  letter-spacing: 0.08em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.tagline {
-  margin: 4px 0 0;
-  color: var(--text-muted);
-  font-size: 0.95rem;
-}
-
-.status-flags {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  transition: background var(--transition), border-color var(--transition);
-}
-
-.status-badge.online {
-  color: var(--success);
-  border-color: rgba(60, 216, 143, 0.35);
-  background: rgba(60, 216, 143, 0.12);
-}
-
-.status-badge.neutral {
-  color: var(--text-muted);
-}
-
-.status-badge.active {
-  color: var(--accent-secondary);
-  border-color: rgba(127, 255, 212, 0.4);
-  background: rgba(31, 139, 255, 0.18);
-  box-shadow: 0 0 18px rgba(31, 139, 255, 0.35);
-}
 
 .resistance-overview {
   display: grid;

@@ -19,10 +19,8 @@ const elements = {
   forceLabel: document.getElementById('forceCurveLabel'),
   engageSlider: document.getElementById('engageDistance'),
   engageDisplay: document.getElementById('engageDisplay'),
-  powerOn: document.getElementById('powerOn'),
-  powerOff: document.getElementById('powerOff'),
+  powerToggle: document.getElementById('powerToggle'),
   motorToggle: document.getElementById('motorToggle'),
-  motorsStatus: document.getElementById('motorsStatus'),
   logList: document.getElementById('workoutLogList'),
   exerciseSelect: document.getElementById('exerciseSelect'),
   exerciseTitle: document.getElementById('exerciseTitle'),
@@ -258,6 +256,31 @@ motors.forEach((motor) => {
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
 });
 
+function updateMotorToggle() {
+  if (!elements.motorToggle) return;
+  if (!powerOn) {
+    elements.motorToggle.dataset.state = 'offline';
+    elements.motorToggle.innerHTML =
+      '<span class="status-line">Motors Offline</span><span class="action-line">Power on required</span>';
+    elements.motorToggle.disabled = true;
+    elements.motorToggle.setAttribute('aria-pressed', 'false');
+    return;
+  }
+
+  elements.motorToggle.disabled = false;
+  if (motorsRunning) {
+    elements.motorToggle.dataset.state = 'online';
+    elements.motorToggle.innerHTML =
+      '<span class="status-line">Motors Ready</span><span class="action-line">Tap to stop</span>';
+    elements.motorToggle.setAttribute('aria-pressed', 'true');
+  } else {
+    elements.motorToggle.dataset.state = 'offline';
+    elements.motorToggle.innerHTML =
+      '<span class="status-line">Motors Offline</span><span class="action-line">Tap to start</span>';
+    elements.motorToggle.setAttribute('aria-pressed', 'false');
+  }
+}
+
 function applyPowerState() {
   const interactive = [
     elements.startToggle,
@@ -289,8 +312,11 @@ function applyPowerState() {
     }
   });
 
-  elements.powerOn.disabled = powerOn;
-  elements.powerOff.disabled = !powerOn;
+  if (elements.powerToggle) {
+    elements.powerToggle.textContent = powerOn ? 'Shutdown' : 'Power On';
+    elements.powerToggle.dataset.state = powerOn ? 'on' : 'off';
+    elements.powerToggle.setAttribute('aria-pressed', powerOn ? 'true' : 'false');
+  }
 
   if (!powerOn) {
     stopSet();
@@ -300,12 +326,10 @@ function applyPowerState() {
     elements.workoutState.textContent = 'System Offline';
     elements.workoutState.classList.remove('active');
     elements.message.textContent = 'Power system on to resume control.';
-    elements.motorsStatus.textContent = 'Motors Offline';
-    elements.motorsStatus.classList.remove('online');
+    motorsRunning = false;
+    updateMotorToggle();
   } else {
-    elements.motorToggle.textContent = motorsRunning ? 'Stop Motors' : 'Start Motors';
-    elements.motorsStatus.classList.toggle('online', motorsRunning);
-    elements.motorsStatus.textContent = motorsRunning ? 'Motors Ready' : 'Motors Stopped';
+    updateMotorToggle();
     if (!workoutActive) {
       elements.workoutState.textContent = 'Workout Not Started';
     }
@@ -315,22 +339,20 @@ function applyPowerState() {
 function toggleMotors() {
   if (!powerOn) return;
   motorsRunning = !motorsRunning;
-  elements.motorToggle.textContent = motorsRunning ? 'Stop Motors' : 'Start Motors';
-  elements.motorsStatus.textContent = motorsRunning ? 'Motors Ready' : 'Motors Stopped';
-  elements.motorsStatus.classList.toggle('online', motorsRunning);
+  updateMotorToggle();
 }
 
-elements.powerOff.addEventListener('click', () => {
-  powerOn = false;
-  applyPowerState();
-});
+if (elements.powerToggle) {
+  elements.powerToggle.addEventListener('click', () => {
+    powerOn = !powerOn;
+    motorsRunning = powerOn ? true : false;
+    applyPowerState();
+  });
+}
 
-elements.powerOn.addEventListener('click', () => {
-  powerOn = true;
-  applyPowerState();
-});
-
-elements.motorToggle.addEventListener('click', toggleMotors);
+if (elements.motorToggle) {
+  elements.motorToggle.addEventListener('click', toggleMotors);
+}
 
 function renderExercisePreview() {
   const selection = elements.exerciseSelect.value;

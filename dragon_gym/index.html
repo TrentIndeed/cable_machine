@@ -11,9 +11,8 @@
 </head>
 <body>
   <main class="app-shell">
-    <div class="hud-corner top-left" aria-label="Power controls">
-      <button class="ghost" id="powerOn" type="button" disabled>Power On</button>
-      <button class="danger" id="powerOff" type="button">Shutdown</button>
+    <div class="hud-corner top-left" aria-label="Power control">
+      <button class="power-toggle" id="powerToggle" type="button">Power On</button>
     </div>
     <div class="hud-corner top-right" aria-label="Battery level">
       <div class="battery-indicator">
@@ -23,33 +22,29 @@
         <span>50%</span>
       </div>
     </div>
-    <header class="app-header">
-      <div class="header-left">
-        <div class="logo-block">
-          <div class="dragon-emblem" aria-hidden="true"></div>
-          <div>
-            <h1>Dragon Gym</h1>
-            <p class="tagline">600 lb smart gym</p>
-          </div>
+    <section class="system-card" aria-label="Dragon Gym overview">
+      <div class="logo-block">
+        <img src="assets/dragonai-logo.svg" alt="DragonAI neon dragon" class="logo-image" />
+        <div class="branding-copy">
+          <p class="eyebrow">Dragon Gym</p>
+          <h1>600 lb smart gym</h1>
         </div>
       </div>
-      <div class="header-right">
-        <div class="status-column">
-          <div class="status-flags">
-            <span class="status-badge online" id="motorsStatus">Motors Ready</span>
-            <span class="status-badge neutral" id="workoutState">Workout Not Started</span>
-          </div>
-          <button class="accent" id="motorToggle" type="button">Stop Motors</button>
-        </div>
+      <div class="system-meta">
+        <button class="status-toggle" id="motorToggle" type="button" aria-pressed="false" data-state="offline">
+          <span class="status-line">Motors Offline</span>
+          <span class="action-line">Tap to start</span>
+        </button>
+        <span class="status-pill" id="workoutState">Workout Not Started</span>
       </div>
-    </header>
+    </section>
 
     <section class="resistance-overview" aria-label="Resistance overview">
       <article class="motor-card" data-motor="left">
         <div class="gauge-wrapper">
           <canvas class="resistance-gauge" id="leftGauge" width="160" height="160" aria-hidden="true"></canvas>
           <div class="gauge-center">
-            <span class="motor-name">Left Arm</span>
+            <span class="motor-name">Left</span>
             <span class="current-resistance" id="leftCurrentResistance">0 lb</span>
           </div>
         </div>
@@ -73,7 +68,7 @@
         <div class="gauge-wrapper">
           <canvas class="resistance-gauge" id="rightGauge" width="160" height="160" aria-hidden="true"></canvas>
           <div class="gauge-center">
-            <span class="motor-name">Right Arm</span>
+            <span class="motor-name">Right</span>
             <span class="current-resistance" id="rightCurrentResistance">0 lb</span>
           </div>
         </div>

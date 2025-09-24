@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-labelledby="title desc">
+  <title id="title">DragonAI emblem</title>
+  <desc id="desc">Glowing neon dragon crest with DragonAI lettering</desc>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#53ff6a" stop-opacity="0.95" />
+      <stop offset="55%" stop-color="#16c96f" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#021d08" stop-opacity="0.05" />
+    </radialGradient>
+    <linearGradient id="crest" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8aff9e" />
+      <stop offset="45%" stop-color="#4dff78" />
+      <stop offset="100%" stop-color="#13ff59" />
+    </linearGradient>
+    <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="320" height="200" fill="url(#glow)" rx="28" />
+  <g filter="url(#soft-glow)" transform="translate(32 16)">
+    <path fill="url(#crest)" d="M170 8c-26 3-55 24-70 51-10 18-10 35 4 48 3 3 6 5 10 6-9 6-20 9-34 7 17 22 49 26 76 9 16-11 30-30 32-47 2-17-5-30-19-37 17-3 30 3 38 18 6 11 9 24 9 36 0 27-13 50-36 65h43c28-17 45-47 45-81 0-54-43-82-98-75z" />
+    <path fill="url(#crest)" d="M63 30c-32 14-49 47-42 82 5 21 16 36 30 48h36c-23-14-38-36-40-65-1-20 5-38 16-52z" opacity="0.72" />
+    <path fill="#0b411a" fill-opacity="0.35" d="M180 68c-5-10-15-15-28-14 10 6 14 16 12 30-2 12-11 27-24 37 19-3 34-20 40-40 2-5 2-10 0-13z" />
+  </g>
+  <text x="160" y="170" text-anchor="middle" fill="#a6ffb8" font-family="'Rajdhani', 'Roboto', sans-serif" font-weight="600" font-size="44" letter-spacing="0.12em">
+    DragonAI
+  </text>
+</svg>
