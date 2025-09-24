@@ -250,6 +250,36 @@ body {
   gap: 24px;
 }
 
+.status-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(150deg, rgba(8, 14, 25, 0.94), rgba(4, 7, 15, 0.9));
+  border-radius: var(--card-radius);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  display: grid;
+  gap: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.status-card h2 {
+  margin: 0;
+  font-family: "Rajdhani", sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.status-card .status-message {
+  color: var(--text-muted);
+}
+
 .motor-card {
   background: linear-gradient(160deg, rgba(12, 18, 32, 0.95), rgba(6, 10, 20, 0.9));
   border-radius: var(--card-radius);

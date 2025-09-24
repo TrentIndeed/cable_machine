@@ -35,11 +35,31 @@
           <span class="status-line">Motors Offline</span>
           <span class="action-line">Tap to start</span>
         </button>
-        <span class="status-pill" id="workoutState">Workout Not Started</span>
       </div>
     </section>
 
     <section class="resistance-overview" aria-label="Resistance overview">
+      <article class="status-card" aria-label="Workout status" aria-live="polite">
+        <header class="status-header">
+          <h2>Workout Status</h2>
+          <span class="status-pill" id="workoutState">Workout Not Started</span>
+        </header>
+        <div class="status-stack">
+          <div>
+            <span class="label">Set</span>
+            <span class="value" id="setStatus">0</span>
+          </div>
+          <div>
+            <span class="label">Reps</span>
+            <span class="value" id="repStatus">0 / 12</span>
+          </div>
+          <div>
+            <span class="label">Force curve</span>
+            <span class="value" id="forceCurveLabel">Linear</span>
+          </div>
+        </div>
+        <p class="status-message" id="workoutMessage">Tap “Start Workout” to arm the set controls.</p>
+      </article>
       <article class="motor-card" data-motor="left">
         <div class="gauge-wrapper">
           <canvas class="resistance-gauge" id="leftGauge" width="160" height="160" aria-hidden="true"></canvas>
@@ -91,7 +111,7 @@
 
     <section class="workspace">
       <aside class="control-panel" aria-label="Workout controls">
-        <h2>Workout Status</h2>
+        <h2>Workout Controls</h2>
         <p class="panel-intro">Configure engagement distance, select a force curve, and log your sets as you train.</p>
 
         <div class="field-group">
@@ -135,22 +155,6 @@
           </div>
         </div>
 
-        <div class="status-stack">
-          <div>
-            <span class="label">Set</span>
-            <span class="value" id="setStatus">0</span>
-          </div>
-          <div>
-            <span class="label">Reps</span>
-            <span class="value" id="repStatus">0 / 12</span>
-          </div>
-          <div>
-            <span class="label">Force curve</span>
-            <span class="value" id="forceCurveLabel">Linear</span>
-          </div>
-        </div>
-
-          <p class="status-message" id="workoutMessage">Tap “Start Workout” to arm the set controls.</p>
       </aside>
 
       <section class="visual-panel" aria-label="Exercise analysis">

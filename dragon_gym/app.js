@@ -31,11 +31,11 @@ const elements = {
 };
 
 const forceCurveCopy = {
-  linear: 'Linear: constant tension through the full stroke.',
-  eccentric: 'Eccentric boost: heavier resistance while lowering to challenge the negative.',
-  chain: 'Chain mode: resistance ramps up through the concentric like adding plates link by link.',
-  band: 'Band mode: exponential tension rise near lockout for banded feel.',
-  'reverse-chain': 'Reverse chain: heaviest from the start, tapering toward the top of the pull.',
+  linear: 'Linear: equal load through the pull and return.',
+  eccentric: 'Eccentric: +20% load on the lowering phase.',
+  chain: 'Chain: ramps up to +20% at the top of the stroke.',
+  band: 'Band: sharp tension spike near lockout.',
+  'reverse-chain': 'Reverse chain: heaviest at the start of the pull.',
 };
 
 const motors = [
@@ -375,30 +375,70 @@ function updateStatuses() {
   elements.repStatus.textContent = `${currentRep} / ${totalReps}`;
 }
 
-function computeForceMultiplier(mode, normalized, derivative) {
+function getForceCurveMultiplier(mode, normalized, direction) {
+  const clamped = Math.max(0, Math.min(1, normalized));
+  const descending = direction < 0;
+
   switch (mode) {
-    case 'linear':
-      return 1.0;
     case 'eccentric':
-      return derivative < 0 ? 1.25 : 0.95;
+      return descending ? 1.2 : 1.0;
     case 'chain':
-      return 0.7 + normalized * 0.6;
+      return 1 + clamped * 0.2;
     case 'band':
-      return 0.6 + Math.pow(normalized, 1.8) * 0.85;
+      return 1 + Math.pow(clamped, 3) * 0.45;
     case 'reverse-chain':
-      return 1.35 - normalized * 0.55;
+      return 1.2 - clamped * 0.25;
+    case 'linear':
     default:
       return 1.0;
   }
 }
 
-const forceCurveProfiles = {
-  linear: (x) => x,
-  eccentric: (x) => 0.85 + Math.sin(x * Math.PI * 0.5) * 0.35,
-  chain: (x) => 0.6 + x * 0.7,
-  band: (x) => 0.5 + Math.pow(x, 2) * 0.8,
-  'reverse-chain': (x) => 1.2 - x * 0.6,
-};
+function computeForceMultiplier(mode, normalized, derivative) {
+  const direction = derivative < 0 ? -1 : 1;
+  return getForceCurveMultiplier(mode, normalized, direction);
+}
+
+function computeGraphForce(mode, distance, direction) {
+  const clamped = Math.max(0, Math.min(1, distance));
+  if (direction >= 0) {
+    const base = clamped;
+    const multiplier = getForceCurveMultiplier(mode, clamped, 1);
+    const baseDelta = (multiplier - 1) * base;
+    const bottomMultiplier = getForceCurveMultiplier(mode, 0, 1);
+    const bottomOffset = (bottomMultiplier - 1) * (1 - clamped);
+    return base + baseDelta + bottomOffset;
+  }
+
+  const travelBack = 1 - clamped;
+  const multiplier = getForceCurveMultiplier(mode, clamped, -1);
+  const base = 1 + travelBack;
+  const delta = (multiplier - 1) * travelBack;
+  const topMultiplier = getForceCurveMultiplier(mode, 1, -1);
+  const topOffset = (topMultiplier - 1) * (1 - travelBack);
+  return base + delta + topOffset;
+}
+
+function generateForceCurveSamples(mode, samples = 120) {
+  const points = [];
+  const half = Math.max(1, Math.floor(samples / 2));
+
+  for (let i = 0; i <= half; i += 1) {
+    const progress = i / half;
+    const distance = progress;
+    const force = computeGraphForce(mode, distance, 1);
+    points.push({ force, distance });
+  }
+
+  for (let i = 1; i <= half; i += 1) {
+    const progress = i / half;
+    const distance = 1 - progress;
+    const force = computeGraphForce(mode, distance, -1);
+    points.push({ force, distance });
+  }
+
+  return points;
+}
 
 function drawForceCurveGraph(mode) {
   if (!elements.forceCurveCanvas) return;
@@ -406,39 +446,61 @@ function drawForceCurveGraph(mode) {
   const ctx = canvas.getContext('2d');
   const width = canvas.width;
   const height = canvas.height;
-  const padding = 18;
   ctx.clearRect(0, 0, width, height);
 
   ctx.fillStyle = 'rgba(10, 16, 30, 0.9)';
   ctx.fillRect(0, 0, width, height);
 
-  const profile = forceCurveProfiles[mode] || forceCurveProfiles.linear;
-  const samples = 60;
-  const values = [];
-  for (let i = 0; i <= samples; i += 1) {
-    const t = i / samples;
-    values.push({ x: t, y: profile(t) });
-  }
-  const minY = Math.min(...values.map((v) => v.y));
-  const maxY = Math.max(...values.map((v) => v.y));
-  const range = maxY - minY || 1;
+  const padding = {
+    top: 28,
+    right: 36,
+    bottom: 48,
+    left: 64,
+  };
+
+  const samples = generateForceCurveSamples(mode, 120);
+  let minForce = Math.min(...samples.map((p) => p.force));
+  let maxForce = Math.max(...samples.map((p) => p.force));
+  let minDistance = Math.min(...samples.map((p) => p.distance));
+  let maxDistance = Math.max(...samples.map((p) => p.distance));
+
+  const forcePad = (maxForce - minForce || 1) * 0.08;
+  const distancePad = (maxDistance - minDistance || 1) * 0.05;
+  minForce -= forcePad;
+  maxForce += forcePad;
+  minDistance = Math.max(0, minDistance - distancePad);
+  maxDistance = Math.min(1, maxDistance + distancePad);
+
+  const forceRange = maxForce - minForce || 1;
+  const distanceRange = maxDistance - minDistance || 1;
+
+  const plotWidth = width - padding.left - padding.right;
+  const plotHeight = height - padding.top - padding.bottom;
 
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
   ctx.lineWidth = 1;
-  const gridLines = 3;
-  for (let i = 0; i <= gridLines; i += 1) {
-    const y = padding + ((height - padding * 2) / gridLines) * i;
+  const gridSteps = 4;
+  for (let i = 0; i <= gridSteps; i += 1) {
+    const y = padding.top + (plotHeight / gridSteps) * i;
     ctx.beginPath();
-    ctx.moveTo(padding, y);
-    ctx.lineTo(width - padding, y);
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(width - padding.right, y);
+    ctx.stroke();
+
+    const x = padding.left + (plotWidth / gridSteps) * i;
+    ctx.beginPath();
+    ctx.moveTo(x, padding.top);
+    ctx.lineTo(x, height - padding.bottom);
     ctx.stroke();
   }
 
   ctx.beginPath();
-  values.forEach((point, index) => {
-    const px = padding + point.x * (width - padding * 2);
+  samples.forEach((point, index) => {
+    const px =
+      padding.left + ((point.force - minForce) / forceRange) * plotWidth;
     const py =
-      padding + (1 - (point.y - minY) / range) * (height - padding * 2);
+      padding.top +
+      (1 - (point.distance - minDistance) / distanceRange) * plotHeight;
     if (index === 0) {
       ctx.moveTo(px, py);
     } else {
@@ -452,10 +514,28 @@ function drawForceCurveGraph(mode) {
   ctx.strokeStyle = 'rgba(127, 255, 212, 0.35)';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(padding, height - padding);
-  ctx.lineTo(padding, padding);
-  ctx.lineTo(width - padding, padding);
+  ctx.moveTo(padding.left, padding.top);
+  ctx.lineTo(padding.left, height - padding.bottom);
+  ctx.lineTo(width - padding.right, height - padding.bottom);
   ctx.stroke();
+
+  ctx.fillStyle = 'rgba(127, 255, 212, 0.75)';
+  ctx.font = '12px "Roboto", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(
+    'Force',
+    padding.left + plotWidth / 2,
+    height - padding.bottom + 16
+  );
+
+  ctx.save();
+  ctx.translate(padding.left - 36, padding.top + plotHeight / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('Cable Distance', 0, 0);
+  ctx.restore();
 }
 
 function drawGauge(motor) {
