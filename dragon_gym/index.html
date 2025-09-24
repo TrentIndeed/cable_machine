@@ -119,9 +119,9 @@
         </div>
 
         <div class="workout-options" id="workoutOptions" hidden>
-          <div class="field-group">
+          <div class="field-group force-curve-group">
             <label>
-              <span>Force curve mode</span>
+              <span>Force curve mode (concentric)</span>
               <select id="forceCurve">
                 <option value="linear">Linear</option>
                 <option value="eccentric">Eccentric boost</option>
@@ -132,12 +132,40 @@
             </label>
             <canvas
               class="force-curve-graph"
-              id="forceCurveCanvas"
+              id="forceCurveConcentric"
               width="320"
               height="150"
               aria-hidden="true"
             ></canvas>
-            <p class="hint" id="forceCurveDescription">Linear: constant tension through the full stroke.</p>
+            <p class="hint" id="forceCurveDescription">Concentric: Equal load through the pull and return.</p>
+            <button
+              class="ghost eccentric-toggle"
+              id="eccentricToggle"
+              type="button"
+              aria-expanded="false"
+            >
+              Enable eccentric profile
+            </button>
+            <div class="eccentric-panel" id="eccentricPanel" hidden>
+              <label>
+                <span>Eccentric force curve</span>
+                <select id="eccentricCurve">
+                  <option value="eccentric">Eccentric boost</option>
+                  <option value="linear">Linear</option>
+                  <option value="chain">Chain mode</option>
+                  <option value="band">Band mode</option>
+                  <option value="reverse-chain">Reverse chain</option>
+                </select>
+              </label>
+              <canvas
+                class="force-curve-graph"
+                id="forceCurveEccentric"
+                width="320"
+                height="150"
+                aria-hidden="true"
+              ></canvas>
+              <p class="hint" id="eccentricCurveDescription">Eccentric: +20% load on the lowering phase.</p>
+            </div>
           </div>
 
           <div class="field-group">

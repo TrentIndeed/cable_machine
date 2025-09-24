@@ -18,7 +18,12 @@ const elements = {
   forceSelect: document.getElementById('forceCurve'),
   forceDescription: document.getElementById('forceCurveDescription'),
   forceLabel: document.getElementById('forceCurveLabel'),
-  forceCurveCanvas: document.getElementById('forceCurveCanvas'),
+  forceCurveConcentric: document.getElementById('forceCurveConcentric'),
+  forceCurveEccentric: document.getElementById('forceCurveEccentric'),
+  eccentricToggle: document.getElementById('eccentricToggle'),
+  eccentricPanel: document.getElementById('eccentricPanel'),
+  eccentricSelect: document.getElementById('eccentricCurve'),
+  eccentricDescription: document.getElementById('eccentricCurveDescription'),
   engageSlider: document.getElementById('engageDistance'),
   engageDisplay: document.getElementById('engageDisplay'),
   powerToggle: document.getElementById('powerToggle'),
@@ -31,11 +36,11 @@ const elements = {
 };
 
 const forceCurveCopy = {
-  linear: 'Linear: equal load through the pull and return.',
-  eccentric: 'Eccentric: +20% load on the lowering phase.',
-  chain: 'Chain: ramps up to +20% at the top of the stroke.',
-  band: 'Band: sharp tension spike near lockout.',
-  'reverse-chain': 'Reverse chain: heaviest at the start of the pull.',
+  linear: 'Equal load through the pull and return.',
+  eccentric: '+20% load on the lowering phase.',
+  chain: 'Gradually increases to +20% at the top of the stroke.',
+  band: 'Fast ramp to +20% near lockout.',
+  'reverse-chain': 'Starts +20% heavier and eases off toward the top.',
 };
 
 const motors = [
@@ -69,6 +74,7 @@ let totalReps = DEFAULT_REP_TARGET;
 let lastTimestamp = performance.now();
 let powerOn = true;
 let motorsRunning = true;
+let eccentricOverrideEnabled = false;
 const workoutLog = [];
 
 const exerciseCatalog = {
@@ -172,11 +178,40 @@ function toggleWorkout() {
 elements.startToggle.addEventListener('click', toggleWorkout);
 
 elements.forceSelect.addEventListener('change', () => {
-  const mode = elements.forceSelect.value;
-  elements.forceDescription.textContent = forceCurveCopy[mode];
-  elements.forceLabel.textContent = elements.forceSelect.options[elements.forceSelect.selectedIndex].text;
-  drawForceCurveGraph(mode);
+  updateForceCurveDescriptions();
+  updateForceCurveLabel();
+  redrawForceCurves();
 });
+
+if (elements.eccentricToggle) {
+  elements.eccentricToggle.addEventListener('click', () => {
+    eccentricOverrideEnabled = !eccentricOverrideEnabled;
+    elements.eccentricToggle.textContent = eccentricOverrideEnabled
+      ? 'Disable eccentric profile'
+      : 'Enable eccentric profile';
+    elements.eccentricToggle.setAttribute('aria-expanded', eccentricOverrideEnabled ? 'true' : 'false');
+
+    if (elements.eccentricPanel) {
+      if (eccentricOverrideEnabled) {
+        elements.eccentricPanel.removeAttribute('hidden');
+      } else {
+        elements.eccentricPanel.hidden = true;
+      }
+    }
+
+    updateForceCurveDescriptions();
+    updateForceCurveLabel();
+    redrawForceCurves();
+  });
+}
+
+if (elements.eccentricSelect) {
+  elements.eccentricSelect.addEventListener('change', () => {
+    updateForceCurveDescriptions();
+    updateForceCurveLabel();
+    redrawForceCurves();
+  });
+}
 
 elements.engageSlider.addEventListener('input', updateEngageDisplay);
 updateEngageDisplay();
@@ -385,9 +420,9 @@ function getForceCurveMultiplier(mode, normalized, direction) {
     case 'chain':
       return 1 + clamped * 0.2;
     case 'band':
-      return 1 + Math.pow(clamped, 3) * 0.45;
+      return 1 + Math.pow(clamped, 2.2) * 0.2;
     case 'reverse-chain':
-      return 1.2 - clamped * 0.25;
+      return 1.2 - clamped * 0.2;
     case 'linear':
     default:
       return 1.0;
@@ -396,118 +431,79 @@ function getForceCurveMultiplier(mode, normalized, direction) {
 
 function computeForceMultiplier(mode, normalized, derivative) {
   const direction = derivative < 0 ? -1 : 1;
-  return getForceCurveMultiplier(mode, normalized, direction);
+  let activeMode = mode;
+  if (direction < 0 && eccentricOverrideEnabled && elements.eccentricSelect) {
+    activeMode = elements.eccentricSelect.value;
+  }
+  return getForceCurveMultiplier(activeMode, normalized, direction);
 }
 
-function computeGraphForce(mode, distance, direction) {
-  const clamped = Math.max(0, Math.min(1, distance));
-  if (direction >= 0) {
-    const base = clamped;
-    const multiplier = getForceCurveMultiplier(mode, clamped, 1);
-    const baseDelta = (multiplier - 1) * base;
-    const bottomMultiplier = getForceCurveMultiplier(mode, 0, 1);
-    const bottomOffset = (bottomMultiplier - 1) * (1 - clamped);
-    return base + baseDelta + bottomOffset;
-  }
-
-  const travelBack = 1 - clamped;
-  const multiplier = getForceCurveMultiplier(mode, clamped, -1);
-  const base = 1 + travelBack;
-  const delta = (multiplier - 1) * travelBack;
-  const topMultiplier = getForceCurveMultiplier(mode, 1, -1);
-  const topOffset = (topMultiplier - 1) * (1 - travelBack);
-  return base + delta + topOffset;
-}
-
-function generateForceCurveSamples(mode, samples = 120) {
-  const points = [];
-  const half = Math.max(1, Math.floor(samples / 2));
-
-  for (let i = 0; i <= half; i += 1) {
-    const progress = i / half;
-    const distance = progress;
-    const force = computeGraphForce(mode, distance, 1);
-    points.push({ force, distance });
-  }
-
-  for (let i = 1; i <= half; i += 1) {
-    const progress = i / half;
-    const distance = 1 - progress;
-    const force = computeGraphForce(mode, distance, -1);
-    points.push({ force, distance });
-  }
-
-  return points;
-}
-
-function drawForceCurveGraph(mode) {
-  if (!elements.forceCurveCanvas) return;
-  const canvas = elements.forceCurveCanvas;
+function drawForceProfile(canvas, mode, direction) {
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const width = canvas.width;
   const height = canvas.height;
   ctx.clearRect(0, 0, width, height);
 
-  ctx.fillStyle = 'rgba(10, 16, 30, 0.9)';
+  ctx.fillStyle = 'rgba(10, 16, 30, 0.92)';
   ctx.fillRect(0, 0, width, height);
 
   const padding = {
     top: 28,
-    right: 36,
-    bottom: 48,
-    left: 64,
+    right: 44,
+    bottom: 56,
+    left: 68,
   };
 
-  const samples = generateForceCurveSamples(mode, 120);
-  let minForce = Math.min(...samples.map((p) => p.force));
-  let maxForce = Math.max(...samples.map((p) => p.force));
-  let minDistance = Math.min(...samples.map((p) => p.distance));
-  let maxDistance = Math.max(...samples.map((p) => p.distance));
-
-  const forcePad = (maxForce - minForce || 1) * 0.08;
-  const distancePad = (maxDistance - minDistance || 1) * 0.05;
-  minForce -= forcePad;
-  maxForce += forcePad;
-  minDistance = Math.max(0, minDistance - distancePad);
-  maxDistance = Math.min(1, maxDistance + distancePad);
-
-  const forceRange = maxForce - minForce || 1;
-  const distanceRange = maxDistance - minDistance || 1;
-
+  const minForce = -0.2;
+  const maxForce = 0.2;
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
 
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 1;
-  const gridSteps = 4;
-  for (let i = 0; i <= gridSteps; i += 1) {
-    const y = padding.top + (plotHeight / gridSteps) * i;
+
+  const ySteps = 4;
+  for (let i = 0; i <= ySteps; i += 1) {
+    const value = minForce + ((maxForce - minForce) / ySteps) * i;
+    const y = padding.top + ((maxForce - value) / (maxForce - minForce || 1)) * plotHeight;
     ctx.beginPath();
     ctx.moveTo(padding.left, y);
     ctx.lineTo(width - padding.right, y);
     ctx.stroke();
+  }
 
-    const x = padding.left + (plotWidth / gridSteps) * i;
+  const xSteps = 4;
+  for (let i = 0; i <= xSteps; i += 1) {
+    const x = padding.left + (plotWidth / xSteps) * i;
     ctx.beginPath();
     ctx.moveTo(x, padding.top);
     ctx.lineTo(x, height - padding.bottom);
     ctx.stroke();
   }
 
+  const zeroY = padding.top + ((maxForce - 0) / (maxForce - minForce || 1)) * plotHeight;
+  ctx.strokeStyle = 'rgba(127, 255, 212, 0.55)';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  samples.forEach((point, index) => {
-    const px =
-      padding.left + ((point.force - minForce) / forceRange) * plotWidth;
-    const py =
-      padding.top +
-      (1 - (point.distance - minDistance) / distanceRange) * plotHeight;
-    if (index === 0) {
+  ctx.moveTo(padding.left, zeroY);
+  ctx.lineTo(width - padding.right, zeroY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  for (let i = 0; i <= 120; i += 1) {
+    const travel = i / 120;
+    const multiplier = getForceCurveMultiplier(mode, travel, direction);
+    const delta = Math.max(minForce, Math.min(maxForce, multiplier - 1));
+    const px = padding.left + travel * plotWidth;
+    const py = padding.top + ((maxForce - delta) / (maxForce - minForce || 1)) * plotHeight;
+    if (i === 0) {
       ctx.moveTo(px, py);
     } else {
       ctx.lineTo(px, py);
     }
-  });
-  ctx.strokeStyle = 'rgba(31, 139, 255, 0.9)';
+  }
+  ctx.strokeStyle = 'rgba(31, 139, 255, 0.92)';
   ctx.lineWidth = 3;
   ctx.stroke();
 
@@ -519,24 +515,65 @@ function drawForceCurveGraph(mode) {
   ctx.lineTo(width - padding.right, height - padding.bottom);
   ctx.stroke();
 
-  ctx.fillStyle = 'rgba(127, 255, 212, 0.75)';
+  ctx.fillStyle = 'rgba(173, 201, 255, 0.85)';
   ctx.font = '12px "Roboto", sans-serif';
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.fillText(
-    'Force',
-    padding.left + plotWidth / 2,
-    height - padding.bottom + 16
-  );
+  ctx.fillText('Cable Length', padding.left + plotWidth / 2, height - 16);
 
   ctx.save();
-  ctx.translate(padding.left - 36, padding.top + plotHeight / 2);
+  ctx.translate(padding.left - 46, padding.top + plotHeight / 2);
   ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('Cable Distance', 0, 0);
+  ctx.fillText('Force (%)', 0, 0);
   ctx.restore();
+
+  const tickValues = [-0.2, -0.1, 0, 0.1, 0.2];
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  tickValues.forEach((value) => {
+    const y = padding.top + ((maxForce - value) / (maxForce - minForce || 1)) * plotHeight;
+    ctx.fillText(`${Math.round(value * 100)}%`, padding.left - 8, y + (value === -0.2 ? 12 : value === 0.2 ? -4 : 4));
+  });
 }
+
+function redrawForceCurves() {
+  const mode = elements.forceSelect.value;
+  drawForceProfile(elements.forceCurveConcentric, mode, 1);
+
+  const eccentricMode =
+    eccentricOverrideEnabled && elements.eccentricSelect
+      ? elements.eccentricSelect.value
+      : mode;
+  drawForceProfile(elements.forceCurveEccentric, eccentricMode, -1);
+}
+
+function updateForceCurveDescriptions() {
+  const concentricMode = elements.forceSelect.value;
+  if (elements.forceDescription) {
+    elements.forceDescription.textContent = `Concentric: ${forceCurveCopy[concentricMode]}`;
+  }
+
+  if (elements.eccentricDescription) {
+    const eccMode =
+      elements.eccentricSelect && eccentricOverrideEnabled
+        ? elements.eccentricSelect.value
+        : concentricMode;
+    elements.eccentricDescription.textContent = `Eccentric: ${forceCurveCopy[eccMode]}`;
+  }
+}
+
+function updateForceCurveLabel() {
+  const concentricLabel = elements.forceSelect
+    ? elements.forceSelect.options[elements.forceSelect.selectedIndex].text
+    : 'Linear';
+
+  if (eccentricOverrideEnabled && elements.eccentricSelect) {
+    const eccentricLabel = elements.eccentricSelect.options[elements.eccentricSelect.selectedIndex].text;
+    elements.forceLabel.textContent = `${concentricLabel} / ${eccentricLabel} (eccentric)`;
+  } else {
+    elements.forceLabel.textContent = concentricLabel;
+  }
+}
+
 
 function drawGauge(motor) {
   const ctx = motor.gaugeCtx;
@@ -772,7 +809,10 @@ requestAnimationFrame(update);
 
 updateStatuses();
 
-elements.forceDescription.textContent = forceCurveCopy[elements.forceSelect.value];
-elements.forceLabel.textContent = elements.forceSelect.options[elements.forceSelect.selectedIndex].text;
-drawForceCurveGraph(elements.forceSelect.value);
+updateForceCurveDescriptions();
+updateForceCurveLabel();
+redrawForceCurves();
+if (elements.eccentricPanel) {
+  elements.eccentricPanel.hidden = true;
+}
 applyPowerState();
