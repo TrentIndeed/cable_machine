@@ -81,10 +81,12 @@ body {
 }
 
 .logo-image {
-  width: 76px;
-  height: 76px;
+  width: 96px;
+  height: 96px;
   object-fit: contain;
-  filter: drop-shadow(0 0 26px rgba(83, 255, 106, 0.45));
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 0 32px rgba(83, 255, 106, 0.5));
 }
 
 .branding-copy {

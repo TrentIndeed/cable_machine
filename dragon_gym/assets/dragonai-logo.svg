@@ -1,32 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-labelledby="title desc">
-  <title id="title">DragonAI emblem</title>
-  <desc id="desc">Glowing neon dragon crest with DragonAI lettering</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">DragonAI neon emblem</title>
+  <desc id="desc">Glowing DragonAI logomark with a detailed dragon head silhouette and lettering</desc>
   <defs>
-    <radialGradient id="glow" cx="50%" cy="40%" r="70%">
-      <stop offset="0%" stop-color="#53ff6a" stop-opacity="0.95" />
-      <stop offset="55%" stop-color="#16c96f" stop-opacity="0.75" />
-      <stop offset="100%" stop-color="#021d08" stop-opacity="0.05" />
+    <radialGradient id="dragon-glow" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#7bff9a" stop-opacity="0.95" />
+      <stop offset="55%" stop-color="#3dff73" stop-opacity="0.78" />
+      <stop offset="100%" stop-color="#021406" stop-opacity="0.05" />
     </radialGradient>
-    <linearGradient id="crest" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8aff9e" />
-      <stop offset="45%" stop-color="#4dff78" />
-      <stop offset="100%" stop-color="#13ff59" />
+    <linearGradient id="crest-fill" x1="12%" y1="8%" x2="88%" y2="92%">
+      <stop offset="0%" stop-color="#b8ffc9" />
+      <stop offset="45%" stop-color="#67ff8b" />
+      <stop offset="100%" stop-color="#14ff55" />
     </linearGradient>
-    <filter id="soft-glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
+    <filter id="soft-glow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="7" result="blur" />
       <feMerge>
         <feMergeNode in="blur" />
         <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
   </defs>
-  <rect width="320" height="200" fill="url(#glow)" rx="28" />
-  <g filter="url(#soft-glow)" transform="translate(32 16)">
-    <path fill="url(#crest)" d="M170 8c-26 3-55 24-70 51-10 18-10 35 4 48 3 3 6 5 10 6-9 6-20 9-34 7 17 22 49 26 76 9 16-11 30-30 32-47 2-17-5-30-19-37 17-3 30 3 38 18 6 11 9 24 9 36 0 27-13 50-36 65h43c28-17 45-47 45-81 0-54-43-82-98-75z" />
-    <path fill="url(#crest)" d="M63 30c-32 14-49 47-42 82 5 21 16 36 30 48h36c-23-14-38-36-40-65-1-20 5-38 16-52z" opacity="0.72" />
-    <path fill="#0b411a" fill-opacity="0.35" d="M180 68c-5-10-15-15-28-14 10 6 14 16 12 30-2 12-11 27-24 37 19-3 34-20 40-40 2-5 2-10 0-13z" />
+  <rect width="512" height="512" rx="56" fill="#020b0b" />
+  <rect width="512" height="512" rx="56" fill="url(#dragon-glow)" />
+  <g filter="url(#soft-glow)" transform="translate(52 30)">
+    <path fill="url(#crest-fill)" d="M332 62c-44 4-88 28-124 68 2-22-6-42-26-60-64 26-108 84-118 150-8 50 12 94 48 126-22-8-42-20-58-38-2 62 38 118 108 140 88 28 180-18 220-100 24-50 22-106-4-152 18 18 32 42 36 70 18-62-10-130-70-160-18-10-38-14-58-14 24 10 44 28 54 52-40-18-84-6-108 32-16 26-16 54-2 80l10 20-24-12c-40-22-60-64-52-108-20 28-24 62-6 94 20 38 62 60 106 58-28 24-66 34-102 24-34-10-60-32-78-62 12 46 48 84 92 100 58 20 122 2 160-46 32-40 38-94 14-140-16-30-44-50-78-54 24-12 52-12 78 0-12-34-40-60-78-66z" />
+    <path fill="#b8ffc9" fill-opacity="0.92" d="M298 52c-12 10-20 26-22 44l-2 20 16-14c14-12 32-18 50-16-12-16-26-28-42-34z" />
+    <path fill="#0c411b" fill-opacity="0.35" d="M340 172c-18-20-46-26-70-14 24 2 42 18 48 42 6 24-2 50-22 70-24 24-58 32-90 22 42 26 94 20 130-16 28-28 36-70 22-104-4-8-10-16-18-22z" />
+    <path fill="#b8ffc9" fill-opacity="0.85" d="M188 148c-10-18-10-40 0-62-24 18-38 42-40 72-4 44 22 82 64 102-26-30-32-70-24-112z" />
+    <path fill="#cffff0" fill-opacity="0.65" d="M232 118c-14-14-16-34-6-54-30 18-44 46-40 78 4 24 18 44 40 58-12-24-10-52 6-82z" />
   </g>
-  <text x="160" y="170" text-anchor="middle" fill="#a6ffb8" font-family="'Rajdhani', 'Roboto', sans-serif" font-weight="600" font-size="44" letter-spacing="0.12em">
+  <text x="256" y="444" text-anchor="middle" fill="#b2ffd0" font-family="'Rajdhani', 'Roboto', sans-serif" font-weight="600" font-size="70" letter-spacing="0.18em">
     DragonAI
   </text>
 </svg>
