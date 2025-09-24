@@ -81,8 +81,9 @@ body {
 }
 
 .logo-image {
-  width: 108px;
+  width: 92px;
   height: auto;
+  object-fit: contain;
   filter: drop-shadow(0 0 26px rgba(83, 255, 106, 0.45));
 }
 
@@ -267,6 +268,7 @@ body {
   background: radial-gradient(circle at top, rgba(31, 139, 255, 0.16), transparent 55%);
   opacity: 0;
   transition: opacity var(--transition);
+  pointer-events: none;
 }
 
 .motor-card:hover::before {

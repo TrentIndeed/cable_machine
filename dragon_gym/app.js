@@ -1,6 +1,8 @@
 const MAX_RESISTANCE = 300;
 const TWO_PI = Math.PI * 2;
 const MAX_TRAVEL_INCHES = 24;
+const REP_SPAN_THRESHOLD = 3;
+const MOVEMENT_EPSILON = 0.05;
 
 const elements = {
   workoutState: document.getElementById('workoutState'),
@@ -98,6 +100,7 @@ function createMotor(id, refs) {
 
   const initialTravel = Number(simSlider.value);
   const normalized = Math.max(0, Math.min(1, initialTravel / MAX_TRAVEL_INCHES));
+  const travelInches = normalized * MAX_TRAVEL_INCHES;
 
   return {
     id,
@@ -116,10 +119,23 @@ function createMotor(id, refs) {
     reps: 0,
     engaged: false,
     normalized,
-    direction: 1,
-    readyForRep: true,
+    direction: 0,
     trail: new Array(120).fill(normalized),
+    lastTravel: travelInches,
+    phase: 'idle',
+    lastPeak: travelInches,
+    lastTrough: travelInches,
+    repCounted: false,
   };
+}
+
+function resetMotorTracking(motor, travel) {
+  motor.phase = 'idle';
+  motor.repCounted = false;
+  motor.lastPeak = travel;
+  motor.lastTrough = travel;
+  motor.lastTravel = travel;
+  motor.direction = 0;
 }
 
 function updateEngageDisplay() {
@@ -202,7 +218,8 @@ elements.startSet.addEventListener('click', () => {
   motors.forEach((motor) => {
     motor.reps = 0;
     motor.engaged = false;
-    motor.readyForRep = true;
+    const travel = motor.normalized * MAX_TRAVEL_INCHES;
+    resetMotorTracking(motor, travel);
   });
   elements.message.textContent = `Set ${currentSet} active. Cable movement will arm the servos.`;
   updateStatuses();
@@ -233,6 +250,11 @@ function stopSet() {
   elements.message.textContent = currentRep >= totalReps
     ? 'Set complete. Press “Start Set” for the next round.'
     : 'Set paused. Press “Start Set” to resume.';
+  motors.forEach((motor) => {
+    const travel = motor.normalized * MAX_TRAVEL_INCHES;
+    resetMotorTracking(motor, travel);
+  });
+  updateStatuses();
 }
 
 motors.forEach((motor) => {
@@ -497,9 +519,10 @@ function update(timestamp) {
     const sliderDistance = Number(motor.simSlider.value);
     const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
     const previous = motor.normalized;
+    motor.normalized = normalized;
+    const travel = motor.normalized * MAX_TRAVEL_INCHES;
     const derivative = delta > 0 ? (normalized - previous) / delta : 0;
     motor.direction = derivative >= 0 ? 1 : -1;
-    motor.normalized = normalized;
 
     if (motorsRunning && setActive && !motor.engaged && motor.normalized >= engageThreshold) {
       motor.engaged = true;
@@ -511,10 +534,10 @@ function update(timestamp) {
     if (!setActive) {
       motor.engaged = false;
       motor.reps = 0;
-      motor.readyForRep = true;
+      resetMotorTracking(motor, travel);
     } else if (!motorsRunning) {
       motor.engaged = false;
-      motor.readyForRep = true;
+      resetMotorTracking(motor, travel);
     }
 
     const multiplier = computeForceMultiplier(mode, motor.normalized, motor.direction);
@@ -523,7 +546,6 @@ function update(timestamp) {
       Math.max(0, motor.baseResistance * multiplier)
     );
 
-    const travel = motor.normalized * MAX_TRAVEL_INCHES;
     motor.cableLabel.textContent = travel.toFixed(1);
 
     motor.trail.push(motor.normalized);
@@ -532,21 +554,38 @@ function update(timestamp) {
     }
 
     if (motorsRunning && setActive && motor.engaged) {
-      if (motor.readyForRep && motor.direction >= 0 && motor.normalized >= 0.95) {
-        motor.reps += 1;
-        motor.readyForRep = false;
-        if (motor.id === 'left') {
-          currentRep = Math.min(totalReps, currentRep + 1);
-          if (currentRep >= totalReps) {
-            finishSet();
-          } else {
-            elements.message.textContent = `Set ${currentSet}: rep ${currentRep} complete.`;
-          }
-          updateStatuses();
-        }
-      } else if (!motor.readyForRep && motor.direction < 0 && motor.normalized <= engageThreshold * 0.6) {
-        motor.readyForRep = true;
+      const deltaTravel = travel - motor.lastTravel;
+      motor.lastTravel = travel;
+      if (Math.abs(deltaTravel) > MOVEMENT_EPSILON) {
+        motor.direction = deltaTravel > 0 ? 1 : -1;
       }
+
+      if (motor.direction >= 0) {
+        if (motor.phase !== 'ascending') {
+          motor.phase = 'ascending';
+          motor.lastPeak = travel;
+          motor.lastTrough = travel;
+          motor.repCounted = false;
+        } else {
+          motor.lastPeak = Math.max(motor.lastPeak, travel);
+        }
+      } else if (motor.direction < 0) {
+        if (motor.phase !== 'descending') {
+          motor.phase = 'descending';
+          motor.lastTrough = travel;
+        } else {
+          motor.lastTrough = Math.min(motor.lastTrough, travel);
+        }
+
+        const span = motor.lastPeak - motor.lastTrough;
+        if (!motor.repCounted && span >= REP_SPAN_THRESHOLD) {
+          motor.reps += 1;
+          motor.repCounted = true;
+          synchronizeRepProgress();
+        }
+      }
+    } else {
+      resetMotorTracking(motor, travel);
     }
 
     drawGauge(motor);
@@ -562,13 +601,30 @@ function finishSet() {
   elements.stopSet.disabled = true;
   motors.forEach((motor) => {
     motor.engaged = false;
-    motor.readyForRep = true;
+    const travel = motor.normalized * MAX_TRAVEL_INCHES;
+    resetMotorTracking(motor, travel);
   });
   elements.workoutState.textContent = currentSet >= totalSets ? 'Workout Complete' : 'Set Complete';
   elements.message.textContent = currentSet >= totalSets
     ? 'Workout complete! Reset or adjust your programming to begin again.'
     : `Set ${currentSet} complete. Press “Start Set” when ready for set ${currentSet + 1}.`;
   recordWorkoutSet();
+  updateStatuses();
+}
+
+function synchronizeRepProgress() {
+  if (!setActive) return;
+  const completedReps = Math.min(...motors.map((motor) => motor.reps));
+  if (completedReps <= currentRep) return;
+
+  currentRep = Math.min(totalReps, completedReps);
+  if (currentRep >= totalReps) {
+    finishSet();
+    return;
+  }
+
+  elements.message.textContent = `Set ${currentSet}: rep ${currentRep} complete.`;
+  updateStatuses();
 }
 
 function recordWorkoutSet() {
