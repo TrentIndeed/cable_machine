@@ -19,6 +19,13 @@ const elements = {
   forceLabel: document.getElementById('forceCurveLabel'),
   engageSlider: document.getElementById('engageDistance'),
   engageDisplay: document.getElementById('engageDisplay'),
+  powerOn: document.getElementById('powerOn'),
+  powerOff: document.getElementById('powerOff'),
+  motorToggle: document.getElementById('motorToggle'),
+  motorsStatus: document.getElementById('motorsStatus'),
+  logList: document.getElementById('workoutLogList'),
+  exerciseSelect: document.getElementById('exerciseSelect'),
+  exerciseImage: document.getElementById('exerciseImage'),
 };
 
 const forceCurveCopy = {
@@ -59,6 +66,52 @@ let totalSets = 0;
 let currentRep = 0;
 let totalReps = 0;
 let lastTimestamp = performance.now();
+let powerOn = true;
+let motorsRunning = true;
+const workoutLog = [];
+
+const exerciseCatalog = {
+  'incline-bench': {
+    label: 'Incline Bench',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15243f"/><stop offset="1" stop-color="#0c141f"/></linearGradient></defs><rect width="400" height="240" fill="url(#g)"/><g stroke="#7fffd4" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M60 180h120l40-100"/><path d="M160 150l120-40"/><circle cx="280" cy="110" r="22" fill="none"/></g></svg>',
+  },
+  'weighted-pullups': {
+    label: 'Weighted Pull Ups',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#101a2d"/><g stroke="#1f8bff" stroke-width="12" stroke-linecap="round" fill="none"><path d="M60 60h280"/><path d="M160 60v100"/><path d="M240 60v100"/><path d="M160 160c0 28 24 50 80 50"/></g><circle cx="200" cy="120" r="24" stroke="#7fffd4" stroke-width="8" fill="none"/></svg>',
+  },
+  'dumbbell-shoulder-press': {
+    label: 'Dumbbell Shoulder Press',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0f1829"/><g stroke="#7fffd4" stroke-width="10" stroke-linecap="round" fill="none"><path d="M140 200v-60l60-40 60 40v60"/><path d="M120 80h40"/><path d="M240 80h40"/><circle cx="200" cy="120" r="24"/></g></svg>',
+  },
+  'lateral-raise': {
+    label: 'Lateral Raise',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0d1625"/><g stroke="#1f8bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M200 180v-80"/><path d="M80 140l120-40 120 40"/><circle cx="200" cy="80" r="20" stroke="#7fffd4" stroke-width="8"/></g></svg>',
+  },
+  'pec-deck': {
+    label: 'Pec Deck',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#101b2f"/><g stroke="#7fffd4" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M200 200v-80"/><path d="M120 120c60-40 120-40 160 0"/><path d="M80 80h240"/><circle cx="200" cy="110" r="24"/></g></svg>',
+  },
+  'tricep-pushdown': {
+    label: 'Tricep Pushdown',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0c141f"/><g stroke="#1f8bff" stroke-width="10" stroke-linecap="round" fill="none"><path d="M200 40v120"/><path d="M160 160h80"/><path d="M160 200l40-40 40 40"/><circle cx="200" cy="80" r="22" stroke="#7fffd4" stroke-width="8"/></g></svg>',
+  },
+  deadlift: {
+    label: 'Deadlift',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0a111c"/><g stroke="#7fffd4" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M80 200h240"/><path d="M160 200v-80l40-40 40 40v80"/><circle cx="200" cy="120" r="22"/></g></svg>',
+  },
+  'one-arm-row': {
+    label: 'One-Arm Row',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0e1726"/><g stroke="#1f8bff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M120 180l80-60 80 60"/><path d="M200 120l40-60"/><circle cx="200" cy="120" r="22" stroke="#7fffd4" stroke-width="8"/></g></svg>',
+  },
+  'leg-curl': {
+    label: 'Leg Curl',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0b121f"/><g stroke="#7fffd4" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M120 200h160"/><path d="M160 200v-80l80-20v100"/><circle cx="200" cy="120" r="22"/><path d="M240 120l40 40"/></g></svg>',
+  },
+  'calve-raise': {
+    label: 'Calve Raise',
+    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0d1522"/><g stroke="#1f8bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M120 200h160"/><path d="M160 200v-60l40-40 40 40v60"/><circle cx="200" cy="120" r="20" stroke="#7fffd4" stroke-width="8"/></g></svg>',
+  },
+};
 
 function createMotor(id, refs) {
   const gaugeCanvas = document.getElementById(refs.gaugeId);
@@ -88,7 +141,6 @@ function createMotor(id, refs) {
     baseLabel,
     repsLabel,
     cableLabel,
-    phase: 0,
     baseResistance: Number(slider.value),
     currentResistance: Number(slider.value),
     reps: 0,
@@ -96,6 +148,7 @@ function createMotor(id, refs) {
     normalized,
     direction: 1,
     readyForRep: true,
+    trail: new Array(120).fill(normalized),
   };
 }
 
@@ -194,6 +247,8 @@ elements.reset.addEventListener('click', () => {
   motors.forEach((motor) => {
     motor.reps = 0;
   });
+  workoutLog.length = 0;
+  elements.logList.innerHTML = '';
   updateStatuses();
   elements.message.textContent = 'Workout reset. Adjust parameters when ready.';
   elements.workoutState.textContent = 'Workout Not Started';
@@ -214,9 +269,98 @@ motors.forEach((motor) => {
   motor.slider.addEventListener('input', () => {
     motor.baseResistance = Number(motor.slider.value);
     motor.baseLabel.textContent = `${motor.baseResistance} lb`;
+    motor.currentResistance = motor.baseResistance;
   });
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
 });
+
+function applyPowerState() {
+  const interactive = [
+    elements.startToggle,
+    elements.setCount,
+    elements.repCount,
+    elements.startSet,
+    elements.stopSet,
+    elements.reset,
+    elements.forceSelect,
+    elements.engageSlider,
+    elements.motorToggle,
+  ];
+
+  motors.forEach((motor) => {
+    motor.slider.disabled = !powerOn;
+    motor.simSlider.disabled = !powerOn;
+  });
+
+  interactive.forEach((el) => {
+    if (!el) return;
+    if (!powerOn) {
+      el.dataset.prevDisabled = el.disabled ? 'true' : 'false';
+      el.disabled = true;
+    } else if (el.dataset.prevDisabled !== undefined) {
+      if (el.dataset.prevDisabled !== 'true') {
+        el.disabled = false;
+      }
+      delete el.dataset.prevDisabled;
+    }
+  });
+
+  elements.powerOn.disabled = powerOn;
+  elements.powerOff.disabled = !powerOn;
+
+  if (!powerOn) {
+    stopSet();
+    workoutActive = false;
+    elements.options.hidden = true;
+    elements.startToggle.textContent = 'Start Workout';
+    elements.workoutState.textContent = 'System Offline';
+    elements.workoutState.classList.remove('active');
+    elements.message.textContent = 'Power system on to resume control.';
+    elements.motorsStatus.textContent = 'Motors Offline';
+    elements.motorsStatus.classList.remove('online');
+  } else {
+    elements.motorToggle.textContent = motorsRunning ? 'Stop Motors' : 'Start Motors';
+    elements.motorsStatus.classList.toggle('online', motorsRunning);
+    elements.motorsStatus.textContent = motorsRunning ? 'Motors Ready' : 'Motors Stopped';
+    if (!workoutActive) {
+      elements.workoutState.textContent = 'Workout Not Started';
+    }
+  }
+}
+
+function toggleMotors() {
+  if (!powerOn) return;
+  motorsRunning = !motorsRunning;
+  elements.motorToggle.textContent = motorsRunning ? 'Stop Motors' : 'Start Motors';
+  elements.motorsStatus.textContent = motorsRunning ? 'Motors Ready' : 'Motors Stopped';
+  elements.motorsStatus.classList.toggle('online', motorsRunning);
+}
+
+elements.powerOff.addEventListener('click', () => {
+  powerOn = false;
+  applyPowerState();
+});
+
+elements.powerOn.addEventListener('click', () => {
+  powerOn = true;
+  applyPowerState();
+});
+
+elements.motorToggle.addEventListener('click', toggleMotors);
+
+function renderExercisePreview() {
+  const selection = elements.exerciseSelect.value;
+  const entry = exerciseCatalog[selection];
+  if (!entry) return;
+  const svg = encodeURIComponent(entry.art)
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29');
+  elements.exerciseImage.src = `data:image/svg+xml;utf8,${svg}`;
+  elements.exerciseImage.alt = `${entry.label} illustration`;
+}
+
+elements.exerciseSelect.addEventListener('change', renderExercisePreview);
+renderExercisePreview();
 
 function updateStatuses() {
   elements.setStatus.textContent = `${currentSet} / ${totalSets}`;
@@ -276,11 +420,12 @@ function drawWave(motor) {
   const { width, height } = motor.waveCanvas;
   ctx.clearRect(0, 0, width, height);
 
-  const baseline = height / 2;
-  const amplitude = height * 0.35;
+  const topPadding = 20;
+  const bottomPadding = 24;
+  const usableHeight = height - topPadding - bottomPadding;
   const circleX = width - 46;
-  const availableWidth = circleX - 12;
-  const headY = baseline + amplitude - motor.normalized * amplitude * 2;
+  const availableWidth = circleX - 16;
+  const headY = topPadding + (1 - motor.normalized) * usableHeight;
 
   ctx.lineWidth = 4;
   ctx.lineCap = 'round';
@@ -292,19 +437,21 @@ function drawWave(motor) {
   ctx.strokeStyle = gradient;
   ctx.beginPath();
 
-  const segments = 80;
-  const influence = 0.35 + motor.normalized * 0.65;
-  for (let i = 0; i <= segments; i++) {
-    const progress = i / segments;
-    const x = progress * availableWidth;
-    const sway = Math.sin(motor.phase + progress * 2.4 * Math.PI);
-    const decay = 1 - progress * 0.85;
-    const y = baseline + sway * amplitude * 0.45 * decay * influence;
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      ctx.lineTo(x, y);
+  const points = motor.trail;
+  const len = points.length;
+  if (len > 0) {
+    for (let i = 0; i < len; i++) {
+      const progress = i / (len - 1 || 1);
+      const x = progress * availableWidth;
+      const y = topPadding + (1 - points[i]) * usableHeight;
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
     }
+  } else {
+    ctx.moveTo(0, headY);
   }
   ctx.lineTo(circleX, headY);
   ctx.stroke();
@@ -322,12 +469,23 @@ function update(timestamp) {
   const delta = (timestamp - lastTimestamp) / 1000;
   lastTimestamp = timestamp;
 
+  if (!powerOn) {
+    motors.forEach((motor) => {
+      motor.currentResistance = 0;
+      motor.normalized = 0;
+      motor.trail.fill(0);
+      motor.cableLabel.textContent = '0.0';
+      drawGauge(motor);
+      drawWave(motor);
+    });
+    requestAnimationFrame(update);
+    return;
+  }
+
   const engageThreshold = Math.min(0.98, Number(elements.engageSlider.value) / MAX_TRAVEL_INCHES);
   const mode = elements.forceSelect.value;
 
   motors.forEach((motor) => {
-    motor.phase += delta * 2.2;
-
     const sliderDistance = Number(motor.simSlider.value);
     const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
     const previous = motor.normalized;
@@ -335,7 +493,7 @@ function update(timestamp) {
     motor.direction = derivative >= 0 ? 1 : -1;
     motor.normalized = normalized;
 
-    if (setActive && !motor.engaged && motor.normalized >= engageThreshold) {
+    if (motorsRunning && setActive && !motor.engaged && motor.normalized >= engageThreshold) {
       motor.engaged = true;
       if (motor.id === 'left') {
         elements.message.textContent = `Left motor engaged at ${elements.engageSlider.value} in. Rep tracking armed.`;
@@ -345,6 +503,9 @@ function update(timestamp) {
     if (!setActive) {
       motor.engaged = false;
       motor.reps = 0;
+      motor.readyForRep = true;
+    } else if (!motorsRunning) {
+      motor.engaged = false;
       motor.readyForRep = true;
     }
 
@@ -357,7 +518,12 @@ function update(timestamp) {
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     motor.cableLabel.textContent = travel.toFixed(1);
 
-    if (setActive && motor.engaged) {
+    motor.trail.push(motor.normalized);
+    if (motor.trail.length > 120) {
+      motor.trail.shift();
+    }
+
+    if (motorsRunning && setActive && motor.engaged) {
       if (motor.readyForRep && motor.direction >= 0 && motor.normalized >= 0.95) {
         motor.reps += 1;
         motor.readyForRep = false;
@@ -394,6 +560,25 @@ function finishSet() {
   elements.message.textContent = currentSet >= totalSets
     ? 'Workout complete! Reset or adjust your programming to begin again.'
     : `Set ${currentSet} complete. Press “Start Set” when ready for set ${currentSet + 1}.`;
+  recordWorkoutSet();
+}
+
+function recordWorkoutSet() {
+  if (!currentRep) return;
+  const exerciseKey = elements.exerciseSelect.value;
+  const exercise = exerciseCatalog[exerciseKey];
+  const entry = {
+    set: currentSet,
+    exercise: exercise ? exercise.label : 'Custom',
+    reps: currentRep,
+    left: Math.round(motors[0].currentResistance),
+    right: Math.round(motors[1].currentResistance),
+  };
+  workoutLog.push(entry);
+
+  const item = document.createElement('li');
+  item.innerHTML = `<span class="log-set">Set ${entry.set}</span><span class="log-exercise">${entry.exercise}</span><span class="log-weight">${entry.left} lb / ${entry.right} lb</span><span class="log-reps">${entry.reps} reps</span>`;
+  elements.logList.prepend(item);
 }
 
 requestAnimationFrame(update);
@@ -402,3 +587,4 @@ updateStatuses();
 
 elements.forceDescription.textContent = forceCurveCopy[elements.forceSelect.value];
 elements.forceLabel.textContent = elements.forceSelect.options[elements.forceSelect.selectedIndex].text;
+applyPowerState();

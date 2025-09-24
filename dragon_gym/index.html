@@ -12,16 +12,33 @@
 <body>
   <main class="app-shell">
     <header class="app-header">
-      <div class="logo-block">
-        <div class="dragon-emblem" aria-hidden="true"></div>
-        <div>
-          <h1>Dragon Gym</h1>
-          <p class="tagline">600 lb smart gym</p>
+      <div class="header-left">
+        <div class="power-controls" aria-label="Power controls">
+          <button class="ghost" id="powerOn" type="button" disabled>Power On</button>
+          <button class="danger" id="powerOff" type="button">Shutdown</button>
+        </div>
+        <div class="logo-block">
+          <div class="dragon-emblem" aria-hidden="true"></div>
+          <div>
+            <h1>Dragon Gym</h1>
+            <p class="tagline">600 lb smart gym</p>
+          </div>
         </div>
       </div>
-      <div class="status-flags">
-        <span class="status-badge online">Motors Ready</span>
-        <span class="status-badge neutral" id="workoutState">Workout Not Started</span>
+      <div class="header-right">
+        <div class="battery-indicator" aria-label="Battery level">
+          <div class="battery-body">
+            <div class="battery-fill" style="width: 50%"></div>
+          </div>
+          <span>50%</span>
+        </div>
+        <div class="status-column">
+          <div class="status-flags">
+            <span class="status-badge online" id="motorsStatus">Motors Ready</span>
+            <span class="status-badge neutral" id="workoutState">Workout Not Started</span>
+          </div>
+          <button class="accent" id="motorToggle" type="button">Stop Motors</button>
+        </div>
       </div>
     </header>
 
@@ -172,6 +189,32 @@
               <span>Right arm travel</span>
               <input type="range" id="rightSim" min="0" max="24" step="0.1" value="0" />
             </label>
+          </div>
+        </section>
+        <section class="log-panel" aria-label="Workout log">
+          <h3>Workout Log</h3>
+          <p class="panel-intro">Completed sets appear here with recorded resistance and reps.</p>
+          <ul class="log-list" id="workoutLogList"></ul>
+        </section>
+        <section class="exercise-panel" aria-label="Workout selector">
+          <h3>Workout Selector</h3>
+          <div class="selector-controls">
+            <label for="exerciseSelect">Choose an exercise</label>
+            <select id="exerciseSelect">
+              <option value="incline-bench">Incline Bench</option>
+              <option value="weighted-pullups">Weighted Pull Ups</option>
+              <option value="dumbbell-shoulder-press">Dumbbell Shoulder Press</option>
+              <option value="lateral-raise">Lateral Raise</option>
+              <option value="pec-deck">Pec Deck</option>
+              <option value="tricep-pushdown">Tricep Pushdown</option>
+              <option value="deadlift">Deadlift</option>
+              <option value="one-arm-row">One-Arm Row</option>
+              <option value="leg-curl">Leg Curl</option>
+              <option value="calve-raise">Calve Raise</option>
+            </select>
+          </div>
+          <div class="exercise-preview">
+            <img id="exerciseImage" src="" alt="Selected exercise preview" />
           </div>
         </section>
       </section>
