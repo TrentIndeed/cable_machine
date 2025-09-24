@@ -24,6 +24,7 @@ const elements = {
   eccentricPanel: document.getElementById('eccentricPanel'),
   eccentricSelect: document.getElementById('eccentricCurve'),
   eccentricDescription: document.getElementById('eccentricCurveDescription'),
+  forceCurveIntensity: document.getElementById('forceCurveIntensity'),
   forcePanel: document.getElementById('forceCurvePanel'),
   engageSlider: document.getElementById('engageDistance'),
   engageDisplay: document.getElementById('engageDisplay'),
@@ -36,13 +37,22 @@ const elements = {
   exerciseVideoPlaceholder: document.getElementById('exerciseVideoPlaceholder'),
 };
 
-const forceCurveCopy = {
-  linear: 'Equal load through the pull and return.',
-  eccentric: '+20% load on the lowering phase.',
-  chain: 'Gradually increases to +20% at the top of the stroke.',
-  band: 'Fast ramp to +20% near lockout.',
-  'reverse-chain': 'Starts +20% heavier and eases off toward the top.',
-};
+function getForceCurveCopy(mode, intensityPercent) {
+  const pct = Math.round(intensityPercent);
+  switch (mode) {
+    case 'eccentric':
+      return `+${pct}% load on the lowering phase.`;
+    case 'chain':
+      return `Gradually increases to +${pct}% at the top of the stroke.`;
+    case 'band':
+      return `Fast ramp to +${pct}% near lockout.`;
+    case 'reverse-chain':
+      return `Starts +${pct}% heavier and eases off toward the top.`;
+    case 'linear':
+    default:
+      return 'Equal load through the pull and return.';
+  }
+}
 
 const motors = [
   createMotor('left', {
@@ -76,6 +86,7 @@ let lastTimestamp = performance.now();
 let powerOn = true;
 let motorsRunning = true;
 let eccentricOverrideEnabled = false;
+let forceCurveIntensity = 20;
 const workoutLog = [];
 
 const exerciseCatalog = {
@@ -237,7 +248,7 @@ function toggleWorkout() {
     currentSet = 0;
     currentRep = 0;
     elements.workoutState.classList.add('active');
-    elements.workoutState.textContent = 'Workout Not Started';
+    elements.workoutState.textContent = 'Workout Started';
     elements.message.textContent = 'Press “Start Set” to begin counting reps.';
     updateStatuses();
     requestAnimationFrame(() => {
@@ -257,6 +268,13 @@ elements.forceSelect.addEventListener('change', () => {
   updateForceCurveLabel();
   redrawForceCurves();
 });
+
+if (elements.forceCurveIntensity) {
+  setForceCurveIntensity(elements.forceCurveIntensity.value || forceCurveIntensity);
+  elements.forceCurveIntensity.addEventListener('input', (event) => {
+    setForceCurveIntensity(event.target.value);
+  });
+}
 
 if (elements.eccentricToggle) {
   elements.eccentricToggle.addEventListener('click', () => {
@@ -338,7 +356,7 @@ elements.reset.addEventListener('click', () => {
   elements.logList.innerHTML = '';
   updateStatuses();
   elements.message.textContent = 'Workout reset. Adjust engagement or force curve when ready.';
-  elements.workoutState.textContent = 'Workout Not Started';
+  elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
 });
 
 function stopSet(options = {}) {
@@ -358,7 +376,7 @@ function stopSet(options = {}) {
       : `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
     recorded = true;
   } else {
-    elements.workoutState.textContent = 'Workout Not Started';
+    elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
     elements.message.textContent = currentRep >= totalReps
       ? 'Set complete. Press “Start Set” for the next round.'
       : 'Set paused. Press “Start Set” to resume.';
@@ -430,6 +448,7 @@ function applyPowerState() {
     elements.setToggle,
     elements.reset,
     elements.forceSelect,
+    elements.forceCurveIntensity,
     elements.engageSlider,
     elements.motorToggle,
   ];
@@ -469,9 +488,7 @@ function applyPowerState() {
     updateMotorToggle();
   } else {
     updateMotorToggle();
-    if (!workoutActive) {
-      elements.workoutState.textContent = 'Workout Not Started';
-    }
+    elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
   }
 
   updateSetToggleAppearance();
@@ -526,16 +543,17 @@ function updateStatuses() {
 function getForceCurveMultiplier(mode, normalized, direction) {
   const clamped = Math.max(0, Math.min(1, normalized));
   const descending = direction < 0;
+  const intensity = Math.max(0, Math.min(100, forceCurveIntensity)) / 100;
 
   switch (mode) {
     case 'eccentric':
-      return descending ? 1.2 : 1.0;
+      return descending ? 1 + intensity : 1.0;
     case 'chain':
-      return 1 + clamped * 0.2;
+      return 1 + clamped * intensity;
     case 'band':
-      return 1 + Math.pow(clamped, 2.2) * 0.2;
+      return 1 + Math.pow(clamped, 2.2) * intensity;
     case 'reverse-chain':
-      return 1.2 - clamped * 0.2;
+      return 1 + intensity - clamped * intensity;
     case 'linear':
     default:
       return 1.0;
@@ -561,6 +579,9 @@ function drawForceProfile(canvas, mode, direction) {
   ctx.fillStyle = 'rgba(10, 16, 30, 0.92)';
   ctx.fillRect(0, 0, width, height);
 
+  const intensity = Math.max(0, Math.min(100, forceCurveIntensity)) / 100;
+  const displayedIntensity = Math.max(intensity, 0.05);
+
   const padding = {
     top: 28,
     right: 44,
@@ -568,8 +589,8 @@ function drawForceProfile(canvas, mode, direction) {
     left: 68,
   };
 
-  const minForce = -0.2;
-  const maxForce = 0.2;
+  const minForce = -displayedIntensity;
+  const maxForce = displayedIntensity;
   const plotWidth = width - padding.left - padding.right;
   const plotHeight = height - padding.top - padding.bottom;
 
@@ -639,12 +660,21 @@ function drawForceProfile(canvas, mode, direction) {
   ctx.fillText('Force (%)', 0, 0);
   ctx.restore();
 
-  const tickValues = [-0.2, -0.1, 0, 0.1, 0.2];
+  const tickStep = displayedIntensity / 2;
+  const tickValues = [
+    -displayedIntensity,
+    -tickStep,
+    0,
+    tickStep,
+    displayedIntensity,
+  ];
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
   tickValues.forEach((value) => {
     const y = padding.top + ((maxForce - value) / (maxForce - minForce || 1)) * plotHeight;
-    ctx.fillText(`${Math.round(value * 100)}%`, padding.left - 8, y + (value === -0.2 ? 12 : value === 0.2 ? -4 : 4));
+    const offset = value === minForce ? 12 : value === maxForce ? -4 : 4;
+    const percentLabel = `${value > 0 ? '+' : ''}${Math.round(value * 100)}%`;
+    ctx.fillText(percentLabel, padding.left - 8, y + offset);
   });
 }
 
@@ -661,8 +691,9 @@ function redrawForceCurves() {
 
 function updateForceCurveDescriptions() {
   const concentricMode = elements.forceSelect.value;
+  const intensity = forceCurveIntensity;
   if (elements.forceDescription) {
-    elements.forceDescription.textContent = `Concentric: ${forceCurveCopy[concentricMode]}`;
+    elements.forceDescription.textContent = `Concentric: ${getForceCurveCopy(concentricMode, intensity)}`;
   }
 
   if (elements.eccentricDescription) {
@@ -670,7 +701,7 @@ function updateForceCurveDescriptions() {
       elements.eccentricSelect && eccentricOverrideEnabled
         ? elements.eccentricSelect.value
         : concentricMode;
-    elements.eccentricDescription.textContent = `Eccentric: ${forceCurveCopy[eccMode]}`;
+    elements.eccentricDescription.textContent = `Eccentric: ${getForceCurveCopy(eccMode, intensity)}`;
   }
 }
 
@@ -685,6 +716,20 @@ function updateForceCurveLabel() {
   } else {
     elements.forceLabel.textContent = concentricLabel;
   }
+}
+
+function setForceCurveIntensity(value) {
+  const numeric = Number(value);
+  const sanitized = Number.isFinite(numeric)
+    ? Math.max(0, Math.min(100, numeric))
+    : forceCurveIntensity;
+  forceCurveIntensity = sanitized;
+  if (elements.forceCurveIntensity) {
+    elements.forceCurveIntensity.value = String(sanitized);
+  }
+  updateForceCurveDescriptions();
+  updateForceCurveLabel();
+  redrawForceCurves();
 }
 
 

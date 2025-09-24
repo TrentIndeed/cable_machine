@@ -131,13 +131,7 @@
     </section>
 
     <section class="workspace">
-      <aside class="control-panel" aria-label="Workout controls">
-        <h2>Workout Controls</h2>
-        <p class="panel-intro">Select force curves and review session details as you train.</p>
-      </aside>
-
-      <section class="visual-panel" aria-label="Exercise analysis">
-        <h2>Exercise Analysis</h2>
+      <section class="visual-panel" aria-label="Cable travel visualizations">
         <div class="wave-grid">
           <article class="wave-card" data-motor="left">
             <header>
@@ -179,6 +173,10 @@
               <option value="band">Band mode</option>
               <option value="reverse-chain">Reverse chain</option>
             </select>
+          </label>
+          <label>
+            <span>Force curve intensity (%)</span>
+            <input type="number" id="forceCurveIntensity" min="0" max="100" step="1" value="20" />
           </label>
           <canvas
             class="force-curve-graph"
