@@ -25,6 +25,7 @@ const elements = {
   eccentricPanel: document.getElementById('eccentricPanel'),
   eccentricSelect: document.getElementById('eccentricCurve'),
   eccentricDescription: document.getElementById('eccentricCurveDescription'),
+  forcePanel: document.getElementById('forceCurvePanel'),
   engageSlider: document.getElementById('engageDistance'),
   engageDisplay: document.getElementById('engageDisplay'),
   powerToggle: document.getElementById('powerToggle'),
@@ -135,6 +136,43 @@ function createMotor(id, refs) {
   };
 }
 
+function resizeCanvasToDisplaySize(canvas) {
+  if (!canvas) return false;
+  const rect = canvas.getBoundingClientRect();
+  const displayWidth = Math.round(rect.width);
+  const displayHeight = Math.round(rect.height);
+  if (!displayWidth || !displayHeight) {
+    return false;
+  }
+  if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
+    return true;
+  }
+  return false;
+}
+
+function syncWaveCanvasSizes() {
+  let resized = false;
+  motors.forEach((motor) => {
+    resized = resizeCanvasToDisplaySize(motor.waveCanvas) || resized;
+  });
+  if (resized) {
+    motors.forEach((motor) => drawWave(motor));
+  }
+}
+
+function syncForceCurveCanvasSizes() {
+  const canvases = [elements.forceCurveConcentric, elements.forceCurveEccentric];
+  let resized = false;
+  canvases.forEach((canvas) => {
+    resized = resizeCanvasToDisplaySize(canvas) || resized;
+  });
+  if (resized) {
+    redrawForceCurves();
+  }
+}
+
 function resetMotorTracking(motor, travel) {
   motor.phase = 'idle';
   motor.repCounted = false;
@@ -171,6 +209,9 @@ function updateSetToggleAppearance() {
 function toggleWorkout() {
   workoutActive = !workoutActive;
   elements.options.hidden = !workoutActive;
+  if (elements.forcePanel) {
+    elements.forcePanel.hidden = !workoutActive;
+  }
   elements.startToggle.textContent = workoutActive ? 'Stop Workout' : 'Start Workout';
 
   updateSetToggleAppearance();
@@ -184,6 +225,14 @@ function toggleWorkout() {
     elements.workoutState.classList.remove('active');
     elements.workoutState.textContent = 'Workout Not Started';
     elements.message.textContent = 'Tap “Start Workout” to arm the set controls.';
+    eccentricOverrideEnabled = false;
+    if (elements.eccentricToggle) {
+      elements.eccentricToggle.textContent = 'Enable eccentric profile';
+      elements.eccentricToggle.setAttribute('aria-expanded', 'false');
+    }
+    if (elements.eccentricPanel) {
+      elements.eccentricPanel.hidden = true;
+    }
     updateStatuses();
   } else {
     totalReps = DEFAULT_REP_TARGET;
@@ -193,7 +242,14 @@ function toggleWorkout() {
     elements.workoutState.textContent = 'Workout Not Started';
     elements.message.textContent = 'Press “Start Set” to begin counting reps.';
     updateStatuses();
+    requestAnimationFrame(() => {
+      syncForceCurveCanvasSizes();
+      redrawForceCurves();
+    });
   }
+
+  updateForceCurveDescriptions();
+  updateForceCurveLabel();
 }
 
 elements.startToggle.addEventListener('click', toggleWorkout);
@@ -223,6 +279,9 @@ if (elements.eccentricToggle) {
     updateForceCurveDescriptions();
     updateForceCurveLabel();
     redrawForceCurves();
+    requestAnimationFrame(() => {
+      syncForceCurveCanvasSizes();
+    });
   });
 }
 
@@ -879,3 +938,13 @@ if (elements.eccentricPanel) {
   elements.eccentricPanel.hidden = true;
 }
 applyPowerState();
+
+requestAnimationFrame(() => {
+  syncWaveCanvasSizes();
+  syncForceCurveCanvasSizes();
+});
+
+window.addEventListener('resize', () => {
+  syncWaveCanvasSizes();
+  syncForceCurveCanvasSizes();
+});

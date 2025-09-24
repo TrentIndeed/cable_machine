@@ -39,6 +39,10 @@
     </section>
 
     <section class="resistance-overview" aria-label="Resistance overview">
+      <article class="controls-pill" aria-label="Workout quick controls">
+        <button class="accent set-toggle" id="setToggle" disabled aria-pressed="false">Start Set</button>
+        <button class="ghost" id="resetWorkout" disabled>Reset</button>
+      </article>
       <article class="status-card" aria-label="Workout status" aria-live="polite">
         <header class="status-header">
           <h2>Workout Status</h2>
@@ -67,10 +71,6 @@
           </div>
         </div>
         <p class="status-message" id="workoutMessage">Tap “Start Workout” to arm the set controls.</p>
-      </article>
-      <article class="controls-pill" aria-label="Workout quick controls">
-        <button class="accent set-toggle" id="setToggle" disabled aria-pressed="false">Start Set</button>
-        <button class="ghost" id="resetWorkout" disabled>Reset</button>
       </article>
       <article class="motor-card" data-motor="left">
         <div class="gauge-wrapper">
@@ -131,53 +131,6 @@
         </div>
 
         <div class="workout-options" id="workoutOptions" hidden>
-          <div class="field-group force-curve-group">
-            <label>
-              <span>Force curve mode (concentric)</span>
-              <select id="forceCurve">
-                <option value="linear">Linear</option>
-                <option value="chain">Chain mode</option>
-                <option value="band">Band mode</option>
-                <option value="reverse-chain">Reverse chain</option>
-              </select>
-            </label>
-            <canvas
-              class="force-curve-graph"
-              id="forceCurveConcentric"
-              width="320"
-              height="150"
-              aria-hidden="true"
-            ></canvas>
-            <p class="hint" id="forceCurveDescription">Concentric: Equal load through the pull and return.</p>
-            <button
-              class="ghost eccentric-toggle"
-              id="eccentricToggle"
-              type="button"
-              aria-expanded="false"
-            >
-              Enable eccentric profile
-            </button>
-            <div class="eccentric-panel" id="eccentricPanel" hidden>
-              <label>
-                <span>Eccentric force curve</span>
-                <select id="eccentricCurve">
-                  <option value="eccentric">Eccentric mode</option>
-                  <option value="chain">Chain mode</option>
-                  <option value="band">Band mode</option>
-                  <option value="reverse-chain">Reverse chain</option>
-                </select>
-              </label>
-              <canvas
-                class="force-curve-graph"
-                id="forceCurveEccentric"
-                width="320"
-                height="150"
-                aria-hidden="true"
-              ></canvas>
-              <p class="hint" id="eccentricCurveDescription">Eccentric: +20% load on the lowering phase.</p>
-            </div>
-          </div>
-
           <div class="field-group">
             <label for="engageDistance">
               <span>Cable engagement distance</span>
@@ -198,14 +151,14 @@
               <span class="motor-name">Left Arm</span>
               <span class="distance-readout">Cable: <span id="leftCableDistance">0.0</span> in</span>
             </header>
-            <canvas class="wave-canvas" id="leftWave" width="520" height="180" aria-hidden="true"></canvas>
+            <canvas class="wave-canvas" id="leftWave" width="960" height="260" aria-hidden="true"></canvas>
           </article>
           <article class="wave-card" data-motor="right">
             <header>
               <span class="motor-name">Right Arm</span>
               <span class="distance-readout">Cable: <span id="rightCableDistance">0.0</span> in</span>
             </header>
-            <canvas class="wave-canvas" id="rightWave" width="520" height="180" aria-hidden="true"></canvas>
+            <canvas class="wave-canvas" id="rightWave" width="960" height="260" aria-hidden="true"></canvas>
           </article>
         </div>
         <section class="simulator-panel" aria-label="Motor travel simulator">
@@ -221,6 +174,55 @@
             </label>
           </div>
         </section>
+      </section>
+      <section class="force-panel" aria-label="Force curve profiles" id="forceCurvePanel" hidden>
+        <h3>Force Curve Profiles</h3>
+        <div class="force-curve-group">
+          <label>
+            <span>Force curve mode (concentric)</span>
+            <select id="forceCurve">
+              <option value="linear">Linear</option>
+              <option value="chain">Chain mode</option>
+              <option value="band">Band mode</option>
+              <option value="reverse-chain">Reverse chain</option>
+            </select>
+          </label>
+          <canvas
+            class="force-curve-graph"
+            id="forceCurveConcentric"
+            width="640"
+            height="220"
+            aria-hidden="true"
+          ></canvas>
+          <p class="hint" id="forceCurveDescription">Concentric: Equal load through the pull and return.</p>
+          <button
+            class="ghost eccentric-toggle"
+            id="eccentricToggle"
+            type="button"
+            aria-expanded="false"
+          >
+            Enable eccentric profile
+          </button>
+          <div class="eccentric-panel" id="eccentricPanel" hidden>
+            <label>
+              <span>Eccentric force curve</span>
+              <select id="eccentricCurve">
+                <option value="eccentric">Eccentric mode</option>
+                <option value="chain">Chain mode</option>
+                <option value="band">Band mode</option>
+                <option value="reverse-chain">Reverse chain</option>
+              </select>
+            </label>
+            <canvas
+              class="force-curve-graph"
+              id="forceCurveEccentric"
+              width="640"
+              height="220"
+              aria-hidden="true"
+            ></canvas>
+            <p class="hint" id="eccentricCurveDescription">Eccentric: +20% load on the lowering phase.</p>
+          </div>
+        </div>
       </section>
       <section class="log-panel" aria-label="Workout log">
         <h3>Workout Log</h3>
