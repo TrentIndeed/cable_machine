@@ -379,6 +379,17 @@ body {
   gap: 12px;
 }
 
+.force-curve-graph {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(4, 9, 18, 0.88);
+  box-shadow: 0 10px 30px rgba(7, 24, 48, 0.35);
+}
+
 .field-group.row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;

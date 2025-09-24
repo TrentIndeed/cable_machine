@@ -3,13 +3,12 @@ const TWO_PI = Math.PI * 2;
 const MAX_TRAVEL_INCHES = 24;
 const REP_SPAN_THRESHOLD = 3;
 const MOVEMENT_EPSILON = 0.05;
+const DEFAULT_REP_TARGET = 12;
 
 const elements = {
   workoutState: document.getElementById('workoutState'),
   startToggle: document.getElementById('toggleWorkout'),
   options: document.getElementById('workoutOptions'),
-  setCount: document.getElementById('setCount'),
-  repCount: document.getElementById('repCount'),
   startSet: document.getElementById('startSet'),
   stopSet: document.getElementById('stopSet'),
   reset: document.getElementById('resetWorkout'),
@@ -19,6 +18,7 @@ const elements = {
   forceSelect: document.getElementById('forceCurve'),
   forceDescription: document.getElementById('forceCurveDescription'),
   forceLabel: document.getElementById('forceCurveLabel'),
+  forceCurveCanvas: document.getElementById('forceCurveCanvas'),
   engageSlider: document.getElementById('engageDistance'),
   engageDisplay: document.getElementById('engageDisplay'),
   powerToggle: document.getElementById('powerToggle'),
@@ -31,7 +31,7 @@ const elements = {
 };
 
 const forceCurveCopy = {
-  balanced: 'Balanced: consistent tension through the full stroke.',
+  linear: 'Linear: constant tension through the full stroke.',
   eccentric: 'Eccentric boost: heavier resistance while lowering to challenge the negative.',
   chain: 'Chain mode: resistance ramps up through the concentric like adding plates link by link.',
   band: 'Band mode: exponential tension rise near lockout for banded feel.',
@@ -64,9 +64,8 @@ const motors = [
 let workoutActive = false;
 let setActive = false;
 let currentSet = 0;
-let totalSets = 0;
 let currentRep = 0;
-let totalReps = 0;
+let totalReps = DEFAULT_REP_TARGET;
 let lastTimestamp = performance.now();
 let powerOn = true;
 let motorsRunning = true;
@@ -153,16 +152,14 @@ function toggleWorkout() {
   if (!workoutActive) {
     stopSet();
     currentSet = 0;
-    totalSets = 0;
     currentRep = 0;
-    totalReps = 0;
+    totalReps = DEFAULT_REP_TARGET;
     elements.workoutState.classList.remove('active');
     elements.workoutState.textContent = 'Workout Not Started';
-    elements.message.textContent = 'Tap “Start Workout” to program your session.';
+    elements.message.textContent = 'Tap “Start Workout” to arm the set controls.';
     updateStatuses();
   } else {
-    totalSets = Math.max(1, Number(elements.setCount.value));
-    totalReps = Math.max(1, Number(elements.repCount.value));
+    totalReps = DEFAULT_REP_TARGET;
     currentSet = 0;
     currentRep = 0;
     elements.workoutState.classList.add('active');
@@ -174,24 +171,11 @@ function toggleWorkout() {
 
 elements.startToggle.addEventListener('click', toggleWorkout);
 
-elements.setCount.addEventListener('change', () => {
-  if (!workoutActive) return;
-  totalSets = Math.max(1, Number(elements.setCount.value));
-  currentSet = Math.min(currentSet, totalSets);
-  updateStatuses();
-});
-
-elements.repCount.addEventListener('change', () => {
-  if (!workoutActive) return;
-  totalReps = Math.max(1, Number(elements.repCount.value));
-  currentRep = Math.min(currentRep, totalReps);
-  updateStatuses();
-});
-
 elements.forceSelect.addEventListener('change', () => {
   const mode = elements.forceSelect.value;
   elements.forceDescription.textContent = forceCurveCopy[mode];
   elements.forceLabel.textContent = elements.forceSelect.options[elements.forceSelect.selectedIndex].text;
+  drawForceCurveGraph(mode);
 });
 
 elements.engageSlider.addEventListener('input', updateEngageDisplay);
@@ -207,12 +191,6 @@ elements.startSet.addEventListener('click', () => {
   elements.workoutState.textContent = 'Workout Started';
   elements.workoutState.classList.add('active');
 
-  totalSets = Math.max(1, Number(elements.setCount.value));
-  totalReps = Math.max(1, Number(elements.repCount.value));
-
-  if (currentSet >= totalSets) {
-    currentSet = 0;
-  }
   currentSet += 1;
   currentRep = 0;
   motors.forEach((motor) => {
@@ -231,13 +209,14 @@ elements.reset.addEventListener('click', () => {
   stopSet();
   currentSet = 0;
   currentRep = 0;
+  totalReps = DEFAULT_REP_TARGET;
   motors.forEach((motor) => {
     motor.reps = 0;
   });
   workoutLog.length = 0;
   elements.logList.innerHTML = '';
   updateStatuses();
-  elements.message.textContent = 'Workout reset. Adjust parameters when ready.';
+  elements.message.textContent = 'Workout reset. Adjust engagement or force curve when ready.';
   elements.workoutState.textContent = 'Workout Not Started';
 });
 
@@ -306,8 +285,6 @@ function updateMotorToggle() {
 function applyPowerState() {
   const interactive = [
     elements.startToggle,
-    elements.setCount,
-    elements.repCount,
     elements.startSet,
     elements.stopSet,
     elements.reset,
@@ -394,12 +371,14 @@ elements.exerciseSelect.addEventListener('change', renderExercisePreview);
 renderExercisePreview();
 
 function updateStatuses() {
-  elements.setStatus.textContent = `${currentSet} / ${totalSets}`;
+  elements.setStatus.textContent = `${currentSet}`;
   elements.repStatus.textContent = `${currentRep} / ${totalReps}`;
 }
 
 function computeForceMultiplier(mode, normalized, derivative) {
   switch (mode) {
+    case 'linear':
+      return 1.0;
     case 'eccentric':
       return derivative < 0 ? 1.25 : 0.95;
     case 'chain':
@@ -411,6 +390,72 @@ function computeForceMultiplier(mode, normalized, derivative) {
     default:
       return 1.0;
   }
+}
+
+const forceCurveProfiles = {
+  linear: (x) => x,
+  eccentric: (x) => 0.85 + Math.sin(x * Math.PI * 0.5) * 0.35,
+  chain: (x) => 0.6 + x * 0.7,
+  band: (x) => 0.5 + Math.pow(x, 2) * 0.8,
+  'reverse-chain': (x) => 1.2 - x * 0.6,
+};
+
+function drawForceCurveGraph(mode) {
+  if (!elements.forceCurveCanvas) return;
+  const canvas = elements.forceCurveCanvas;
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  const padding = 18;
+  ctx.clearRect(0, 0, width, height);
+
+  ctx.fillStyle = 'rgba(10, 16, 30, 0.9)';
+  ctx.fillRect(0, 0, width, height);
+
+  const profile = forceCurveProfiles[mode] || forceCurveProfiles.linear;
+  const samples = 60;
+  const values = [];
+  for (let i = 0; i <= samples; i += 1) {
+    const t = i / samples;
+    values.push({ x: t, y: profile(t) });
+  }
+  const minY = Math.min(...values.map((v) => v.y));
+  const maxY = Math.max(...values.map((v) => v.y));
+  const range = maxY - minY || 1;
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+  ctx.lineWidth = 1;
+  const gridLines = 3;
+  for (let i = 0; i <= gridLines; i += 1) {
+    const y = padding + ((height - padding * 2) / gridLines) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  values.forEach((point, index) => {
+    const px = padding + point.x * (width - padding * 2);
+    const py =
+      padding + (1 - (point.y - minY) / range) * (height - padding * 2);
+    if (index === 0) {
+      ctx.moveTo(px, py);
+    } else {
+      ctx.lineTo(px, py);
+    }
+  });
+  ctx.strokeStyle = 'rgba(31, 139, 255, 0.9)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(127, 255, 212, 0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(padding, height - padding);
+  ctx.lineTo(padding, padding);
+  ctx.lineTo(width - padding, padding);
+  ctx.stroke();
 }
 
 function drawGauge(motor) {
@@ -597,24 +642,22 @@ function update(timestamp) {
 
 function finishSet() {
   setActive = false;
-  elements.startSet.disabled = currentSet >= totalSets;
+  elements.startSet.disabled = false;
   elements.stopSet.disabled = true;
   motors.forEach((motor) => {
     motor.engaged = false;
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     resetMotorTracking(motor, travel);
   });
-  elements.workoutState.textContent = currentSet >= totalSets ? 'Workout Complete' : 'Set Complete';
-  elements.message.textContent = currentSet >= totalSets
-    ? 'Workout complete! Reset or adjust your programming to begin again.'
-    : `Set ${currentSet} complete. Press “Start Set” when ready for set ${currentSet + 1}.`;
+  elements.workoutState.textContent = 'Set Complete';
+  elements.message.textContent = `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
   recordWorkoutSet();
   updateStatuses();
 }
 
 function synchronizeRepProgress() {
   if (!setActive) return;
-  const completedReps = Math.min(...motors.map((motor) => motor.reps));
+  const completedReps = Math.max(...motors.map((motor) => motor.reps));
   if (completedReps <= currentRep) return;
 
   currentRep = Math.min(totalReps, completedReps);
@@ -651,4 +694,5 @@ updateStatuses();
 
 elements.forceDescription.textContent = forceCurveCopy[elements.forceSelect.value];
 elements.forceLabel.textContent = elements.forceSelect.options[elements.forceSelect.selectedIndex].text;
+drawForceCurveGraph(elements.forceSelect.value);
 applyPowerState();
