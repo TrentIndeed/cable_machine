@@ -81,8 +81,8 @@ body {
 }
 
 .logo-image {
-  width: 92px;
-  height: auto;
+  width: 76px;
+  height: 76px;
   object-fit: contain;
   filter: drop-shadow(0 0 26px rgba(83, 255, 106, 0.45));
 }
@@ -154,6 +154,7 @@ body {
   border: 1px solid rgba(62, 90, 118, 0.45);
   background: rgba(8, 16, 28, 0.8);
   color: var(--text-muted);
+  font-family: "Rajdhani", sans-serif;
   font-size: 0.88rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;

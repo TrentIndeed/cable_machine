@@ -831,7 +831,10 @@ function finishSet() {
 function synchronizeRepProgress() {
   if (!setActive) return;
   const completedReps = Math.max(...motors.map((motor) => motor.reps));
-  if (completedReps <= currentRep) return;
+  if (completedReps <= currentRep) {
+    updateStatuses();
+    return;
+  }
 
   currentRep = Math.min(totalReps, completedReps);
   if (currentRep >= totalReps) {
