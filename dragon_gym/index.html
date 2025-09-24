@@ -74,7 +74,7 @@
             <dd id="leftBaseResistance">0 lb</dd>
           </div>
           <div>
-            <dt>Reps completed</dt>
+            <dt>Left Reps</dt>
             <dd id="leftRepCount">0</dd>
           </div>
         </dl>
@@ -98,7 +98,7 @@
             <dd id="rightBaseResistance">0 lb</dd>
           </div>
           <div>
-            <dt>Reps completed</dt>
+            <dt>Right Reps</dt>
             <dd id="rightRepCount">0</dd>
           </div>
         </dl>
@@ -124,7 +124,6 @@
               <span>Force curve mode (concentric)</span>
               <select id="forceCurve">
                 <option value="linear">Linear</option>
-                <option value="eccentric">Eccentric boost</option>
                 <option value="chain">Chain mode</option>
                 <option value="band">Band mode</option>
                 <option value="reverse-chain">Reverse chain</option>
@@ -150,8 +149,7 @@
               <label>
                 <span>Eccentric force curve</span>
                 <select id="eccentricCurve">
-                  <option value="eccentric">Eccentric boost</option>
-                  <option value="linear">Linear</option>
+                  <option value="eccentric">Eccentric mode</option>
                   <option value="chain">Chain mode</option>
                   <option value="band">Band mode</option>
                   <option value="reverse-chain">Reverse chain</option>
@@ -177,8 +175,7 @@
           </div>
 
           <div class="field-group row buttons">
-            <button class="accent" id="startSet" disabled>Start Set</button>
-            <button class="ghost" id="stopSet" disabled>Stop Set</button>
+            <button class="accent set-toggle" id="setToggle" disabled aria-pressed="false">Start Set</button>
             <button class="ghost" id="resetWorkout" disabled>Reset</button>
           </div>
         </div>

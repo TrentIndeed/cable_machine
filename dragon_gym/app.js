@@ -9,8 +9,7 @@ const elements = {
   workoutState: document.getElementById('workoutState'),
   startToggle: document.getElementById('toggleWorkout'),
   options: document.getElementById('workoutOptions'),
-  startSet: document.getElementById('startSet'),
-  stopSet: document.getElementById('stopSet'),
+  setToggle: document.getElementById('setToggle'),
   reset: document.getElementById('resetWorkout'),
   setStatus: document.getElementById('setStatus'),
   repStatus: document.getElementById('repStatus'),
@@ -147,12 +146,32 @@ function updateEngageDisplay() {
   elements.engageDisplay.textContent = Number(elements.engageSlider.value).toFixed(1);
 }
 
+function updateSetToggleAppearance() {
+  if (!elements.setToggle) return;
+  const shouldDisable = !workoutActive || !powerOn;
+  elements.setToggle.disabled = shouldDisable;
+
+  if (setActive) {
+    elements.setToggle.textContent = 'Stop Set';
+    elements.setToggle.classList.remove('accent');
+    elements.setToggle.classList.add('danger');
+    elements.setToggle.setAttribute('aria-pressed', 'true');
+  } else {
+    elements.setToggle.textContent = 'Start Set';
+    elements.setToggle.classList.remove('danger');
+    if (!elements.setToggle.classList.contains('accent')) {
+      elements.setToggle.classList.add('accent');
+    }
+    elements.setToggle.setAttribute('aria-pressed', 'false');
+  }
+}
+
 function toggleWorkout() {
   workoutActive = !workoutActive;
   elements.options.hidden = !workoutActive;
   elements.startToggle.textContent = workoutActive ? 'Stop Workout' : 'Start Workout';
 
-  elements.startSet.disabled = !workoutActive;
+  updateSetToggleAppearance();
   elements.reset.disabled = !workoutActive;
 
   if (!workoutActive) {
@@ -215,14 +234,12 @@ if (elements.eccentricSelect) {
 
 elements.engageSlider.addEventListener('input', updateEngageDisplay);
 updateEngageDisplay();
+updateSetToggleAppearance();
 
-elements.startSet.addEventListener('click', () => {
-  if (!workoutActive) return;
-  if (setActive) return;
+function startSet() {
+  if (!workoutActive || !powerOn || setActive) return;
 
   setActive = true;
-  elements.startSet.disabled = true;
-  elements.stopSet.disabled = false;
   elements.workoutState.textContent = 'Workout Started';
   elements.workoutState.classList.add('active');
 
@@ -236,9 +253,19 @@ elements.startSet.addEventListener('click', () => {
   });
   elements.message.textContent = `Set ${currentSet} active. Cable movement will arm the servos.`;
   updateStatuses();
-});
+  updateSetToggleAppearance();
+}
 
-elements.stopSet.addEventListener('click', stopSet);
+if (elements.setToggle) {
+  elements.setToggle.addEventListener('click', () => {
+    if (!workoutActive || !powerOn) return;
+    if (setActive) {
+      stopSet();
+    } else {
+      startSet();
+    }
+  });
+}
 
 elements.reset.addEventListener('click', () => {
   stopSet();
@@ -256,10 +283,11 @@ elements.reset.addEventListener('click', () => {
 });
 
 function stopSet() {
-  if (!setActive) return;
+  const wasActive = setActive;
   setActive = false;
-  elements.startSet.disabled = !workoutActive;
-  elements.stopSet.disabled = true;
+  updateSetToggleAppearance();
+  if (!wasActive) return;
+
   elements.workoutState.textContent = 'Workout Not Started';
   elements.message.textContent = currentRep >= totalReps
     ? 'Set complete. Press “Start Set” for the next round.'
@@ -320,8 +348,7 @@ function updateMotorToggle() {
 function applyPowerState() {
   const interactive = [
     elements.startToggle,
-    elements.startSet,
-    elements.stopSet,
+    elements.setToggle,
     elements.reset,
     elements.forceSelect,
     elements.engageSlider,
@@ -368,6 +395,8 @@ function applyPowerState() {
       elements.workoutState.textContent = 'Workout Not Started';
     }
   }
+
+  updateSetToggleAppearance();
 }
 
 function toggleMotors() {
@@ -759,8 +788,7 @@ function update(timestamp) {
 
 function finishSet() {
   setActive = false;
-  elements.startSet.disabled = false;
-  elements.stopSet.disabled = true;
+  updateSetToggleAppearance();
   motors.forEach((motor) => {
     motor.engaged = false;
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
