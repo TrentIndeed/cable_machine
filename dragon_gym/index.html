@@ -39,15 +39,16 @@
     </section>
 
     <section class="resistance-overview" aria-label="Resistance overview">
-      <article class="controls-pill" aria-label="Workout quick controls">
-        <button class="accent set-toggle" id="setToggle" disabled aria-pressed="false">Start Set</button>
-        <button class="ghost" id="resetWorkout" disabled>Reset</button>
-      </article>
       <article class="status-card" aria-label="Workout status" aria-live="polite">
         <header class="status-header">
           <h2>Workout Status</h2>
           <span class="status-pill" id="workoutState">Workout Not Started</span>
         </header>
+        <div class="status-controls" aria-label="Workout controls">
+          <button class="primary" id="toggleWorkout" type="button">Start Workout</button>
+          <button class="accent" id="setToggle" type="button" disabled aria-pressed="false">Start Set</button>
+          <button class="ghost" id="resetWorkout" type="button" disabled>Reset</button>
+        </div>
         <div class="status-stack">
           <div>
             <span class="label">Set</span>
@@ -71,6 +72,14 @@
           </div>
         </div>
         <p class="status-message" id="workoutMessage">Tap “Start Workout” to arm the set controls.</p>
+      </article>
+      <article class="engagement-card" aria-label="Cable engagement distance">
+        <h3>Cable Engagement</h3>
+        <label for="engageDistance" class="slider-field">
+          <span>Engagement distance</span>
+          <input type="range" id="engageDistance" min="0" max="24" step="0.5" value="1.5" />
+        </label>
+        <p class="hint">Engage after <span id="engageDisplay">1.5</span> in of travel.</p>
       </article>
       <article class="motor-card" data-motor="left">
         <div class="gauge-wrapper">
@@ -124,23 +133,7 @@
     <section class="workspace">
       <aside class="control-panel" aria-label="Workout controls">
         <h2>Workout Controls</h2>
-        <p class="panel-intro">Configure engagement distance, select a force curve, and log your sets as you train.</p>
-
-        <div class="field-group">
-          <button class="primary" id="toggleWorkout">Start Workout</button>
-        </div>
-
-        <div class="workout-options" id="workoutOptions" hidden>
-          <div class="field-group">
-            <label for="engageDistance">
-              <span>Cable engagement distance</span>
-              <input type="range" id="engageDistance" min="0" max="24" step="0.5" value="1.5" />
-            </label>
-            <p class="hint">Engage after <span id="engageDisplay">1.5</span> in of travel.</p>
-          </div>
-
-        </div>
-
+        <p class="panel-intro">Select force curves and review session details as you train.</p>
       </aside>
 
       <section class="visual-panel" aria-label="Exercise analysis">

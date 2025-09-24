@@ -8,7 +8,6 @@ const DEFAULT_REP_TARGET = 12;
 const elements = {
   workoutState: document.getElementById('workoutState'),
   startToggle: document.getElementById('toggleWorkout'),
-  options: document.getElementById('workoutOptions'),
   setToggle: document.getElementById('setToggle'),
   reset: document.getElementById('resetWorkout'),
   setStatus: document.getElementById('setStatus'),
@@ -208,7 +207,6 @@ function updateSetToggleAppearance() {
 
 function toggleWorkout() {
   workoutActive = !workoutActive;
-  elements.options.hidden = !workoutActive;
   if (elements.forcePanel) {
     elements.forcePanel.hidden = !workoutActive;
   }
@@ -463,7 +461,6 @@ function applyPowerState() {
   if (!powerOn) {
     stopSet();
     workoutActive = false;
-    elements.options.hidden = true;
     elements.startToggle.textContent = 'Start Workout';
     elements.workoutState.textContent = 'System Offline';
     elements.workoutState.classList.remove('active');

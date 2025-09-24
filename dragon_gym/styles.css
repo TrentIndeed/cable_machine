@@ -263,18 +263,33 @@ body {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
-.controls-pill {
-  grid-column: 1 / -1;
+
+.status-controls {
   display: flex;
-  gap: 16px;
-  background: linear-gradient(150deg, rgba(5, 10, 20, 0.94), rgba(8, 14, 26, 0.92));
-  border: 1px solid rgba(31, 139, 255, 0.2);
-  border-radius: 999px;
-  padding: 14px 20px;
-  justify-content: center;
-  align-items: center;
   flex-wrap: wrap;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  gap: 12px;
+}
+
+.status-controls button {
+  flex: 1 1 160px;
+}
+
+.engagement-card {
+  grid-column: 1 / -1;
+  background: linear-gradient(160deg, rgba(10, 16, 28, 0.94), rgba(6, 11, 20, 0.9));
+  border-radius: var(--card-radius);
+  border: 1px solid var(--border);
+  padding: 20px 24px;
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.engagement-card h3 {
+  margin: 0;
+  font-family: "Rajdhani", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .status-header {
