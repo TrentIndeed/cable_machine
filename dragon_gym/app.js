@@ -34,21 +34,21 @@ const motors = [
     gaugeId: 'leftGauge',
     waveId: 'leftWave',
     sliderId: 'leftResistance',
+    simId: 'leftSim',
     currentId: 'leftCurrentResistance',
     baseId: 'leftBaseResistance',
     repsId: 'leftRepCount',
     cableId: 'leftCableDistance',
-    phaseOffset: 0,
   }),
   createMotor('right', {
     gaugeId: 'rightGauge',
     waveId: 'rightWave',
     sliderId: 'rightResistance',
+    simId: 'rightSim',
     currentId: 'rightCurrentResistance',
     baseId: 'rightBaseResistance',
     repsId: 'rightRepCount',
     cableId: 'rightCableDistance',
-    phaseOffset: Math.PI / 3,
   }),
 ];
 
@@ -60,11 +60,6 @@ let currentRep = 0;
 let totalReps = 0;
 let lastTimestamp = performance.now();
 
-const waveColors = {
-  left: createGradient(motors[0].waveCtx),
-  right: createGradient(motors[1].waveCtx),
-};
-
 function createMotor(id, refs) {
   const gaugeCanvas = document.getElementById(refs.gaugeId);
   const gaugeCtx = gaugeCanvas.getContext('2d');
@@ -72,10 +67,14 @@ function createMotor(id, refs) {
   const waveCtx = waveCanvas.getContext('2d');
 
   const slider = document.getElementById(refs.sliderId);
+  const simSlider = document.getElementById(refs.simId);
   const currentLabel = document.getElementById(refs.currentId);
   const baseLabel = document.getElementById(refs.baseId);
   const repsLabel = document.getElementById(refs.repsId);
   const cableLabel = document.getElementById(refs.cableId);
+
+  const initialTravel = Number(simSlider.value);
+  const normalized = Math.max(0, Math.min(1, initialTravel / MAX_TRAVEL_INCHES));
 
   return {
     id,
@@ -84,28 +83,20 @@ function createMotor(id, refs) {
     waveCanvas,
     waveCtx,
     slider,
+    simSlider,
     currentLabel,
     baseLabel,
     repsLabel,
     cableLabel,
     phase: 0,
-    phaseOffset: refs.phaseOffset || 0,
     baseResistance: Number(slider.value),
     currentResistance: Number(slider.value),
     reps: 0,
     engaged: false,
-    normalized: 0.5,
+    normalized,
     direction: 1,
-    speedFactor: id === 'left' ? 1 : 1.08,
+    readyForRep: true,
   };
-}
-
-function createGradient(ctx) {
-  const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, ctx.canvas.height);
-  gradient.addColorStop(0, 'rgba(31, 139, 255, 0.8)');
-  gradient.addColorStop(0.45, 'rgba(127, 255, 212, 0.8)');
-  gradient.addColorStop(1, 'rgba(31, 139, 255, 0.3)');
-  return gradient;
 }
 
 function updateEngageDisplay() {
@@ -115,7 +106,7 @@ function updateEngageDisplay() {
 function toggleWorkout() {
   workoutActive = !workoutActive;
   elements.options.hidden = !workoutActive;
-  elements.startToggle.textContent = workoutActive ? 'Hide Workout' : 'Start Workout';
+  elements.startToggle.textContent = workoutActive ? 'Stop Workout' : 'Start Workout';
 
   elements.startSet.disabled = !workoutActive;
   elements.reset.disabled = !workoutActive;
@@ -127,7 +118,7 @@ function toggleWorkout() {
     currentRep = 0;
     totalReps = 0;
     elements.workoutState.classList.remove('active');
-    elements.workoutState.textContent = 'Workout Idle';
+    elements.workoutState.textContent = 'Workout Not Started';
     elements.message.textContent = 'Tap “Start Workout” to program your session.';
     updateStatuses();
   } else {
@@ -136,7 +127,7 @@ function toggleWorkout() {
     currentSet = 0;
     currentRep = 0;
     elements.workoutState.classList.add('active');
-    elements.workoutState.textContent = 'Programming';
+    elements.workoutState.textContent = 'Workout Not Started';
     elements.message.textContent = 'Press “Start Set” to begin counting reps.';
     updateStatuses();
   }
@@ -174,7 +165,7 @@ elements.startSet.addEventListener('click', () => {
   setActive = true;
   elements.startSet.disabled = true;
   elements.stopSet.disabled = false;
-  elements.workoutState.textContent = 'Set Running';
+  elements.workoutState.textContent = 'Workout Started';
   elements.workoutState.classList.add('active');
 
   totalSets = Math.max(1, Number(elements.setCount.value));
@@ -186,9 +177,9 @@ elements.startSet.addEventListener('click', () => {
   currentSet += 1;
   currentRep = 0;
   motors.forEach((motor) => {
-    motor.phase = 0;
     motor.reps = 0;
     motor.engaged = false;
+    motor.readyForRep = true;
   });
   elements.message.textContent = `Set ${currentSet} active. Cable movement will arm the servos.`;
   updateStatuses();
@@ -205,6 +196,7 @@ elements.reset.addEventListener('click', () => {
   });
   updateStatuses();
   elements.message.textContent = 'Workout reset. Adjust parameters when ready.';
+  elements.workoutState.textContent = 'Workout Not Started';
 });
 
 function stopSet() {
@@ -212,7 +204,7 @@ function stopSet() {
   setActive = false;
   elements.startSet.disabled = !workoutActive;
   elements.stopSet.disabled = true;
-  elements.workoutState.textContent = 'Workout Paused';
+  elements.workoutState.textContent = 'Workout Not Started';
   elements.message.textContent = currentRep >= totalReps
     ? 'Set complete. Press “Start Set” for the next round.'
     : 'Set paused. Press “Start Set” to resume.';
@@ -284,34 +276,45 @@ function drawWave(motor) {
   const { width, height } = motor.waveCanvas;
   ctx.clearRect(0, 0, width, height);
 
+  const baseline = height / 2;
+  const amplitude = height * 0.35;
+  const circleX = width - 46;
+  const availableWidth = circleX - 12;
+  const headY = baseline + amplitude - motor.normalized * amplitude * 2;
+
   ctx.lineWidth = 4;
-  ctx.strokeStyle = waveColors[motor.id];
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const gradient = ctx.createLinearGradient(0, 0, circleX, 0);
+  gradient.addColorStop(0, 'rgba(31, 139, 255, 0)');
+  gradient.addColorStop(0.18, 'rgba(31, 139, 255, 0.45)');
+  gradient.addColorStop(1, 'rgba(127, 255, 212, 0.95)');
+  ctx.strokeStyle = gradient;
   ctx.beginPath();
 
-  const amplitude = height * 0.38;
-  const baseline = height / 2;
-  const segments = Math.floor(width / 4);
-
+  const segments = 80;
+  const influence = 0.35 + motor.normalized * 0.65;
   for (let i = 0; i <= segments; i++) {
-    const x = (i / segments) * width;
-    const theta = motor.phase + motor.phaseOffset + (i / segments) * TWO_PI;
-    const y = baseline - Math.sin(theta) * amplitude;
+    const progress = i / segments;
+    const x = progress * availableWidth;
+    const sway = Math.sin(motor.phase + progress * 2.4 * Math.PI);
+    const decay = 1 - progress * 0.85;
+    const y = baseline + sway * amplitude * 0.45 * decay * influence;
     if (i === 0) {
       ctx.moveTo(x, y);
     } else {
       ctx.lineTo(x, y);
     }
   }
+  ctx.lineTo(circleX, headY);
   ctx.stroke();
 
-  const bubbleX = width - 40;
-  const bubbleY = baseline - Math.sin(motor.phase + motor.phaseOffset) * amplitude;
   ctx.fillStyle = 'rgba(31, 139, 255, 0.35)';
   ctx.beginPath();
-  ctx.arc(bubbleX, bubbleY, 14, 0, TWO_PI);
+  ctx.arc(circleX, headY, 16, 0, TWO_PI);
   ctx.fill();
-  ctx.strokeStyle = 'rgba(127, 255, 212, 0.8)';
   ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(127, 255, 212, 0.85)';
   ctx.stroke();
 }
 
@@ -322,28 +325,15 @@ function update(timestamp) {
   const engageThreshold = Math.min(0.98, Number(elements.engageSlider.value) / MAX_TRAVEL_INCHES);
   const mode = elements.forceSelect.value;
 
-  motors.forEach((motor, index) => {
-    const speed = setActive ? 1.9 * motor.speedFactor : 0.6 * (index === 0 ? 1 : 1.1);
-    motor.phase += delta * speed;
+  motors.forEach((motor) => {
+    motor.phase += delta * 2.2;
 
-    if (motor.phase >= TWO_PI) {
-      motor.phase -= TWO_PI;
-      if (setActive && motor.engaged) {
-        motor.reps += 1;
-        if (motor.id === 'left') {
-          currentRep = Math.min(totalReps, currentRep + 1);
-          if (currentRep >= totalReps) {
-            finishSet();
-          } else {
-            elements.message.textContent = `Set ${currentSet}: rep ${currentRep} complete.`;
-          }
-          updateStatuses();
-        }
-      }
-    }
-
-    motor.normalized = 0.5 + 0.5 * Math.sin(motor.phase);
-    motor.direction = Math.cos(motor.phase) >= 0 ? 1 : -1;
+    const sliderDistance = Number(motor.simSlider.value);
+    const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
+    const previous = motor.normalized;
+    const derivative = delta > 0 ? (normalized - previous) / delta : 0;
+    motor.direction = derivative >= 0 ? 1 : -1;
+    motor.normalized = normalized;
 
     if (setActive && !motor.engaged && motor.normalized >= engageThreshold) {
       motor.engaged = true;
@@ -355,6 +345,7 @@ function update(timestamp) {
     if (!setActive) {
       motor.engaged = false;
       motor.reps = 0;
+      motor.readyForRep = true;
     }
 
     const multiplier = computeForceMultiplier(mode, motor.normalized, motor.direction);
@@ -365,6 +356,24 @@ function update(timestamp) {
 
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     motor.cableLabel.textContent = travel.toFixed(1);
+
+    if (setActive && motor.engaged) {
+      if (motor.readyForRep && motor.direction >= 0 && motor.normalized >= 0.95) {
+        motor.reps += 1;
+        motor.readyForRep = false;
+        if (motor.id === 'left') {
+          currentRep = Math.min(totalReps, currentRep + 1);
+          if (currentRep >= totalReps) {
+            finishSet();
+          } else {
+            elements.message.textContent = `Set ${currentSet}: rep ${currentRep} complete.`;
+          }
+          updateStatuses();
+        }
+      } else if (!motor.readyForRep && motor.direction < 0 && motor.normalized <= engageThreshold * 0.6) {
+        motor.readyForRep = true;
+      }
+    }
 
     drawGauge(motor);
     drawWave(motor);
@@ -377,6 +386,10 @@ function finishSet() {
   setActive = false;
   elements.startSet.disabled = currentSet >= totalSets;
   elements.stopSet.disabled = true;
+  motors.forEach((motor) => {
+    motor.engaged = false;
+    motor.readyForRep = true;
+  });
   elements.workoutState.textContent = currentSet >= totalSets ? 'Workout Complete' : 'Set Complete';
   elements.message.textContent = currentSet >= totalSets
     ? 'Workout complete! Reset or adjust your programming to begin again.'

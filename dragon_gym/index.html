@@ -16,12 +16,12 @@
         <div class="dragon-emblem" aria-hidden="true"></div>
         <div>
           <h1>Dragon Gym</h1>
-          <p class="tagline">EtherCAT Dual Servo Trainer Control</p>
+          <p class="tagline">600 lb smart gym</p>
         </div>
       </div>
       <div class="status-flags">
         <span class="status-badge online">Motors Ready</span>
-        <span class="status-badge neutral" id="workoutState">Workout Idle</span>
+        <span class="status-badge neutral" id="workoutState">Workout Not Started</span>
       </div>
     </header>
 
@@ -77,7 +77,7 @@
 
     <section class="workspace">
       <aside class="control-panel" aria-label="Workout controls">
-        <h2>Workout Programming</h2>
+        <h2>Workout Status</h2>
         <p class="panel-intro">Configure workout parameters, engagement distance, and force curve shaping before starting a set.</p>
 
         <div class="field-group">
@@ -161,6 +161,19 @@
             <canvas class="wave-canvas" id="rightWave" width="520" height="180" aria-hidden="true"></canvas>
           </article>
         </div>
+        <section class="simulator-panel" aria-label="Motor travel simulator">
+          <h3>Motor Travel Simulation</h3>
+          <div class="sim-slider-group">
+            <label class="sim-slider">
+              <span>Left arm travel</span>
+              <input type="range" id="leftSim" min="0" max="24" step="0.1" value="0" />
+            </label>
+            <label class="sim-slider">
+              <span>Right arm travel</span>
+              <input type="range" id="rightSim" min="0" max="24" step="0.1" value="0" />
+            </label>
+          </div>
+        </section>
       </section>
     </section>
   </main>
