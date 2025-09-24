@@ -248,6 +248,7 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
+  align-items: start;
 }
 
 .status-card {
@@ -259,6 +260,20 @@ body {
   display: grid;
   gap: 16px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.controls-pill {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 16px;
+  background: linear-gradient(150deg, rgba(5, 10, 20, 0.94), rgba(8, 14, 26, 0.92));
+  border: 1px solid rgba(31, 139, 255, 0.2);
+  border-radius: 999px;
+  padding: 14px 20px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
 }
 
 .status-header {
@@ -307,14 +322,14 @@ body {
 
 .gauge-wrapper {
   position: relative;
-  width: 160px;
-  height: 160px;
+  width: 320px;
+  height: 320px;
   justify-self: center;
 }
 
 .gauge-center {
   position: absolute;
-  inset: 28px;
+  inset: 56px;
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -329,12 +344,12 @@ body {
   font-family: "Rajdhani", sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 0.82rem;
+  font-size: 1rem;
   color: var(--text-muted);
 }
 
 .current-resistance {
-  font-size: 1.5rem;
+  font-size: 2.1rem;
   font-weight: 600;
 }
 
@@ -561,7 +576,7 @@ body {
 
 .status-stack {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   background: rgba(4, 9, 18, 0.7);
   border: 1px solid rgba(31, 139, 255, 0.16);
   border-radius: 14px;
@@ -703,6 +718,20 @@ body {
 
 .log-list .log-set {
   color: var(--accent-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.log-list .log-set .log-partial {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 215, 141, 0.9);
+  border: 1px solid rgba(255, 215, 141, 0.55);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(32, 24, 4, 0.45);
 }
 
 .log-list .log-exercise {

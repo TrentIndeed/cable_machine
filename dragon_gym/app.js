@@ -13,6 +13,8 @@ const elements = {
   reset: document.getElementById('resetWorkout'),
   setStatus: document.getElementById('setStatus'),
   repStatus: document.getElementById('repStatus'),
+  leftStatusReps: document.getElementById('leftStatusReps'),
+  rightStatusReps: document.getElementById('rightStatusReps'),
   message: document.getElementById('workoutMessage'),
   forceSelect: document.getElementById('forceCurve'),
   forceDescription: document.getElementById('forceCurveDescription'),
@@ -260,7 +262,7 @@ if (elements.setToggle) {
   elements.setToggle.addEventListener('click', () => {
     if (!workoutActive || !powerOn) return;
     if (setActive) {
-      stopSet();
+      stopSet({ record: true });
     } else {
       startSet();
     }
@@ -282,20 +284,40 @@ elements.reset.addEventListener('click', () => {
   elements.workoutState.textContent = 'Workout Not Started';
 });
 
-function stopSet() {
+function stopSet(options = {}) {
+  const { record = false } = options;
   const wasActive = setActive;
   setActive = false;
   updateSetToggleAppearance();
   if (!wasActive) return;
 
-  elements.workoutState.textContent = 'Workout Not Started';
-  elements.message.textContent = currentRep >= totalReps
-    ? 'Set complete. Press “Start Set” for the next round.'
-    : 'Set paused. Press “Start Set” to resume.';
+  let recorded = false;
+  if (record && currentRep > 0) {
+    const partial = currentRep < totalReps;
+    recordWorkoutSet(partial);
+    elements.workoutState.textContent = partial ? 'Set Logged' : 'Set Complete';
+    elements.message.textContent = partial
+      ? `Set ${currentSet} logged with ${currentRep} reps.`
+      : `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
+    recorded = true;
+  } else {
+    elements.workoutState.textContent = 'Workout Not Started';
+    elements.message.textContent = currentRep >= totalReps
+      ? 'Set complete. Press “Start Set” for the next round.'
+      : 'Set paused. Press “Start Set” to resume.';
+  }
+
   motors.forEach((motor) => {
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     resetMotorTracking(motor, travel);
+    if (recorded) {
+      motor.reps = 0;
+      motor.repsLabel.textContent = '0';
+    }
   });
+  if (recorded) {
+    currentRep = 0;
+  }
   updateStatuses();
 }
 
@@ -437,6 +459,12 @@ renderExercisePreview();
 function updateStatuses() {
   elements.setStatus.textContent = `${currentSet}`;
   elements.repStatus.textContent = `${currentRep} / ${totalReps}`;
+  if (elements.leftStatusReps) {
+    elements.leftStatusReps.textContent = `${motors[0].reps}`;
+  }
+  if (elements.rightStatusReps) {
+    elements.rightStatusReps.textContent = `${motors[1].reps}`;
+  }
 }
 
 function getForceCurveMultiplier(mode, normalized, direction) {
@@ -815,7 +843,7 @@ function synchronizeRepProgress() {
   updateStatuses();
 }
 
-function recordWorkoutSet() {
+function recordWorkoutSet(partial = false) {
   if (!currentRep) return;
   const exerciseKey = elements.exerciseSelect.value;
   const exerciseLabel = exerciseCatalog[exerciseKey] || 'Custom';
@@ -825,11 +853,15 @@ function recordWorkoutSet() {
     reps: currentRep,
     left: Math.round(motors[0].currentResistance),
     right: Math.round(motors[1].currentResistance),
+    partial,
   };
   workoutLog.push(entry);
 
   const item = document.createElement('li');
-  item.innerHTML = `<span class="log-set">Set ${entry.set}</span><span class="log-exercise">${entry.exercise}</span><span class="log-weight">${entry.left} lb / ${entry.right} lb</span><span class="log-reps">${entry.reps} reps</span>`;
+  const partialBadge = entry.partial
+    ? '<span class="log-partial">Partial</span>'
+    : '';
+  item.innerHTML = `<span class="log-set">Set ${entry.set}${partialBadge}</span><span class="log-exercise">${entry.exercise}</span><span class="log-weight">${entry.left} lb / ${entry.right} lb</span><span class="log-reps">${entry.reps} reps</span>`;
   elements.logList.prepend(item);
 }
 
