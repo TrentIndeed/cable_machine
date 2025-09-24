@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dragon Gym — Dual Servo Control</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="logo-block">
+        <div class="dragon-emblem" aria-hidden="true"></div>
+        <div>
+          <h1>Dragon Gym</h1>
+          <p class="tagline">EtherCAT Dual Servo Trainer Control</p>
+        </div>
+      </div>
+      <div class="status-flags">
+        <span class="status-badge online">Motors Ready</span>
+        <span class="status-badge neutral" id="workoutState">Workout Idle</span>
+      </div>
+    </header>
+
+    <section class="resistance-overview" aria-label="Resistance overview">
+      <article class="motor-card" data-motor="left">
+        <div class="gauge-wrapper">
+          <canvas class="resistance-gauge" id="leftGauge" width="160" height="160" aria-hidden="true"></canvas>
+          <div class="gauge-center">
+            <span class="motor-name">Left Arm</span>
+            <span class="current-resistance" id="leftCurrentResistance">0 lb</span>
+          </div>
+        </div>
+        <dl class="motor-meta">
+          <div>
+            <dt>Base resistance</dt>
+            <dd id="leftBaseResistance">0 lb</dd>
+          </div>
+          <div>
+            <dt>Reps completed</dt>
+            <dd id="leftRepCount">0</dd>
+          </div>
+        </dl>
+        <label class="slider-field">
+          <span>Adjust resistance</span>
+          <input type="range" id="leftResistance" min="0" max="300" value="120" />
+        </label>
+      </article>
+
+      <article class="motor-card" data-motor="right">
+        <div class="gauge-wrapper">
+          <canvas class="resistance-gauge" id="rightGauge" width="160" height="160" aria-hidden="true"></canvas>
+          <div class="gauge-center">
+            <span class="motor-name">Right Arm</span>
+            <span class="current-resistance" id="rightCurrentResistance">0 lb</span>
+          </div>
+        </div>
+        <dl class="motor-meta">
+          <div>
+            <dt>Base resistance</dt>
+            <dd id="rightBaseResistance">0 lb</dd>
+          </div>
+          <div>
+            <dt>Reps completed</dt>
+            <dd id="rightRepCount">0</dd>
+          </div>
+        </dl>
+        <label class="slider-field">
+          <span>Adjust resistance</span>
+          <input type="range" id="rightResistance" min="0" max="300" value="120" />
+        </label>
+      </article>
+    </section>
+
+    <section class="workspace">
+      <aside class="control-panel" aria-label="Workout controls">
+        <h2>Workout Programming</h2>
+        <p class="panel-intro">Configure workout parameters, engagement distance, and force curve shaping before starting a set.</p>
+
+        <div class="field-group">
+          <button class="primary" id="toggleWorkout">Start Workout</button>
+        </div>
+
+        <div class="workout-options" id="workoutOptions" hidden>
+          <div class="field-group row">
+            <label>
+              <span>Total sets</span>
+              <input type="number" id="setCount" min="1" max="12" value="3" />
+            </label>
+            <label>
+              <span>Reps per set</span>
+              <input type="number" id="repCount" min="1" max="50" value="12" />
+            </label>
+          </div>
+
+          <div class="field-group">
+            <label>
+              <span>Force curve mode</span>
+              <select id="forceCurve">
+                <option value="balanced">Balanced</option>
+                <option value="eccentric">Eccentric boost</option>
+                <option value="chain">Chain mode</option>
+                <option value="band">Band mode</option>
+                <option value="reverse-chain">Reverse chain</option>
+              </select>
+            </label>
+            <p class="hint" id="forceCurveDescription">Balanced: consistent tension through the full stroke.</p>
+          </div>
+
+          <div class="field-group">
+            <label for="engageDistance">
+              <span>Cable engagement distance</span>
+              <input type="range" id="engageDistance" min="0" max="24" step="0.5" value="1.5" />
+            </label>
+            <p class="hint">Engage after <span id="engageDisplay">1.5</span> in of travel.</p>
+          </div>
+
+          <div class="field-group row buttons">
+            <button class="accent" id="startSet" disabled>Start Set</button>
+            <button class="ghost" id="stopSet" disabled>Stop Set</button>
+            <button class="ghost" id="resetWorkout" disabled>Reset</button>
+          </div>
+        </div>
+
+        <div class="status-stack">
+          <div>
+            <span class="label">Set</span>
+            <span class="value" id="setStatus">0 / 0</span>
+          </div>
+          <div>
+            <span class="label">Reps</span>
+            <span class="value" id="repStatus">0 / 0</span>
+          </div>
+          <div>
+            <span class="label">Force curve</span>
+            <span class="value" id="forceCurveLabel">Balanced</span>
+          </div>
+        </div>
+
+        <p class="status-message" id="workoutMessage">Tap “Start Workout” to program your session.</p>
+      </aside>
+
+      <section class="visual-panel" aria-label="Cable travel visualizations">
+        <h2>Cable Travel</h2>
+        <div class="wave-grid">
+          <article class="wave-card" data-motor="left">
+            <header>
+              <span class="motor-name">Left Arm</span>
+              <span class="distance-readout">Cable: <span id="leftCableDistance">0.0</span> in</span>
+            </header>
+            <canvas class="wave-canvas" id="leftWave" width="520" height="180" aria-hidden="true"></canvas>
+          </article>
+          <article class="wave-card" data-motor="right">
+            <header>
+              <span class="motor-name">Right Arm</span>
+              <span class="distance-readout">Cable: <span id="rightCableDistance">0.0</span> in</span>
+            </header>
+            <canvas class="wave-canvas" id="rightWave" width="520" height="180" aria-hidden="true"></canvas>
+          </article>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="app.js" defer></script>
+</body>
+</html>
