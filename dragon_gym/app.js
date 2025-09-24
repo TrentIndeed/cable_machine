@@ -25,7 +25,9 @@ const elements = {
   motorsStatus: document.getElementById('motorsStatus'),
   logList: document.getElementById('workoutLogList'),
   exerciseSelect: document.getElementById('exerciseSelect'),
-  exerciseImage: document.getElementById('exerciseImage'),
+  exerciseTitle: document.getElementById('exerciseTitle'),
+  exerciseImagePlaceholder: document.getElementById('exerciseImagePlaceholder'),
+  exerciseVideoPlaceholder: document.getElementById('exerciseVideoPlaceholder'),
 };
 
 const forceCurveCopy = {
@@ -71,46 +73,16 @@ let motorsRunning = true;
 const workoutLog = [];
 
 const exerciseCatalog = {
-  'incline-bench': {
-    label: 'Incline Bench',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#15243f"/><stop offset="1" stop-color="#0c141f"/></linearGradient></defs><rect width="400" height="240" fill="url(#g)"/><g stroke="#7fffd4" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M60 180h120l40-100"/><path d="M160 150l120-40"/><circle cx="280" cy="110" r="22" fill="none"/></g></svg>',
-  },
-  'weighted-pullups': {
-    label: 'Weighted Pull Ups',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#101a2d"/><g stroke="#1f8bff" stroke-width="12" stroke-linecap="round" fill="none"><path d="M60 60h280"/><path d="M160 60v100"/><path d="M240 60v100"/><path d="M160 160c0 28 24 50 80 50"/></g><circle cx="200" cy="120" r="24" stroke="#7fffd4" stroke-width="8" fill="none"/></svg>',
-  },
-  'dumbbell-shoulder-press': {
-    label: 'Dumbbell Shoulder Press',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0f1829"/><g stroke="#7fffd4" stroke-width="10" stroke-linecap="round" fill="none"><path d="M140 200v-60l60-40 60 40v60"/><path d="M120 80h40"/><path d="M240 80h40"/><circle cx="200" cy="120" r="24"/></g></svg>',
-  },
-  'lateral-raise': {
-    label: 'Lateral Raise',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0d1625"/><g stroke="#1f8bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M200 180v-80"/><path d="M80 140l120-40 120 40"/><circle cx="200" cy="80" r="20" stroke="#7fffd4" stroke-width="8"/></g></svg>',
-  },
-  'pec-deck': {
-    label: 'Pec Deck',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#101b2f"/><g stroke="#7fffd4" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M200 200v-80"/><path d="M120 120c60-40 120-40 160 0"/><path d="M80 80h240"/><circle cx="200" cy="110" r="24"/></g></svg>',
-  },
-  'tricep-pushdown': {
-    label: 'Tricep Pushdown',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0c141f"/><g stroke="#1f8bff" stroke-width="10" stroke-linecap="round" fill="none"><path d="M200 40v120"/><path d="M160 160h80"/><path d="M160 200l40-40 40 40"/><circle cx="200" cy="80" r="22" stroke="#7fffd4" stroke-width="8"/></g></svg>',
-  },
-  deadlift: {
-    label: 'Deadlift',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0a111c"/><g stroke="#7fffd4" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M80 200h240"/><path d="M160 200v-80l40-40 40 40v80"/><circle cx="200" cy="120" r="22"/></g></svg>',
-  },
-  'one-arm-row': {
-    label: 'One-Arm Row',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0e1726"/><g stroke="#1f8bff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M120 180l80-60 80 60"/><path d="M200 120l40-60"/><circle cx="200" cy="120" r="22" stroke="#7fffd4" stroke-width="8"/></g></svg>',
-  },
-  'leg-curl': {
-    label: 'Leg Curl',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0b121f"/><g stroke="#7fffd4" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M120 200h160"/><path d="M160 200v-80l80-20v100"/><circle cx="200" cy="120" r="22"/><path d="M240 120l40 40"/></g></svg>',
-  },
-  'calve-raise': {
-    label: 'Calve Raise',
-    art: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240"><rect width="400" height="240" fill="#0d1522"/><g stroke="#1f8bff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M120 200h160"/><path d="M160 200v-60l40-40 40 40v60"/><circle cx="200" cy="120" r="20" stroke="#7fffd4" stroke-width="8"/></g></svg>',
-  },
+  'incline-bench': 'Incline Bench',
+  'weighted-pullups': 'Weighted Pull Ups',
+  'dumbbell-shoulder-press': 'Dumbbell Shoulder Press',
+  'lateral-raise': 'Lateral Raise',
+  'pec-deck': 'Pec Deck',
+  'tricep-pushdown': 'Tricep Pushdown',
+  deadlift: 'Deadlift',
+  'one-arm-row': 'One-Arm Row',
+  'leg-curl': 'Leg Curl',
+  'calve-raise': 'Calve Raise',
 };
 
 function createMotor(id, refs) {
@@ -270,6 +242,18 @@ motors.forEach((motor) => {
     motor.baseResistance = Number(motor.slider.value);
     motor.baseLabel.textContent = `${motor.baseResistance} lb`;
     motor.currentResistance = motor.baseResistance;
+    drawGauge(motor);
+  });
+  motor.simSlider.addEventListener('input', () => {
+    const sliderDistance = Number(motor.simSlider.value);
+    const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
+    motor.normalized = normalized;
+    motor.trail.push(normalized);
+    if (motor.trail.length > 120) {
+      motor.trail.shift();
+    }
+    motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
+    drawWave(motor);
   });
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
 });
@@ -350,13 +334,16 @@ elements.motorToggle.addEventListener('click', toggleMotors);
 
 function renderExercisePreview() {
   const selection = elements.exerciseSelect.value;
-  const entry = exerciseCatalog[selection];
-  if (!entry) return;
-  const svg = encodeURIComponent(entry.art)
-    .replace(/\(/g, '%28')
-    .replace(/\)/g, '%29');
-  elements.exerciseImage.src = `data:image/svg+xml;utf8,${svg}`;
-  elements.exerciseImage.alt = `${entry.label} illustration`;
+  const label = exerciseCatalog[selection] || 'Custom';
+  if (elements.exerciseTitle) {
+    elements.exerciseTitle.textContent = label;
+  }
+  if (elements.exerciseImagePlaceholder) {
+    elements.exerciseImagePlaceholder.textContent = `${label} image placeholder`;
+  }
+  if (elements.exerciseVideoPlaceholder) {
+    elements.exerciseVideoPlaceholder.textContent = `${label} video placeholder`;
+  }
 }
 
 elements.exerciseSelect.addEventListener('change', renderExercisePreview);
@@ -390,15 +377,14 @@ function drawGauge(motor) {
   const centerX = width / 2;
   const centerY = height / 2;
   const radius = Math.min(width, height) / 2 - 10;
-  const startAngle = Math.PI * 0.75;
-  const endAngle = Math.PI * 0.25;
+  const startAngle = -Math.PI / 2;
 
   ctx.lineCap = 'round';
   ctx.lineWidth = 12;
 
-  ctx.strokeStyle = 'rgba(40, 54, 82, 0.65)';
+  ctx.strokeStyle = 'rgba(40, 54, 82, 0.55)';
   ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, startAngle, endAngle, false);
+  ctx.arc(centerX, centerY, radius, 0, TWO_PI, false);
   ctx.stroke();
 
   const progress = Math.max(0, Math.min(1, motor.currentResistance / MAX_RESISTANCE));
@@ -408,7 +394,7 @@ function drawGauge(motor) {
 
   ctx.strokeStyle = gradient;
   ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, startAngle, startAngle + (endAngle - startAngle) * progress, false);
+  ctx.arc(centerX, centerY, radius, startAngle, startAngle + TWO_PI * progress, false);
   ctx.stroke();
 
   motor.currentLabel.textContent = `${Math.round(motor.currentResistance)} lb`;
@@ -566,10 +552,10 @@ function finishSet() {
 function recordWorkoutSet() {
   if (!currentRep) return;
   const exerciseKey = elements.exerciseSelect.value;
-  const exercise = exerciseCatalog[exerciseKey];
+  const exerciseLabel = exerciseCatalog[exerciseKey] || 'Custom';
   const entry = {
     set: currentSet,
-    exercise: exercise ? exercise.label : 'Custom',
+    exercise: exerciseLabel,
     reps: currentRep,
     left: Math.round(motors[0].currentResistance),
     right: Math.round(motors[1].currentResistance),

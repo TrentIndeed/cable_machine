@@ -29,6 +29,25 @@ body {
   justify-content: center;
   align-items: flex-start;
   padding: 0 24px;
+  position: relative;
+}
+
+.hud-corner {
+  position: absolute;
+  display: flex;
+  gap: 10px;
+  z-index: 10;
+}
+
+.hud-corner.top-left {
+  top: 24px;
+  left: 24px;
+}
+
+.hud-corner.top-right {
+  top: 24px;
+  right: 24px;
+  align-items: center;
 }
 
 .app-shell {
@@ -39,6 +58,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 28px;
+  position: relative;
 }
 
 .app-header {
@@ -56,11 +76,6 @@ body {
   display: flex;
   align-items: center;
   gap: 20px;
-}
-
-.power-controls {
-  display: flex;
-  gap: 10px;
 }
 
 .header-right {
@@ -275,6 +290,7 @@ body {
   display: grid;
   gap: 8px;
   font-size: 0.9rem;
+  letter-spacing: 0.02em;
 }
 
 .slider-field input[type="range"] {
@@ -286,6 +302,7 @@ body {
   display: grid;
   gap: 28px;
   grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+  grid-auto-rows: min-content;
 }
 
 .control-panel {
@@ -299,6 +316,7 @@ body {
   position: sticky;
   top: 24px;
   align-self: start;
+  grid-row: span 3;
 }
 
 .control-panel h2 {
@@ -470,6 +488,7 @@ body {
   padding: 24px;
   display: grid;
   gap: 20px;
+  grid-column: 2;
 }
 
 .visual-panel h2 {
@@ -534,17 +553,18 @@ body {
 }
 
 .log-panel,
-.exercise-panel {
+.selector-panel {
   background: rgba(4, 9, 18, 0.78);
   border-radius: 16px;
   border: 1px solid rgba(31, 139, 255, 0.18);
   padding: 20px;
   display: grid;
   gap: 14px;
+  grid-column: 2;
 }
 
 .log-panel h3,
-.exercise-panel h3 {
+.selector-panel h3 {
   margin: 0;
   font-family: "Rajdhani", sans-serif;
   letter-spacing: 0.12em;
@@ -582,20 +602,20 @@ body {
   font-weight: 600;
 }
 
-.selector-controls {
+.selector-panel .selector-controls {
   display: grid;
   gap: 8px;
   font-size: 0.9rem;
 }
 
-.selector-controls label {
+.selector-panel .selector-controls label {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
   font-size: 0.75rem;
 }
 
-.selector-controls select {
+.selector-panel .selector-controls select {
   background: rgba(8, 14, 25, 0.8);
   border: 1px solid rgba(31, 139, 255, 0.25);
   border-radius: 10px;
@@ -604,22 +624,31 @@ body {
   font-size: 0.9rem;
 }
 
-.exercise-preview {
-  background: rgba(8, 14, 25, 0.7);
-  border: 1px solid rgba(31, 139, 255, 0.2);
-  border-radius: 14px;
-  padding: 12px;
-  display: grid;
-  place-items: center;
-  min-height: 200px;
+.exercise-title {
+  margin: 12px 0 0;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-.exercise-preview img {
-  width: 100%;
-  max-width: 320px;
-  border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-  background: rgba(2, 5, 10, 0.6);
+.exercise-preview {
+  margin-top: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.media-placeholder {
+  display: grid;
+  place-items: center;
+  background: rgba(8, 14, 25, 0.7);
+  border: 1px dashed rgba(127, 255, 212, 0.4);
+  border-radius: 14px;
+  min-height: 160px;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(127, 255, 212, 0.75);
 }
 
 .wave-card header {
@@ -651,6 +680,13 @@ body {
   .control-panel {
     position: relative;
     top: 0;
+    grid-row: auto;
+  }
+
+  .visual-panel,
+  .log-panel,
+  .selector-panel {
+    grid-column: 1;
   }
 
   .resistance-overview,
