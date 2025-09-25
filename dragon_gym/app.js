@@ -4,6 +4,7 @@ const MAX_TRAVEL_INCHES = 24;
 const REP_SPAN_THRESHOLD = 3;
 const MOVEMENT_EPSILON = 0.05;
 const DEFAULT_REP_TARGET = 12;
+const TRAIL_LENGTH = 600;
 
 const elements = {
   workoutState: document.getElementById('workoutState'),
@@ -137,7 +138,7 @@ function createMotor(id, refs) {
     engaged: false,
     normalized,
     direction: 0,
-    trail: new Array(120).fill(normalized),
+    trail: new Array(TRAIL_LENGTH).fill(normalized),
     lastTravel: travelInches,
     phase: 'idle',
     lastPeak: travelInches,
@@ -169,6 +170,16 @@ function syncWaveCanvasSizes() {
   });
   if (resized) {
     motors.forEach((motor) => drawWave(motor));
+  }
+}
+
+function syncGaugeCanvasSizes() {
+  let resized = false;
+  motors.forEach((motor) => {
+    resized = resizeCanvasToDisplaySize(motor.gaugeCanvas) || resized;
+  });
+  if (resized) {
+    motors.forEach((motor) => drawGauge(motor));
   }
 }
 
@@ -216,12 +227,20 @@ function updateSetToggleAppearance() {
   }
 }
 
+function updateWorkoutToggleAppearance() {
+  if (!elements.startToggle) return;
+  const isActive = workoutActive && powerOn;
+  elements.startToggle.textContent = isActive ? 'Stop Workout' : 'Start Workout';
+  elements.startToggle.classList.toggle('is-stop', isActive);
+  elements.startToggle.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+}
+
 function toggleWorkout() {
   workoutActive = !workoutActive;
   if (elements.forcePanel) {
     elements.forcePanel.hidden = !workoutActive;
   }
-  elements.startToggle.textContent = workoutActive ? 'Stop Workout' : 'Start Workout';
+  updateWorkoutToggleAppearance();
 
   updateSetToggleAppearance();
   elements.reset.disabled = !workoutActive;
@@ -231,8 +250,10 @@ function toggleWorkout() {
     currentSet = 0;
     currentRep = 0;
     totalReps = DEFAULT_REP_TARGET;
-    elements.workoutState.classList.remove('active');
-    elements.workoutState.textContent = 'Workout Not Started';
+    if (elements.workoutState) {
+      elements.workoutState.classList.remove('active');
+      elements.workoutState.textContent = 'Workout Not Started';
+    }
     elements.message.textContent = 'Tap “Start Workout” to arm the set controls.';
     eccentricOverrideEnabled = false;
     if (elements.eccentricToggle) {
@@ -247,8 +268,10 @@ function toggleWorkout() {
     totalReps = DEFAULT_REP_TARGET;
     currentSet = 0;
     currentRep = 0;
-    elements.workoutState.classList.add('active');
-    elements.workoutState.textContent = 'Workout Started';
+    if (elements.workoutState) {
+      elements.workoutState.classList.add('active');
+      elements.workoutState.textContent = 'Workout Started';
+    }
     elements.message.textContent = 'Press “Start Set” to begin counting reps.';
     updateStatuses();
     requestAnimationFrame(() => {
@@ -312,13 +335,16 @@ if (elements.eccentricSelect) {
 elements.engageSlider.addEventListener('input', updateEngageDisplay);
 updateEngageDisplay();
 updateSetToggleAppearance();
+updateWorkoutToggleAppearance();
 
 function startSet() {
   if (!workoutActive || !powerOn || setActive) return;
 
   setActive = true;
-  elements.workoutState.textContent = 'Workout Started';
-  elements.workoutState.classList.add('active');
+  if (elements.workoutState) {
+    elements.workoutState.textContent = 'Workout Started';
+    elements.workoutState.classList.add('active');
+  }
 
   currentSet += 1;
   currentRep = 0;
@@ -356,7 +382,9 @@ elements.reset.addEventListener('click', () => {
   elements.logList.innerHTML = '';
   updateStatuses();
   elements.message.textContent = 'Workout reset. Adjust engagement or force curve when ready.';
-  elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
+  if (elements.workoutState) {
+    elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
+  }
 });
 
 function stopSet(options = {}) {
@@ -370,13 +398,17 @@ function stopSet(options = {}) {
   if (record && currentRep > 0) {
     const partial = currentRep < totalReps;
     recordWorkoutSet(partial);
-    elements.workoutState.textContent = partial ? 'Set Logged' : 'Set Complete';
+    if (elements.workoutState) {
+      elements.workoutState.textContent = partial ? 'Set Logged' : 'Set Complete';
+    }
     elements.message.textContent = partial
       ? `Set ${currentSet} logged with ${currentRep} reps.`
       : `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
     recorded = true;
   } else {
-    elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
+    if (elements.workoutState) {
+      elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
+    }
     elements.message.textContent = currentRep >= totalReps
       ? 'Set complete. Press “Start Set” for the next round.'
       : 'Set paused. Press “Start Set” to resume.';
@@ -408,7 +440,7 @@ motors.forEach((motor) => {
     const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
     motor.normalized = normalized;
     motor.trail.push(normalized);
-    if (motor.trail.length > 120) {
+    if (motor.trail.length > TRAIL_LENGTH) {
       motor.trail.shift();
     }
     motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
@@ -480,15 +512,20 @@ function applyPowerState() {
   if (!powerOn) {
     stopSet();
     workoutActive = false;
-    elements.startToggle.textContent = 'Start Workout';
-    elements.workoutState.textContent = 'System Offline';
-    elements.workoutState.classList.remove('active');
+    updateWorkoutToggleAppearance();
+    if (elements.workoutState) {
+      elements.workoutState.textContent = 'System Offline';
+      elements.workoutState.classList.remove('active');
+    }
     elements.message.textContent = 'Power system on to resume control.';
     motorsRunning = false;
     updateMotorToggle();
   } else {
     updateMotorToggle();
-    elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
+    if (elements.workoutState) {
+      elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
+    }
+    updateWorkoutToggleAppearance();
   }
 
   updateSetToggleAppearance();
@@ -742,9 +779,10 @@ function drawGauge(motor) {
   const centerY = height / 2;
   const radius = Math.min(width, height) / 2 - 10;
   const startAngle = -Math.PI / 2;
+  const strokeWidth = Math.max(8, radius * 0.08);
 
   ctx.lineCap = 'round';
-  ctx.lineWidth = 12;
+  ctx.lineWidth = strokeWidth;
 
   ctx.strokeStyle = 'rgba(40, 54, 82, 0.55)';
   ctx.beginPath();
@@ -756,10 +794,12 @@ function drawGauge(motor) {
   gradient.addColorStop(0, 'rgba(127, 255, 212, 0.95)');
   gradient.addColorStop(1, 'rgba(31, 139, 255, 0.95)');
 
-  ctx.strokeStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, startAngle, startAngle + TWO_PI * progress, false);
-  ctx.stroke();
+  if (progress > 0) {
+    ctx.strokeStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, startAngle, startAngle + TWO_PI * progress, false);
+    ctx.stroke();
+  }
 
   motor.currentLabel.textContent = `${Math.round(motor.currentResistance)} lb`;
   motor.repsLabel.textContent = `${motor.reps}`;
@@ -869,7 +909,7 @@ function update(timestamp) {
     motor.cableLabel.textContent = travel.toFixed(1);
 
     motor.trail.push(motor.normalized);
-    if (motor.trail.length > 120) {
+    if (motor.trail.length > TRAIL_LENGTH) {
       motor.trail.shift();
     }
 
@@ -923,7 +963,9 @@ function finishSet() {
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     resetMotorTracking(motor, travel);
   });
-  elements.workoutState.textContent = 'Set Complete';
+  if (elements.workoutState) {
+    elements.workoutState.textContent = 'Set Complete';
+  }
   elements.message.textContent = `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
   recordWorkoutSet();
   updateStatuses();
@@ -984,9 +1026,11 @@ applyPowerState();
 requestAnimationFrame(() => {
   syncWaveCanvasSizes();
   syncForceCurveCanvasSizes();
+  syncGaugeCanvasSizes();
 });
 
 window.addEventListener('resize', () => {
   syncWaveCanvasSizes();
   syncForceCurveCanvasSizes();
+  syncGaugeCanvasSizes();
 });

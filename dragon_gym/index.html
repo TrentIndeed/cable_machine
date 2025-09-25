@@ -42,12 +42,16 @@
       <article class="status-card" aria-label="Workout status" aria-live="polite">
         <header class="status-header">
           <h2>Workout Status</h2>
-          <span class="status-pill" id="workoutState">Workout Not Started</span>
+          <span class="status-pill sr-only" id="workoutState">Workout Not Started</span>
         </header>
         <div class="status-controls" aria-label="Workout controls">
-          <button class="primary" id="toggleWorkout" type="button">Start Workout</button>
-          <button class="accent" id="setToggle" type="button" disabled aria-pressed="false">Start Set</button>
-          <button class="ghost" id="resetWorkout" type="button" disabled>Reset</button>
+          <div class="workout-toggle">
+            <button class="primary" id="toggleWorkout" type="button" aria-pressed="false">Start Workout</button>
+          </div>
+          <div class="set-control-group" aria-label="Set controls">
+            <button class="accent" id="setToggle" type="button" disabled aria-pressed="false">Start Set</button>
+            <button class="ghost" id="resetWorkout" type="button" disabled>Reset</button>
+          </div>
         </div>
         <div class="status-stack">
           <div>
