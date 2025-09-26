@@ -375,7 +375,10 @@ body {
   position: relative;
   width: min(100%, 320px);
   aspect-ratio: 1 / 1;
-  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
 }
 
 .resistance-gauge {

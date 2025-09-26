@@ -231,51 +231,63 @@ function pushTrailSample(motor, normalized) {
 function drawGauge(motor) {
   const ctx = motor.gaugeCtx;
   const { width, height } = motor.gaugeCanvas;
+  if (!width || !height) return;
+
   ctx.clearRect(0, 0, width, height);
 
   const centerX = width / 2;
   const centerY = height / 2;
-  const radius = Math.min(width, height) / 2 - 10;
+  const shortest = Math.min(width, height);
+  const padding = shortest * 0.08;
+  const strokeWidth = Math.max(10, shortest * 0.12);
+  const radius = shortest / 2 - padding - strokeWidth / 2;
   const startAngle = -Math.PI / 2;
-  const strokeWidth = Math.max(8, radius * 0.08);
 
+  ctx.save();
+  ctx.translate(centerX, centerY);
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.lineWidth = strokeWidth;
 
-  ctx.strokeStyle = 'rgba(40, 54, 82, 0.55)';
+  ctx.strokeStyle = 'rgba(26, 42, 66, 0.65)';
   ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, false);
+  ctx.arc(0, 0, radius, 0, Math.PI * 2, false);
   ctx.stroke();
 
   const progress = clamp(motor.currentResistance / MAX_RESISTANCE, 0, 1);
   if (progress > 0) {
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    const gradient = ctx.createLinearGradient(-radius, -radius, radius, radius);
     gradient.addColorStop(0, 'rgba(127, 255, 212, 0.95)');
     gradient.addColorStop(1, 'rgba(31, 139, 255, 0.95)');
     ctx.strokeStyle = gradient;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, startAngle, startAngle + Math.PI * 2 * progress, false);
+    ctx.arc(0, 0, radius, startAngle, startAngle + Math.PI * 2 * progress, false);
     ctx.stroke();
   }
+  ctx.restore();
 }
 
 function drawWave(motor) {
   const ctx = motor.waveCtx;
   const { width, height } = motor.waveCanvas;
+  if (!width || !height) return;
+
   ctx.clearRect(0, 0, width, height);
 
   const topPadding = 20;
-  const bottomPadding = 24;
+  const bottomPadding = 28;
+  const leftPadding = 18;
   const usableHeight = height - topPadding - bottomPadding;
-  const circleX = width - 46;
-  const availableWidth = circleX - 16;
+  const radius = Math.max(14, Math.min(24, height * 0.12));
+  const circleX = width - radius - 18;
+  const pathWidth = Math.max(10, circleX - radius - leftPadding);
   const headY = topPadding + (1 - motor.normalized) * usableHeight;
 
   ctx.lineWidth = 4;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  const gradient = ctx.createLinearGradient(0, 0, circleX, 0);
+  const gradient = ctx.createLinearGradient(leftPadding, 0, circleX, 0);
   gradient.addColorStop(0, 'rgba(31, 139, 255, 0)');
   gradient.addColorStop(0.18, 'rgba(31, 139, 255, 0.45)');
   gradient.addColorStop(1, 'rgba(127, 255, 212, 0.95)');
@@ -283,13 +295,13 @@ function drawWave(motor) {
   ctx.beginPath();
 
   const len = motor.trailLength;
-  if (len > 0) {
+  if (len > 1) {
     const startIndex = (motor.trailCursor - len + TRAIL_LENGTH) % TRAIL_LENGTH;
     for (let i = 0; i < len; i += 1) {
       const index = (startIndex + i) % TRAIL_LENGTH;
       const sample = motor.trail[index];
       const progress = len > 1 ? i / (len - 1) : 0;
-      const x = progress * availableWidth;
+      const x = leftPadding + progress * pathWidth;
       const y = topPadding + (1 - sample) * usableHeight;
       if (i === 0) {
         ctx.moveTo(x, y);
@@ -298,15 +310,15 @@ function drawWave(motor) {
       }
     }
   } else {
-    ctx.moveTo(0, headY);
+    ctx.moveTo(leftPadding, headY);
   }
 
-  ctx.lineTo(circleX, headY);
+  ctx.lineTo(circleX - radius, headY);
   ctx.stroke();
 
   ctx.fillStyle = 'rgba(31, 139, 255, 0.35)';
   ctx.beginPath();
-  ctx.arc(circleX, headY, 16, 0, Math.PI * 2);
+  ctx.arc(circleX, headY, radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.lineWidth = 2;
   ctx.strokeStyle = 'rgba(127, 255, 212, 0.85)';
