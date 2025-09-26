@@ -315,6 +315,17 @@ body {
   text-transform: uppercase;
 }
 
+.engagement-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.engagement-actions button {
+  flex: 0 1 200px;
+  justify-content: center;
+}
+
 .status-header {
   display: flex;
   align-items: center;

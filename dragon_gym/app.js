@@ -1,6 +1,7 @@
 const MAX_RESISTANCE = 300;
 const TWO_PI = Math.PI * 2;
 const MAX_TRAVEL_INCHES = 24;
+const ENGAGEMENT_RAMP_INCHES = 1;
 const REP_SPAN_THRESHOLD = 3;
 const MOVEMENT_EPSILON = 0.05;
 const DEFAULT_REP_TARGET = 12;
@@ -29,6 +30,7 @@ const elements = {
   forcePanel: document.getElementById('forceCurvePanel'),
   engageSlider: document.getElementById('engageDistance'),
   engageDisplay: document.getElementById('engageDisplay'),
+  setCableButton: document.getElementById('setCableLength'),
   powerToggle: document.getElementById('powerToggle'),
   motorToggle: document.getElementById('motorToggle'),
   logList: document.getElementById('workoutLogList'),
@@ -133,7 +135,7 @@ function createMotor(id, refs) {
     repsLabel,
     cableLabel,
     baseResistance: Number(slider.value),
-    currentResistance: Number(slider.value),
+    currentResistance: 0,
     reps: 0,
     engaged: false,
     normalized,
@@ -203,8 +205,53 @@ function resetMotorTracking(motor, travel) {
   motor.direction = 0;
 }
 
+function calculateEngagementProgress(travel, engageDistance) {
+  const clampedStart = Math.max(0, Math.min(MAX_TRAVEL_INCHES, engageDistance));
+  const rampEnd = Math.min(MAX_TRAVEL_INCHES, clampedStart + ENGAGEMENT_RAMP_INCHES);
+  if (travel <= clampedStart) {
+    return 0;
+  }
+  if (travel >= rampEnd) {
+    return 1;
+  }
+  const span = Math.max(0.001, rampEnd - clampedStart);
+  return Math.max(0, Math.min(1, (travel - clampedStart) / span));
+}
+
+function resolveMotorResistance(motor, engageDistance, mode) {
+  if (!powerOn || !motorsRunning) {
+    return 0;
+  }
+
+  const travel = motor.normalized * MAX_TRAVEL_INCHES;
+  const rampProgress = calculateEngagementProgress(travel, engageDistance);
+  if (rampProgress <= 0) {
+    return 0;
+  }
+
+  const derivative = motor.direction || 1;
+  const multiplier = computeForceMultiplier(mode, motor.normalized, derivative);
+  const applied = motor.baseResistance * rampProgress * multiplier;
+  return Math.min(MAX_RESISTANCE, Math.max(0, applied));
+}
+
+function refreshMotorResistance(motor) {
+  if (!motor) return;
+  const engageDistance = elements.engageSlider
+    ? Number(elements.engageSlider.value)
+    : 0;
+  const mode = elements.forceSelect ? elements.forceSelect.value : 'linear';
+  motor.currentResistance = resolveMotorResistance(motor, engageDistance, mode);
+  drawGauge(motor);
+}
+
+function refreshAllMotorResistances() {
+  motors.forEach((motor) => refreshMotorResistance(motor));
+}
+
 function updateEngageDisplay() {
   elements.engageDisplay.textContent = Number(elements.engageSlider.value).toFixed(1);
+  refreshAllMotorResistances();
 }
 
 function updateSetToggleAppearance() {
@@ -290,6 +337,7 @@ elements.forceSelect.addEventListener('change', () => {
   updateForceCurveDescriptions();
   updateForceCurveLabel();
   redrawForceCurves();
+  refreshAllMotorResistances();
 });
 
 if (elements.forceCurveIntensity) {
@@ -318,6 +366,7 @@ if (elements.eccentricToggle) {
     updateForceCurveDescriptions();
     updateForceCurveLabel();
     redrawForceCurves();
+    refreshAllMotorResistances();
     requestAnimationFrame(() => {
       syncForceCurveCanvasSizes();
     });
@@ -329,10 +378,28 @@ if (elements.eccentricSelect) {
     updateForceCurveDescriptions();
     updateForceCurveLabel();
     redrawForceCurves();
+    refreshAllMotorResistances();
   });
 }
 
 elements.engageSlider.addEventListener('input', updateEngageDisplay);
+if (elements.setCableButton) {
+  elements.setCableButton.addEventListener('click', () => {
+    if (!elements.engageSlider) return;
+    if (!motors.length) return;
+    const totalDistance = motors.reduce(
+      (sum, motor) => sum + Number(motor.simSlider.value || 0),
+      0
+    );
+    const average = totalDistance / motors.length;
+    const quantized = Math.round(Math.max(0, Math.min(MAX_TRAVEL_INCHES, average)) * 2) / 2;
+    elements.engageSlider.value = String(quantized);
+    updateEngageDisplay();
+    if (elements.message) {
+      elements.message.textContent = `Engagement distance set to ${quantized.toFixed(1)} in based on cable position.`;
+    }
+  });
+}
 updateEngageDisplay();
 updateSetToggleAppearance();
 updateWorkoutToggleAppearance();
@@ -432,8 +499,7 @@ motors.forEach((motor) => {
   motor.slider.addEventListener('input', () => {
     motor.baseResistance = Number(motor.slider.value);
     motor.baseLabel.textContent = `${motor.baseResistance} lb`;
-    motor.currentResistance = motor.baseResistance;
-    drawGauge(motor);
+    refreshMotorResistance(motor);
   });
   motor.simSlider.addEventListener('input', () => {
     const sliderDistance = Number(motor.simSlider.value);
@@ -445,8 +511,10 @@ motors.forEach((motor) => {
     }
     motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
     drawWave(motor);
+    refreshMotorResistance(motor);
   });
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
+  refreshMotorResistance(motor);
 });
 
 function updateMotorToggle() {
@@ -482,6 +550,7 @@ function applyPowerState() {
     elements.forceSelect,
     elements.forceCurveIntensity,
     elements.engageSlider,
+    elements.setCableButton,
     elements.motorToggle,
   ];
 
@@ -529,12 +598,14 @@ function applyPowerState() {
   }
 
   updateSetToggleAppearance();
+  refreshAllMotorResistances();
 }
 
 function toggleMotors() {
   if (!powerOn) return;
   motorsRunning = !motorsRunning;
   updateMotorToggle();
+  refreshAllMotorResistances();
 }
 
 if (elements.powerToggle) {
@@ -767,6 +838,7 @@ function setForceCurveIntensity(value) {
   updateForceCurveDescriptions();
   updateForceCurveLabel();
   redrawForceCurves();
+  refreshAllMotorResistances();
 }
 
 
@@ -872,8 +944,11 @@ function update(timestamp) {
     return;
   }
 
-  const engageThreshold = Math.min(0.98, Number(elements.engageSlider.value) / MAX_TRAVEL_INCHES);
-  const mode = elements.forceSelect.value;
+  const engageDistance = elements.engageSlider
+    ? Math.max(0, Math.min(MAX_TRAVEL_INCHES, Number(elements.engageSlider.value)))
+    : 0;
+  const engageThreshold = Math.min(0.98, engageDistance / MAX_TRAVEL_INCHES);
+  const mode = elements.forceSelect ? elements.forceSelect.value : 'linear';
 
   motors.forEach((motor) => {
     const sliderDistance = Number(motor.simSlider.value);
@@ -900,11 +975,7 @@ function update(timestamp) {
       resetMotorTracking(motor, travel);
     }
 
-    const multiplier = computeForceMultiplier(mode, motor.normalized, motor.direction);
-    motor.currentResistance = Math.min(
-      MAX_RESISTANCE,
-      Math.max(0, motor.baseResistance * multiplier)
-    );
+    motor.currentResistance = resolveMotorResistance(motor, engageDistance, mode);
 
     motor.cableLabel.textContent = travel.toFixed(1);
 
