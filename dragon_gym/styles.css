@@ -382,6 +382,7 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+  will-change: contents;
 }
 
 .gauge-center {
@@ -508,6 +509,7 @@ body {
   border: 1px solid var(--border);
   background: rgba(4, 9, 18, 0.88);
   box-shadow: 0 10px 30px rgba(7, 24, 48, 0.35);
+  will-change: contents;
 }
 
 .eccentric-toggle {
@@ -873,6 +875,7 @@ body {
   background: linear-gradient(180deg, rgba(6, 12, 25, 0.8), rgba(3, 6, 13, 0.95));
   box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(31, 139, 255, 0.15);
+  will-change: contents;
 }
 
 .distance-readout span {
