@@ -344,6 +344,8 @@ body {
   letter-spacing: 0.12em;
   font-size: 1rem;
   text-align: center;
+  justify-items: center;
+  align-items: center;
   width: min(100%, 520px);
 }
 
@@ -554,10 +556,14 @@ button.is-pulsing {
   gap: 12px;
 }
 
+
 .force-curve-group {
   display: grid;
   gap: 16px;
   max-width: 620px;
+  justify-items: center;
+  margin: 0 auto;
+  text-align: center;
 }
 
 .force-curve-group label {
@@ -567,6 +573,8 @@ button.is-pulsing {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-family: "Rajdhani", sans-serif;
+  justify-items: center;
+  width: min(100%, 420px);
 }
 
 .force-curve-group select,
@@ -582,6 +590,7 @@ button.is-pulsing {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transition: border-color var(--transition), box-shadow var(--transition);
+  text-align: center;
 }
 
 .force-curve-group select:focus,
@@ -602,7 +611,7 @@ button.is-pulsing {
 }
 
 .eccentric-toggle {
-  justify-self: start;
+  justify-self: center;
   padding: 8px 16px;
   font-size: 0.8rem;
   letter-spacing: 0.08em;
@@ -617,6 +626,8 @@ button.is-pulsing {
   border: 1px solid var(--border);
   background: rgba(6, 12, 22, 0.85);
   box-shadow: inset 0 0 0 1px rgba(31, 139, 255, 0.08);
+  justify-items: center;
+  text-align: center;
 }
 
 .eccentric-panel[hidden] {
@@ -846,6 +857,11 @@ button.is-pulsing {
   gap: 14px;
 }
 
+.force-panel {
+  justify-items: center;
+  text-align: center;
+}
+
 .force-panel h3,
 .log-panel h3,
 .selector-panel h3 {
@@ -854,6 +870,14 @@ button.is-pulsing {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.force-panel h3 {
+  justify-self: center;
+}
+
+.force-panel .hint {
+  text-align: center;
 }
 
 .log-list {
