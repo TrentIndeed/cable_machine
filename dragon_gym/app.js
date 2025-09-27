@@ -253,6 +253,17 @@ function formatMotorLabel(id) {
   return `${id.charAt(0).toUpperCase()}${id.slice(1)}`;
 }
 
+function toggleButtonPulse(button, active) {
+  if (!button) return;
+  const shouldPulse = Boolean(active);
+  button.classList.toggle('is-pulsing', shouldPulse);
+  if (shouldPulse) {
+    button.setAttribute('aria-busy', 'true');
+  } else {
+    button.removeAttribute('aria-busy');
+  }
+}
+
 
 function renderMotorEngagement(motor) {
   if (!motor) return;
@@ -351,11 +362,6 @@ function toggleMotorCableSet(motor) {
     disarmMotorCableSet(motor);
     return;
   }
-  motors.forEach((other) => {
-    if (other !== motor) {
-      disarmMotorCableSet(other, { silent: true });
-    }
-  });
   motor.setArmed = true;
   toggleButtonPulse(motor.setCableButton, true);
   if (elements.message) {
