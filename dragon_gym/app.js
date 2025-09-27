@@ -11,9 +11,9 @@ const SECONDS_PER_HOUR = 3600;
 const RETRACTION_SPEED_MPH = 0.2;
 const RETRACTION_SPEED_IPS =
   (RETRACTION_SPEED_MPH * INCHES_PER_MILE) / SECONDS_PER_HOUR;
-const ENGAGEMENT_SLIDER_STEP = 0.5;
 const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
+const WEIGHT_ENGAGE_OFFSET = 1;
 
 const elements = {
   workoutState: document.getElementById('workoutState'),
@@ -89,8 +89,8 @@ const motors = [
 
 motors.forEach((motor) => {
   engagementControls.set(motor.id, {
-    slider: motor.engageSlider,
     display: motor.engageDisplay,
+    thresholdDisplay: motor.engageThresholdDisplay,
     setButton: motor.setCableButton,
     retractButton: motor.retractCableButton,
   });
@@ -115,6 +115,11 @@ const retractionState = {
   target: DEFAULT_RETRACTION_BOTTOM,
   speed: RETRACTION_SPEED_IPS,
   requestedBy: null,
+};
+
+const cableSetState = {
+  active: false,
+  motorId: null,
 };
 
 const exerciseCatalog = {
@@ -142,8 +147,8 @@ function createMotor(id, refs) {
   const baseLabel = document.getElementById(refs.baseId);
   const repsLabel = document.getElementById(refs.repsId);
   const cableLabel = document.getElementById(refs.cableId);
-  const engageSlider = document.getElementById(`${id}EngageDistance`);
   const engageDisplay = document.getElementById(`${id}EngageDisplay`);
+  const engageThresholdDisplay = document.getElementById(`${id}EngageThreshold`);
   const setCableButton = document.getElementById(`${id}SetCableLength`);
   const retractCableButton = document.getElementById(`${id}RetractCable`);
 
@@ -163,8 +168,8 @@ function createMotor(id, refs) {
     baseLabel,
     repsLabel,
     cableLabel,
-    engageSlider,
     engageDisplay,
+    engageThresholdDisplay,
     setCableButton,
     retractCableButton,
     baseResistance: Number(slider.value),
@@ -239,16 +244,19 @@ function resetMotorTracking(motor, travel) {
 }
 
 function calculateEngagementProgress(travel, engageDistance) {
-  const clampedStart = Math.max(0, Math.min(MAX_TRAVEL_INCHES, engageDistance));
-  const rampEnd = Math.min(MAX_TRAVEL_INCHES, clampedStart + ENGAGEMENT_RAMP_INCHES);
-  if (travel <= clampedStart) {
+  const engageStart = Math.max(
+    0,
+    Math.min(MAX_TRAVEL_INCHES, engageDistance + WEIGHT_ENGAGE_OFFSET)
+  );
+  const rampEnd = Math.min(MAX_TRAVEL_INCHES, engageStart + ENGAGEMENT_RAMP_INCHES);
+  if (travel <= engageStart) {
     return 0;
   }
   if (travel >= rampEnd) {
     return 1;
   }
-  const span = Math.max(0.001, rampEnd - clampedStart);
-  return Math.max(0, Math.min(1, (travel - clampedStart) / span));
+  const span = Math.max(0.001, rampEnd - engageStart);
+  return Math.max(0, Math.min(1, (travel - engageStart) / span));
 }
 
 function clamp(value, min, max) {
@@ -260,74 +268,78 @@ function quantize(value, step) {
   return Math.round(value / step) * step;
 }
 
+function formatMotorLabel(id) {
+  if (!id) return 'System';
+  return `${id.charAt(0).toUpperCase()}${id.slice(1)}`;
+}
+
 function renderEngagementDisplay(value) {
-  const formatted = value.toFixed(1);
+  const clampedValue = clamp(value, DEFAULT_RETRACTION_BOTTOM, MAX_TRAVEL_INCHES);
+  const formatted = `${clampedValue.toFixed(1)} in`;
+  const threshold = Math.min(MAX_TRAVEL_INCHES, clampedValue + WEIGHT_ENGAGE_OFFSET);
+  const thresholdFormatted = `${threshold.toFixed(1)} in`;
   engagementControls.forEach((control) => {
     if (control.display) {
       control.display.textContent = formatted;
+    }
+    if (control.thresholdDisplay) {
+      control.thresholdDisplay.textContent = thresholdFormatted;
     }
   });
 }
 
 function announceEngagementChange(distance, source) {
   if (!elements.message) return;
+  const clampedDistance = clamp(distance, DEFAULT_RETRACTION_BOTTOM, MAX_TRAVEL_INCHES);
+  const actualEngage = Math.min(
+    MAX_TRAVEL_INCHES,
+    clampedDistance + WEIGHT_ENGAGE_OFFSET
+  );
+  const engageNote = ` Weight engages at ${actualEngage.toFixed(1)} in.`;
   let message;
   switch (source) {
     case 'left-engagement':
-      message = `Engagement distance set to ${distance.toFixed(1)} in via left motor control.`;
+      message = `Engagement distance set to ${clampedDistance.toFixed(1)} in via left motor control.`;
       break;
     case 'right-engagement':
-      message = `Engagement distance set to ${distance.toFixed(1)} in via right motor control.`;
+      message = `Engagement distance set to ${clampedDistance.toFixed(1)} in via right motor control.`;
       break;
     case 'simulation':
-      message = `Engagement distance synced to ${distance.toFixed(
+      message = `Cable length synchronized to ${clampedDistance.toFixed(
         1
-      )} in from motor travel simulation.`;
+      )} in from the simulator.`;
       break;
     case 'left-set-button':
-      message = `Engagement distance set to ${distance.toFixed(
-        1
-      )} in based on left cable position.`;
+      message = `Left cable length locked at ${clampedDistance.toFixed(1)} in.`;
       break;
     case 'right-set-button':
-      message = `Engagement distance set to ${distance.toFixed(
-        1
-      )} in based on right cable position.`;
+      message = `Right cable length locked at ${clampedDistance.toFixed(1)} in.`;
       break;
     case 'retraction':
       if (retractionState.requestedBy) {
-        const label =
-          retractionState.requestedBy.charAt(0).toUpperCase() +
-          retractionState.requestedBy.slice(1);
-        message = `${label} control retracted cables to ${distance.toFixed(1)} in.`;
+        const label = formatMotorLabel(retractionState.requestedBy);
+        message = `${label} control retracted cables to ${clampedDistance.toFixed(1)} in.`;
       } else {
-        message = `Cables retracted to ${distance.toFixed(1)} in.`;
+        message = `Cables retracted to ${clampedDistance.toFixed(1)} in.`;
       }
       break;
     default:
-      message = `Engagement distance set to ${distance.toFixed(1)} in.`;
+      message = `Engagement distance set to ${clampedDistance.toFixed(1)} in.`;
       break;
+  }
+  if (source !== 'retraction' && message) {
+    message = `${message}${engageNote}`;
   }
   elements.message.textContent = message;
 }
 
 function setEngagementDistance(distance, options = {}) {
   const { skipSimSync = false, source, announce = true } = options;
-  const clamped = clamp(distance, 0, MAX_TRAVEL_INCHES);
-  const quantized = quantize(clamped, ENGAGEMENT_SLIDER_STEP);
+  const clamped = clamp(distance, DEFAULT_RETRACTION_BOTTOM, MAX_TRAVEL_INCHES);
+  const quantized = quantize(clamped, SIM_SLIDER_STEP);
   const formatted = quantized.toFixed(1);
 
   currentEngagementDistance = quantized;
-
-  if (engagementControls.size) {
-    isSyncingCables = true;
-    engagementControls.forEach((control) => {
-      if (control.slider) {
-        control.slider.value = formatted;
-      }
-    });
-    isSyncingCables = false;
-  }
 
   renderEngagementDisplay(quantized);
   refreshAllMotorResistances();
@@ -347,6 +359,65 @@ function setEngagementDistance(distance, options = {}) {
   return quantized;
 }
 
+function toggleButtonPulse(button, active) {
+  if (!button) return;
+  if (active) {
+    button.classList.add('is-pulsing');
+    button.setAttribute('aria-busy', 'true');
+  } else {
+    button.classList.remove('is-pulsing');
+    button.removeAttribute('aria-busy');
+  }
+}
+
+function cancelCableSet() {
+  if (!cableSetState.active) return;
+  const control = engagementControls.get(cableSetState.motorId);
+  if (control && control.setButton) {
+    toggleButtonPulse(control.setButton, false);
+  }
+  cableSetState.active = false;
+  cableSetState.motorId = null;
+}
+
+function beginCableSet(motor) {
+  if (!motor || !powerOn) return;
+  if (cableSetState.active && cableSetState.motorId === motor.id) {
+    cancelCableSet();
+    if (elements.message) {
+      const label = formatMotorLabel(motor.id);
+      elements.message.textContent = `${label} cable length arming canceled.`;
+    }
+    return;
+  }
+  cancelCableSet();
+  cableSetState.active = true;
+  cableSetState.motorId = motor.id;
+  toggleButtonPulse(motor.setCableButton, true);
+  if (elements.message) {
+    const label = formatMotorLabel(motor.id);
+    elements.message.textContent = `${label} cable length armed. Adjust the motor travel slider and release to lock it.`;
+  }
+}
+
+function completeCableSet(motorId) {
+  if (!cableSetState.active || cableSetState.motorId !== motorId) return;
+  const control = engagementControls.get(motorId);
+  if (control && control.setButton) {
+    toggleButtonPulse(control.setButton, false);
+  }
+  cableSetState.active = false;
+  cableSetState.motorId = null;
+}
+
+function markRetractActive(motorId, active) {
+  if (!motorId) return;
+  const control = engagementControls.get(motorId);
+  if (control && control.retractButton) {
+    toggleButtonPulse(control.retractButton, active);
+  }
+}
+
 function syncEngagementToAverage(source = 'simulation', options = {}) {
   const { announce = true } = options;
   if (!motors.length) return 0;
@@ -354,7 +425,10 @@ function syncEngagementToAverage(source = 'simulation', options = {}) {
     (sum, motor) => sum + Number(motor.simSlider.value || 0),
     0
   );
-  const average = totalDistance / motors.length;
+  const average = Math.max(
+    DEFAULT_RETRACTION_BOTTOM,
+    totalDistance / motors.length
+  );
   return setEngagementDistance(average, {
     skipSimSync: true,
     source,
@@ -364,6 +438,8 @@ function syncEngagementToAverage(source = 'simulation', options = {}) {
 
 function startRetraction(requestedBy) {
   if (!powerOn) return false;
+  if (retractionState.active) return false;
+  cancelCableSet();
   const totalDistance = motors.reduce(
     (sum, motor) => sum + Number(motor.simSlider.value || 0),
     0
@@ -372,7 +448,7 @@ function startRetraction(requestedBy) {
   if (rawAverage <= DEFAULT_RETRACTION_BOTTOM + SIM_SLIDER_STEP / 2) {
     if (elements.message) {
       const label = requestedBy
-        ? `${requestedBy.charAt(0).toUpperCase()}${requestedBy.slice(1)} control`
+        ? `${formatMotorLabel(requestedBy)} control`
         : 'System';
       elements.message.textContent = `${label} reports cables already at the retraction stop.`;
     }
@@ -389,10 +465,13 @@ function startRetraction(requestedBy) {
   retractionState.target = DEFAULT_RETRACTION_BOTTOM;
   retractionState.speed = RETRACTION_SPEED_IPS;
   retractionState.requestedBy = requestedBy || null;
+  if (requestedBy) {
+    markRetractActive(requestedBy, true);
+  }
 
   if (elements.message) {
     const label = requestedBy
-      ? `${requestedBy.charAt(0).toUpperCase()}${requestedBy.slice(1)} control`
+      ? `${formatMotorLabel(requestedBy)} control`
       : 'System';
     elements.message.textContent = `${label} retracting cables to ${retractionState.target.toFixed(
       1
@@ -559,17 +638,6 @@ if (elements.eccentricSelect) {
   });
 }
 
-const initialControl =
-  engagementControls.get('left') ||
-  engagementControls.get('right') ||
-  engagementControls.values().next().value;
-const initialEngagement = initialControl?.slider
-  ? Number(initialControl.slider.value || 0)
-  : DEFAULT_RETRACTION_BOTTOM;
-setEngagementDistance(initialEngagement, {
-  skipSimSync: true,
-  announce: false,
-});
 updateSetToggleAppearance();
 updateWorkoutToggleAppearance();
 
@@ -681,27 +749,21 @@ motors.forEach((motor) => {
     motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
     drawWave(motor);
     refreshMotorResistance(motor);
-    if (!isSyncingCables) {
-      syncEngagementToAverage('simulation');
+  });
+  motor.simSlider.addEventListener('change', () => {
+    if (isSyncingCables) return;
+    if (cableSetState.active && cableSetState.motorId === motor.id) {
+      const distance = Number(motor.simSlider.value || 0);
+      setEngagementDistance(distance, { source: `${motor.id}-set-button` });
+      completeCableSet(motor.id);
     }
   });
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
   refreshMotorResistance(motor);
 
-  if (motor.engageSlider) {
-    motor.engageSlider.addEventListener('input', () => {
-      if (isSyncingCables) return;
-      const distance = Number(motor.engageSlider.value);
-      setEngagementDistance(distance, { source: `${motor.id}-engagement` });
-    });
-  }
   if (motor.setCableButton) {
     motor.setCableButton.addEventListener('click', () => {
-      const distance = Number(motor.simSlider.value || 0);
-      setEngagementDistance(distance, {
-        skipSimSync: true,
-        source: `${motor.id}-set-button`,
-      });
+      beginCableSet(motor);
     });
   }
   if (motor.retractCableButton) {
@@ -747,9 +809,6 @@ function applyPowerState() {
   ];
 
   engagementControls.forEach((control) => {
-    if (control.slider) {
-      interactive.push(control.slider);
-    }
     if (control.setButton) {
       interactive.push(control.setButton);
     }
@@ -783,9 +842,14 @@ function applyPowerState() {
   }
 
   if (!powerOn) {
+    cancelCableSet();
     stopSet();
     workoutActive = false;
+    if (retractionState.requestedBy) {
+      markRetractActive(retractionState.requestedBy, false);
+    }
     retractionState.active = false;
+    retractionState.requestedBy = null;
     updateWorkoutToggleAppearance();
     if (elements.workoutState) {
       elements.workoutState.textContent = 'System Offline';
@@ -1151,7 +1215,11 @@ function update(timestamp) {
   }
 
   const engageDistance = currentEngagementDistance;
-  const engageThreshold = Math.min(0.98, engageDistance / MAX_TRAVEL_INCHES);
+  const engageThresholdDistance = Math.min(
+    MAX_TRAVEL_INCHES,
+    engageDistance + WEIGHT_ENGAGE_OFFSET
+  );
+  const engageThreshold = Math.min(0.98, engageThresholdDistance / MAX_TRAVEL_INCHES);
   const mode = elements.forceSelect ? elements.forceSelect.value : 'linear';
 
   if (retractionState.active) {
@@ -1178,8 +1246,12 @@ function update(timestamp) {
     syncEngagementToAverage('retraction', { announce: false });
 
     if (complete) {
+      const requester = retractionState.requestedBy;
       retractionState.active = false;
       syncEngagementToAverage('retraction', { announce: true });
+      if (requester) {
+        markRetractActive(requester, false);
+      }
       retractionState.requestedBy = null;
     }
   }
@@ -1193,10 +1265,15 @@ function update(timestamp) {
     const derivative = delta > 0 ? (normalized - previous) / delta : 0;
     motor.direction = derivative >= 0 ? 1 : -1;
 
-    if (motorsRunning && setActive && !motor.engaged && motor.normalized >= engageThreshold) {
+    if (
+      motorsRunning &&
+      setActive &&
+      !motor.engaged &&
+      motor.normalized >= engageThreshold
+    ) {
       motor.engaged = true;
       if (motor.id === 'left') {
-        elements.message.textContent = `Left motor engaged at ${engageDistance.toFixed(
+        elements.message.textContent = `Left motor engaged at ${engageThresholdDistance.toFixed(
           1
         )} in. Rep tracking armed.`;
       }
@@ -1317,6 +1394,8 @@ function recordWorkoutSet(partial = false) {
   item.innerHTML = `<span class="log-set">Set ${entry.set}${partialBadge}</span><span class="log-exercise">${entry.exercise}</span><span class="log-weight">${entry.left} lb / ${entry.right} lb</span><span class="log-reps">${entry.reps} reps</span>`;
   elements.logList.prepend(item);
 }
+
+setEngagementDistance(DEFAULT_RETRACTION_BOTTOM, { announce: false });
 
 requestAnimationFrame(update);
 
