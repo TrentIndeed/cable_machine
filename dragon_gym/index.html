@@ -77,18 +77,6 @@
         </div>
         <p class="status-message" id="workoutMessage">Tap “Start Workout” to arm the set controls.</p>
       </article>
-      <article class="engagement-card" aria-label="Cable engagement distance">
-        <h3>Cable Engagement</h3>
-        <label for="engageDistance" class="slider-field">
-          <span>Engagement distance</span>
-          <input type="range" id="engageDistance" min="0" max="24" step="0.5" value="1.5" />
-        </label>
-        <p class="hint">Engage after <span id="engageDisplay">1.5</span> in of travel.</p>
-        <div class="engagement-actions">
-          <button type="button" class="ghost" id="setCableLength">Set Cable Length</button>
-          <button type="button" class="ghost" id="retractCables">Retract Cable</button>
-        </div>
-      </article>
       <article class="motor-card" data-motor="left">
         <div class="gauge-wrapper">
           <canvas class="resistance-gauge" id="leftGauge" width="320" height="320" aria-hidden="true"></canvas>
@@ -107,10 +95,23 @@
             <dd id="leftRepCount">0</dd>
           </div>
         </dl>
-        <label class="slider-field">
-          <span>Adjust resistance</span>
-          <input type="range" id="leftResistance" min="0" max="300" value="120" />
-        </label>
+        <div class="resistance-control">
+          <label class="slider-field">
+            <span>Adjust resistance</span>
+            <input type="range" id="leftResistance" min="0" max="300" value="120" />
+          </label>
+        </div>
+        <div class="motor-engagement" aria-label="Left motor cable engagement">
+          <label class="slider-field">
+            <span>Engagement distance</span>
+            <input type="range" id="leftEngageDistance" min="0" max="24" step="0.5" value="1.5" />
+          </label>
+          <p class="hint">Engage after <span id="leftEngageDisplay">1.5</span> in of travel.</p>
+          <div class="engagement-actions">
+            <button type="button" class="ghost" id="leftSetCableLength">Set Cable Length</button>
+            <button type="button" class="ghost" id="leftRetractCable">Retract Cable</button>
+          </div>
+        </div>
       </article>
 
       <article class="motor-card" data-motor="right">
@@ -131,10 +132,23 @@
             <dd id="rightRepCount">0</dd>
           </div>
         </dl>
-        <label class="slider-field">
-          <span>Adjust resistance</span>
-          <input type="range" id="rightResistance" min="0" max="300" value="120" />
-        </label>
+        <div class="resistance-control">
+          <label class="slider-field">
+            <span>Adjust resistance</span>
+            <input type="range" id="rightResistance" min="0" max="300" value="120" />
+          </label>
+        </div>
+        <div class="motor-engagement" aria-label="Right motor cable engagement">
+          <label class="slider-field">
+            <span>Engagement distance</span>
+            <input type="range" id="rightEngageDistance" min="0" max="24" step="0.5" value="1.5" />
+          </label>
+          <p class="hint">Engage after <span id="rightEngageDisplay">1.5</span> in of travel.</p>
+          <div class="engagement-actions">
+            <button type="button" class="ghost" id="rightSetCableLength">Set Cable Length</button>
+            <button type="button" class="ghost" id="rightRetractCable">Retract Cable</button>
+          </div>
+        </div>
       </article>
     </section>
 
