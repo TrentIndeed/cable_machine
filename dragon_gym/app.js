@@ -677,8 +677,6 @@ motors.forEach((motor) => {
     if (motor.setArmed) {
       setMotorEngagementDistance(motor, distance, { source: 'set-button' });
       disarmMotorCableSet(motor, { silent: true });
-    } else {
-      setMotorEngagementDistance(motor, distance, { source: 'simulation' });
     }
   });
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
