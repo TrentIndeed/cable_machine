@@ -335,6 +335,8 @@ body {
 }
 
 .resistance-control .slider-field {
+  display: grid;
+  gap: 16px;
   background: linear-gradient(160deg, rgba(10, 16, 28, 0.94), rgba(6, 11, 20, 0.9));
   border-radius: 999px;
   border: 1px solid rgba(62, 90, 118, 0.55);
@@ -367,6 +369,7 @@ body {
   display: grid;
   gap: 14px;
   text-align: center;
+  justify-items: center;
 }
 
 .motor-engagement .engagement-readout {
@@ -376,6 +379,12 @@ body {
   padding: 20px 28px;
   display: grid;
   gap: 6px;
+  width: min(100%, 520px);
+}
+
+.motor-engagement .hint {
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 .motor-engagement .engagement-readout .label {
