@@ -327,11 +327,14 @@ body {
   justify-content: center;
 }
 
+
 .resistance-control {
   margin: 28px auto 0;
   width: 100%;
+  max-width: 620px;
   display: flex;
   justify-content: center;
+  justify-self: center;
 }
 
 .resistance-control .slider-field {
@@ -348,7 +351,8 @@ body {
   text-align: center;
   justify-items: center;
   align-items: center;
-  width: min(100%, 520px);
+  width: 100%;
+  max-width: 520px;
 }
 
 .resistance-control .slider-field span {
@@ -365,11 +369,13 @@ body {
 
 .motor-engagement {
   margin: 28px auto 0;
-  width: min(100%, 620px);
+  width: 100%;
+  max-width: 620px;
   display: grid;
   gap: 14px;
   text-align: center;
   justify-items: center;
+  justify-self: center;
 }
 
 .motor-engagement .engagement-readout {
@@ -379,7 +385,9 @@ body {
   padding: 20px 28px;
   display: grid;
   gap: 6px;
-  width: min(100%, 520px);
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 .motor-engagement .hint {
