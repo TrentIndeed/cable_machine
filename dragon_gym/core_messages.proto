@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package dragongym;
+
+enum SessionCommand {
+  SESSION_COMMAND_UNSPECIFIED = 0;
+  SESSION_COMMAND_POWER = 1;
+  SESSION_COMMAND_WORKOUT = 2;
+  SESSION_COMMAND_MOTORS = 3;
+}
+
+message SessionControl {
+  SessionCommand command = 1;
+  bool active = 2;
+  uint32 sequence = 3;
+}
+
+message Profile {
+  uint32 target_reps = 1;
+  uint32 target_sets = 2;
+  float engagement_inches = 3;
+  string force_mode = 4;
+  string eccentric_mode = 5;
+  float force_intensity = 6;
+}
+
+message Setpoint {
+  float left_base_resistance = 1;
+  float right_base_resistance = 2;
+  float left_travel_inches = 3;
+  float right_travel_inches = 4;
+  bool set_active = 5;
+  bool motors_enabled = 6;
+  bool power_on = 7;
+}
+
+enum FaultSeverity {
+  FAULT_SEVERITY_INFO = 0;
+  FAULT_SEVERITY_WARNING = 1;
+  FAULT_SEVERITY_CRITICAL = 2;
+}
+
+message Fault {
+  FaultSeverity severity = 1;
+  string code = 2;
+  string description = 3;
+}
+
+message Telemetry {
+  double timestamp_ms = 1;
+  float left_resistance = 2;
+  float right_resistance = 3;
+  float left_travel_inches = 4;
+  float right_travel_inches = 5;
+  float left_normalized = 6;
+  float right_normalized = 7;
+  uint32 left_reps = 8;
+  uint32 right_reps = 9;
+  uint32 total_reps = 10;
+  float engagement_inches = 11;
+  string force_mode = 12;
+  string eccentric_mode = 13;
+  float force_intensity = 14;
+  bool set_active = 15;
+  bool workout_active = 16;
+  bool motors_enabled = 17;
+  bool power_on = 18;
+  bool set_complete = 19;
+  uint32 set_sequence = 20;
+}
