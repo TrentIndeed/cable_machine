@@ -923,12 +923,18 @@ function getForceCurveMultiplier(mode, normalized, direction) {
   }
 }
 
+function getActiveEccentricMode(fallbackMode) {
+  if (!elements.eccentricSelect) {
+    return fallbackMode;
+  }
+  return eccentricOverrideEnabled ? elements.eccentricSelect.value : fallbackMode;
+}
+
 function computeForceMultiplier(mode, normalized, derivative) {
   const direction = derivative < 0 ? -1 : 1;
-  let activeMode = mode;
-  if (direction < 0 && eccentricOverrideEnabled && elements.eccentricSelect) {
-    activeMode = elements.eccentricSelect.value;
-  }
+  const descending = direction < 0;
+  const eccentricMode = getActiveEccentricMode(mode);
+  const activeMode = descending ? eccentricMode : mode;
   return getForceCurveMultiplier(activeMode, normalized, direction);
 }
 
@@ -1045,10 +1051,7 @@ function redrawForceCurves() {
   const mode = elements.forceSelect.value;
   drawForceProfile(elements.forceCurveConcentric, mode, 1);
 
-  const eccentricMode =
-    eccentricOverrideEnabled && elements.eccentricSelect
-      ? elements.eccentricSelect.value
-      : mode;
+  const eccentricMode = getActiveEccentricMode(mode);
   drawForceProfile(elements.forceCurveEccentric, eccentricMode, -1);
 }
 
@@ -1056,15 +1059,19 @@ function updateForceCurveDescriptions() {
   const concentricMode = elements.forceSelect.value;
   const intensity = forceCurveIntensity;
   if (elements.forceDescription) {
-    elements.forceDescription.textContent = `Concentric: ${getForceCurveCopy(concentricMode, intensity)}`;
+    elements.forceDescription.textContent = `Force curve: ${getForceCurveCopy(
+      concentricMode,
+      intensity
+    )}`;
   }
 
   if (elements.eccentricDescription) {
-    const eccMode =
-      elements.eccentricSelect && eccentricOverrideEnabled
-        ? elements.eccentricSelect.value
-        : concentricMode;
-    elements.eccentricDescription.textContent = `Eccentric: ${getForceCurveCopy(eccMode, intensity)}`;
+    const eccMode = getActiveEccentricMode(concentricMode);
+    const prefix = eccentricOverrideEnabled ? 'Eccentric override' : 'Eccentric';
+    elements.eccentricDescription.textContent = `${prefix}: ${getForceCurveCopy(
+      eccMode,
+      intensity
+    )}`;
   }
 }
 
@@ -1075,7 +1082,7 @@ function updateForceCurveLabel() {
 
   if (eccentricOverrideEnabled && elements.eccentricSelect) {
     const eccentricLabel = elements.eccentricSelect.options[elements.eccentricSelect.selectedIndex].text;
-    elements.forceLabel.textContent = `${concentricLabel} / ${eccentricLabel} (eccentric)`;
+    elements.forceLabel.textContent = `${concentricLabel} / ${eccentricLabel}`;
   } else {
     elements.forceLabel.textContent = concentricLabel;
   }
