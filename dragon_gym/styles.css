@@ -261,15 +261,19 @@ body {
 
 .resistance-overview {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
   gap: clamp(20px, 3vw, 32px);
-  align-items: start;
+  align-items: stretch;
 }
 
 
 .resistance-overview > * {
   width: 100%;
   justify-self: stretch;
+}
+
+.status-card {
+  grid-column: 1 / -1;
 }
 
 .status-card {
@@ -470,6 +474,8 @@ button.is-pulsing {
   overflow: hidden;
   justify-items: center;
   width: 100%;
+  min-height: 100%;
+  align-content: start;
 }
 
 .motor-card::before {
@@ -488,7 +494,7 @@ button.is-pulsing {
 
 .gauge-wrapper {
   position: relative;
-  width: min(100%, clamp(360px, 60vw, 540px));
+  width: min(100%, clamp(320px, 45vw, 480px));
   aspect-ratio: 1 / 1;
   justify-self: center;
 }
@@ -1052,6 +1058,14 @@ button.is-pulsing {
 
   .hud-corner.top-right {
     justify-content: flex-end;
+  }
+
+  .resistance-overview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .status-card {
+    grid-column: auto;
   }
 }
 
