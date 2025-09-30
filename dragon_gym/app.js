@@ -1277,6 +1277,8 @@ function update(timestamp) {
       );
     }
 
+    const resistance = resolveMotorResistance(motor, engageDistance, mode);
+
     if (!setActive) {
       motor.engaged = false;
       motor.reps = 0;
@@ -1286,7 +1288,7 @@ function update(timestamp) {
       resetMotorTracking(motor, travel);
     }
 
-    motor.currentResistance = resolveMotorResistance(motor, engageDistance, mode);
+    motor.currentResistance = resistance;
 
     motor.cableLabel.textContent = travel.toFixed(1);
 
