@@ -168,7 +168,7 @@ function createMotor(id, refs) {
     retractionTarget: DEFAULT_RETRACTION_BOTTOM,
     retractionSpeed: RETRACTION_SPEED_IPS,
     normalized,
-    direction: 0,
+    direction: 1,
     trail: new Array(TRAIL_LENGTH).fill(normalized),
     lastTravel: travelInches,
     phase: 'idle',
@@ -1234,7 +1234,11 @@ function update(timestamp) {
     motor.normalized = normalized;
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     const derivative = delta > 0 ? (normalized - previous) / delta : 0;
-    motor.direction = derivative >= 0 ? 1 : -1;
+    if (derivative > 0) {
+      motor.direction = 1;
+    } else if (derivative < 0) {
+      motor.direction = -1;
+    }
 
     const engageDistance = motor.engagementDistance;
     const engageThresholdDistance = Math.min(
