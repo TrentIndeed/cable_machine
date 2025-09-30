@@ -187,19 +187,31 @@
       <section class="force-panel" aria-label="Force curve profiles" id="forceCurvePanel" hidden>
         <h3>Force Curve Profiles</h3>
         <div class="force-curve-group">
-          <label>
-            <span>Force curve mode (concentric)</span>
-            <select id="forceCurve">
-              <option value="linear">Linear</option>
-              <option value="chain">Chain mode</option>
-              <option value="band">Band mode</option>
-              <option value="reverse-chain">Reverse chain</option>
-            </select>
-          </label>
-          <label>
-            <span>Force curve intensity (%)</span>
-            <input type="number" id="forceCurveIntensity" min="0" max="100" step="1" value="20" />
-          </label>
+          <div class="force-curve-header">
+            <div class="force-curve-inputs">
+              <label>
+                <span>Force curve mode (concentric)</span>
+                <select id="forceCurve">
+                  <option value="linear">Linear</option>
+                  <option value="chain">Chain mode</option>
+                  <option value="band">Band mode</option>
+                  <option value="reverse-chain">Reverse chain</option>
+                </select>
+              </label>
+              <label>
+                <span>Force curve intensity (%)</span>
+                <input type="number" id="forceCurveIntensity" min="0" max="100" step="1" value="20" />
+              </label>
+            </div>
+            <button
+              class="ghost eccentric-toggle"
+              id="eccentricToggle"
+              type="button"
+              aria-expanded="false"
+            >
+              Enable eccentric profile
+            </button>
+          </div>
           <canvas
             class="force-curve-graph"
             id="forceCurveConcentric"
@@ -208,14 +220,6 @@
             aria-hidden="true"
           ></canvas>
           <p class="hint" id="forceCurveDescription">Concentric: Equal load through the pull and return.</p>
-          <button
-            class="ghost eccentric-toggle"
-            id="eccentricToggle"
-            type="button"
-            aria-expanded="false"
-          >
-            Enable eccentric profile
-          </button>
           <div class="eccentric-panel" id="eccentricPanel" hidden>
             <label>
               <span>Eccentric force curve</span>
