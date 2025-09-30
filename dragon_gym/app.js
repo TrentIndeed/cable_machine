@@ -45,6 +45,17 @@ const elements = {
   exerciseVideoPlaceholder: document.getElementById('exerciseVideoPlaceholder'),
 };
 
+function setStatusMessage(message, options = {}) {
+  if (!elements.message) return;
+  const { tone = 'info' } = options;
+  elements.message.textContent = message;
+  if (tone === 'error') {
+    elements.message.classList.add('is-error');
+  } else {
+    elements.message.classList.remove('is-error');
+  }
+}
+
 function getForceCurveCopy(mode, intensityPercent) {
   const pct = Math.round(intensityPercent);
   switch (mode) {
@@ -164,6 +175,8 @@ function createMotor(id, refs) {
     lastPeak: travelInches,
     lastTrough: travelInches,
     repCounted: false,
+    resistanceSuspended: false,
+    armedTravelStart: null,
   };
 }
 
@@ -264,6 +277,17 @@ function toggleButtonPulse(button, active) {
   }
 }
 
+function setMotorResistanceSuspended(motor, suspended) {
+  if (!motor) return;
+  motor.resistanceSuspended = Boolean(suspended);
+  if (motor.resistanceSuspended) {
+    motor.currentResistance = 0;
+    drawGauge(motor);
+  } else {
+    refreshMotorResistance(motor);
+  }
+}
+
 
 function renderMotorEngagement(motor) {
   if (!motor) return;
@@ -322,7 +346,7 @@ function announceMotorEngagementChange(motor, distance, source) {
   if (source !== 'retraction') {
     message = `${message}${engageNote}`;
   }
-  elements.message.textContent = message;
+  setStatusMessage(message);
 }
 
 function setMotorEngagementDistance(motor, distance, options = {}) {
@@ -349,10 +373,12 @@ function disarmMotorCableSet(motor, options = {}) {
   if (!motor || !motor.setArmed) return;
   const { silent = false } = options;
   motor.setArmed = false;
+  motor.armedTravelStart = null;
+  setMotorResistanceSuspended(motor, false);
   toggleButtonPulse(motor.setCableButton, false);
-  if (!silent && elements.message) {
+  if (!silent) {
     const label = formatMotorLabel(motor.id);
-    elements.message.textContent = `${label} cable length arming canceled.`;
+    setStatusMessage(`${label} cable length arming canceled.`);
   }
 }
 
@@ -362,12 +388,36 @@ function toggleMotorCableSet(motor) {
     disarmMotorCableSet(motor);
     return;
   }
-  motor.setArmed = true;
-  toggleButtonPulse(motor.setCableButton, true);
-  if (elements.message) {
-    const label = formatMotorLabel(motor.id);
-    elements.message.textContent = `${label} cable length armed. Adjust the motor travel slider and release to lock it.`;
+  const label = formatMotorLabel(motor.id);
+  if (motor.retractionActive) {
+    setStatusMessage(
+      `${label} cable is retracting. Wait for it to reach ${DEFAULT_RETRACTION_BOTTOM.toFixed(
+        1
+      )} in before arming.`,
+      { tone: 'error' }
+    );
+    return;
   }
+  const current = Number(motor.simSlider.value || 0);
+  const tolerance = SIM_SLIDER_STEP / 2;
+  if (current > DEFAULT_RETRACTION_BOTTOM + tolerance) {
+    setStatusMessage(
+      `${label} cable must be fully retracted to ${DEFAULT_RETRACTION_BOTTOM.toFixed(
+        1
+      )} in before setting length.`,
+      { tone: 'error' }
+    );
+    return;
+  }
+
+  motor.setArmed = true;
+  motor.armedTravelStart = current;
+  setMotorResistanceSuspended(motor, true);
+  toggleButtonPulse(motor.setCableButton, true);
+  setStatusMessage(
+    `${label} cable length armed. Adjust the motor travel slider and release after at least 1.0 in of travel to lock it.`,
+    { tone: 'info' }
+  );
 }
 
 function markRetractActive(motor, active) {
@@ -381,10 +431,11 @@ function startMotorRetraction(motor) {
   disarmMotorCableSet(motor, { silent: true });
   const current = Number(motor.simSlider.value || 0);
   if (current <= DEFAULT_RETRACTION_BOTTOM + SIM_SLIDER_STEP / 2) {
-    if (elements.message) {
-      const label = formatMotorLabel(motor.id);
-      elements.message.textContent = `${label} control reports cable already at the retraction stop.`;
-    }
+    const label = formatMotorLabel(motor.id);
+    setStatusMessage(
+      `${label} control reports cable already at the retraction stop.`,
+      { tone: 'info' }
+    );
     return false;
   }
 
@@ -393,18 +444,19 @@ function startMotorRetraction(motor) {
   motor.retractionSpeed = RETRACTION_SPEED_IPS;
   markRetractActive(motor, true);
 
-  if (elements.message) {
-    const label = formatMotorLabel(motor.id);
-    elements.message.textContent = `${label} cable retracting to ${motor.retractionTarget.toFixed(
+  const label = formatMotorLabel(motor.id);
+  setStatusMessage(
+    `${label} cable retracting to ${motor.retractionTarget.toFixed(1)} in at ${RETRACTION_SPEED_MPH.toFixed(
       1
-    )} in at ${RETRACTION_SPEED_MPH.toFixed(1)} mph.`;
-  }
+    )} mph.`,
+    { tone: 'info' }
+  );
 
   return true;
 }
 
 function resolveMotorResistance(motor, engageDistance, mode) {
-  if (!powerOn || !motorsRunning) {
+  if (!powerOn || !motorsRunning || motor.resistanceSuspended) {
     return 0;
   }
 
@@ -479,7 +531,7 @@ function toggleWorkout() {
       elements.workoutState.classList.remove('active');
       elements.workoutState.textContent = 'Workout Not Started';
     }
-    elements.message.textContent = 'Tap “Start Workout” to arm the set controls.';
+    setStatusMessage('Tap “Start Workout” to arm the set controls.');
     eccentricOverrideEnabled = false;
     if (elements.eccentricToggle) {
       elements.eccentricToggle.textContent = 'Enable eccentric profile';
@@ -497,7 +549,7 @@ function toggleWorkout() {
       elements.workoutState.classList.add('active');
       elements.workoutState.textContent = 'Workout Started';
     }
-    elements.message.textContent = 'Press “Start Set” to begin counting reps.';
+    setStatusMessage('Press “Start Set” to begin counting reps.');
     updateStatuses();
     requestAnimationFrame(() => {
       syncForceCurveCanvasSizes();
@@ -580,7 +632,7 @@ function startSet() {
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     resetMotorTracking(motor, travel);
   });
-  elements.message.textContent = `Set ${currentSet} active. Cable movement will arm the servos.`;
+  setStatusMessage(`Set ${currentSet} active. Cable movement will arm the servos.`);
   updateStatuses();
   updateSetToggleAppearance();
 }
@@ -607,7 +659,7 @@ elements.reset.addEventListener('click', () => {
   workoutLog.length = 0;
   elements.logList.innerHTML = '';
   updateStatuses();
-  elements.message.textContent = 'Workout reset. Adjust engagement or force curve when ready.';
+  setStatusMessage('Workout reset. Adjust engagement or force curve when ready.');
   if (elements.workoutState) {
     elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
   }
@@ -627,17 +679,21 @@ function stopSet(options = {}) {
     if (elements.workoutState) {
       elements.workoutState.textContent = partial ? 'Set Logged' : 'Set Complete';
     }
-    elements.message.textContent = partial
-      ? `Set ${currentSet} logged with ${currentRep} reps.`
-      : `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
+    setStatusMessage(
+      partial
+        ? `Set ${currentSet} logged with ${currentRep} reps.`
+        : `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`
+    );
     recorded = true;
   } else {
     if (elements.workoutState) {
       elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
     }
-    elements.message.textContent = currentRep >= totalReps
-      ? 'Set complete. Press “Start Set” for the next round.'
-      : 'Set paused. Press “Start Set” to resume.';
+    setStatusMessage(
+      currentRep >= totalReps
+        ? 'Set complete. Press “Start Set” for the next round.'
+        : 'Set paused. Press “Start Set” to resume.'
+    );
   }
 
   motors.forEach((motor) => {
@@ -675,6 +731,17 @@ motors.forEach((motor) => {
   motor.simSlider.addEventListener('change', () => {
     const distance = Number(motor.simSlider.value || 0);
     if (motor.setArmed) {
+      const start = motor.armedTravelStart ?? DEFAULT_RETRACTION_BOTTOM;
+      const required = start + 1;
+      const tolerance = SIM_SLIDER_STEP / 2;
+      if (distance < required - tolerance) {
+        const label = formatMotorLabel(motor.id);
+        setStatusMessage(
+          `${label} cable must be pulled at least 1.0 in before locking the length.`,
+          { tone: 'error' }
+        );
+        return;
+      }
       setMotorEngagementDistance(motor, distance, { source: 'set-button' });
       disarmMotorCableSet(motor, { silent: true });
     }
@@ -774,7 +841,7 @@ function applyPowerState() {
       elements.workoutState.textContent = 'System Offline';
       elements.workoutState.classList.remove('active');
     }
-    elements.message.textContent = 'Power system on to resume control.';
+    setStatusMessage('Power system on to resume control.');
     motorsRunning = false;
     updateMotorToggle();
   } else {
@@ -1186,12 +1253,10 @@ function update(timestamp) {
       motor.normalized >= engageThreshold
     ) {
       motor.engaged = true;
-      if (elements.message) {
-        const label = formatMotorLabel(motor.id);
-        elements.message.textContent = `${label} motor engaged at ${engageThresholdDistance.toFixed(
-          1
-        )} in. Rep tracking armed.`;
-      }
+      const label = formatMotorLabel(motor.id);
+      setStatusMessage(
+        `${label} motor engaged at ${engageThresholdDistance.toFixed(1)} in. Rep tracking armed.`
+      );
     }
 
     if (!setActive) {
@@ -1265,7 +1330,7 @@ function finishSet() {
   if (elements.workoutState) {
     elements.workoutState.textContent = 'Set Complete';
   }
-  elements.message.textContent = `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
+  setStatusMessage(`Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`);
   recordWorkoutSet();
   updateStatuses();
 }
@@ -1284,7 +1349,7 @@ function synchronizeRepProgress() {
     return;
   }
 
-  elements.message.textContent = `Set ${currentSet}: rep ${currentRep} complete.`;
+  setStatusMessage(`Set ${currentSet}: rep ${currentRep} complete.`);
   updateStatuses();
 }
 

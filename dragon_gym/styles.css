@@ -854,6 +854,11 @@ button.is-pulsing {
   color: var(--text-muted);
 }
 
+.status-message.is-error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .visual-panel {
   background: linear-gradient(160deg, rgba(9, 16, 27, 0.92), rgba(4, 7, 15, 0.9));
   border-radius: var(--card-radius);
