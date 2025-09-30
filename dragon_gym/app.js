@@ -719,6 +719,13 @@ motors.forEach((motor) => {
   motor.simSlider.addEventListener('input', () => {
     const sliderDistance = Number(motor.simSlider.value);
     const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
+    const previous = motor.normalized;
+    const previousDistance = previous * MAX_TRAVEL_INCHES;
+    if (sliderDistance > previousDistance + SIM_SLIDER_STEP / 2) {
+      motor.direction = 1;
+    } else if (sliderDistance < previousDistance - SIM_SLIDER_STEP / 2) {
+      motor.direction = -1;
+    }
     motor.normalized = normalized;
     motor.trail.push(normalized);
     if (motor.trail.length > TRAIL_LENGTH) {
