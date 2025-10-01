@@ -66,7 +66,7 @@ body {
   width: min(100%, 1080px);
   min-height: 1920px;
   margin: 0 auto;
-  padding: clamp(150px, 18vw, 220px) clamp(20px, 4vw, 32px) 60px;
+  padding: clamp(75px, 9vw, 110px) clamp(20px, 4vw, 32px) 60px;
   display: flex;
   flex-direction: column;
   gap: 28px;
