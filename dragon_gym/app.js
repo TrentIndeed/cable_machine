@@ -15,7 +15,7 @@ const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
 const WEIGHT_ENGAGE_OFFSET = 1;
 const FORCE_PROFILE_LOCK_MESSAGE =
-  'Retract the cables to or below their engagement distance to adjust the force profiles.';
+  'Retract both cables to or below their engagement distance to adjust these';
 
 const elements = {
   workoutState: document.getElementById('workoutState'),
@@ -67,6 +67,8 @@ function motorBeyondEngagement(motor) {
   return travel > motor.engagementDistance + MOVEMENT_EPSILON;
 }
 
+let forceProfileLockHintVisible = false;
+
 function updateForceProfileLockState() {
   const locked = motors.some((motor) => motorBeyondEngagement(motor));
 
@@ -75,7 +77,10 @@ function updateForceProfileLockState() {
   }
 
   if (elements.forceLockHint) {
-    elements.forceLockHint.hidden = !locked;
+    if (!locked) {
+      forceProfileLockHintVisible = false;
+    }
+    elements.forceLockHint.hidden = !(locked && forceProfileLockHintVisible);
   }
 
   const controls = [
@@ -94,6 +99,12 @@ function updateForceProfileLockState() {
   });
 
   return locked;
+}
+
+function notifyForceProfileLock() {
+  forceProfileLockHintVisible = true;
+  updateForceProfileLockState();
+  setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
 }
 
 function getForceCurveCopy(mode, intensityPercent) {
@@ -614,7 +625,7 @@ elements.startToggle.addEventListener('click', toggleWorkout);
 elements.forceSelect.addEventListener('change', (event) => {
   if (updateForceProfileLockState()) {
     event.target.value = lastForceCurveMode;
-    setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+    notifyForceProfileLock();
     return;
   }
 
@@ -630,7 +641,7 @@ if (elements.forceCurveIntensity) {
   const handleForceIntensityInput = (event) => {
     if (updateForceProfileLockState()) {
       event.target.value = String(forceCurveIntensity);
-      setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+      notifyForceProfileLock();
       return;
     }
     setForceCurveIntensity(event.target.value);
@@ -643,7 +654,7 @@ if (elements.eccentricToggle) {
   elements.eccentricToggle.addEventListener('click', (event) => {
     if (updateForceProfileLockState()) {
       event.preventDefault();
-      setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+      notifyForceProfileLock();
       return;
     }
 
@@ -675,7 +686,7 @@ if (elements.eccentricSelect) {
   elements.eccentricSelect.addEventListener('change', (event) => {
     if (updateForceProfileLockState()) {
       event.target.value = lastEccentricMode;
-      setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+      notifyForceProfileLock();
       return;
     }
 
