@@ -938,6 +938,31 @@ button.is-pulsing {
   text-align: center;
 }
 
+.force-panel.is-locked .force-curve-group {
+  opacity: 0.55;
+  filter: saturate(0.7);
+  transition: opacity var(--transition), filter var(--transition);
+}
+
+.force-panel.is-locked .force-curve-group select,
+.force-panel.is-locked .force-curve-group input,
+.force-panel.is-locked .force-curve-group button {
+  cursor: not-allowed;
+}
+
+.force-panel .lock-hint {
+  margin: 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 79, 109, 0.32);
+  background: rgba(255, 79, 109, 0.12);
+  color: var(--danger);
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: "Rajdhani", sans-serif;
+}
+
 .force-panel h3,
 .log-panel h3,
 .selector-panel h3 {

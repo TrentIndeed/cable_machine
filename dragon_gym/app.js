@@ -14,6 +14,8 @@ const RETRACTION_SPEED_IPS =
 const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
 const WEIGHT_ENGAGE_OFFSET = 1;
+const FORCE_PROFILE_LOCK_MESSAGE =
+  'Retract the cables to or below their engagement distance to adjust the force profiles.';
 
 const elements = {
   workoutState: document.getElementById('workoutState'),
@@ -36,6 +38,7 @@ const elements = {
   eccentricDescription: document.getElementById('eccentricCurveDescription'),
   forceCurveIntensity: document.getElementById('forceCurveIntensity'),
   forcePanel: document.getElementById('forceCurvePanel'),
+  forceLockHint: document.getElementById('forceCurveLockHint'),
   powerToggle: document.getElementById('powerToggle'),
   motorToggle: document.getElementById('motorToggle'),
   logList: document.getElementById('workoutLogList'),
@@ -54,6 +57,43 @@ function setStatusMessage(message, options = {}) {
   } else {
     elements.message.classList.remove('is-error');
   }
+}
+
+function motorBeyondEngagement(motor) {
+  if (!motor) {
+    return false;
+  }
+  const travel = motor.normalized * MAX_TRAVEL_INCHES;
+  return travel > motor.engagementDistance + MOVEMENT_EPSILON;
+}
+
+function updateForceProfileLockState() {
+  const locked = motors.some((motor) => motorBeyondEngagement(motor));
+
+  if (elements.forcePanel) {
+    elements.forcePanel.classList.toggle('is-locked', locked);
+  }
+
+  if (elements.forceLockHint) {
+    elements.forceLockHint.hidden = !locked;
+  }
+
+  const controls = [
+    elements.forceSelect,
+    elements.forceCurveIntensity,
+    elements.eccentricToggle,
+    elements.eccentricSelect,
+  ];
+  controls.forEach((control) => {
+    if (!control) return;
+    if (locked) {
+      control.setAttribute('aria-disabled', 'true');
+    } else {
+      control.removeAttribute('aria-disabled');
+    }
+  });
+
+  return locked;
 }
 
 function getForceCurveCopy(mode, intensityPercent) {
@@ -107,6 +147,9 @@ let motorsRunning = true;
 let eccentricOverrideEnabled = false;
 let forceCurveIntensity = 20;
 const workoutLog = [];
+
+let lastForceCurveMode = elements.forceSelect ? elements.forceSelect.value : 'linear';
+let lastEccentricMode = elements.eccentricSelect ? elements.eccentricSelect.value : 'eccentric';
 
 const exerciseCatalog = {
   'incline-bench': 'Incline Bench',
@@ -369,6 +412,8 @@ function setMotorEngagementDistance(motor, distance, options = {}) {
     announceMotorEngagementChange(motor, quantized, source);
   }
 
+  updateForceProfileLockState();
+
   return quantized;
 }
 
@@ -566,7 +611,14 @@ function toggleWorkout() {
 
 elements.startToggle.addEventListener('click', toggleWorkout);
 
-elements.forceSelect.addEventListener('change', () => {
+elements.forceSelect.addEventListener('change', (event) => {
+  if (updateForceProfileLockState()) {
+    event.target.value = lastForceCurveMode;
+    setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+    return;
+  }
+
+  lastForceCurveMode = elements.forceSelect.value;
   updateForceCurveDescriptions();
   updateForceCurveLabel();
   redrawForceCurves();
@@ -575,13 +627,26 @@ elements.forceSelect.addEventListener('change', () => {
 
 if (elements.forceCurveIntensity) {
   setForceCurveIntensity(elements.forceCurveIntensity.value || forceCurveIntensity);
-  elements.forceCurveIntensity.addEventListener('input', (event) => {
+  const handleForceIntensityInput = (event) => {
+    if (updateForceProfileLockState()) {
+      event.target.value = String(forceCurveIntensity);
+      setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+      return;
+    }
     setForceCurveIntensity(event.target.value);
-  });
+  };
+  elements.forceCurveIntensity.addEventListener('input', handleForceIntensityInput);
+  elements.forceCurveIntensity.addEventListener('change', handleForceIntensityInput);
 }
 
 if (elements.eccentricToggle) {
-  elements.eccentricToggle.addEventListener('click', () => {
+  elements.eccentricToggle.addEventListener('click', (event) => {
+    if (updateForceProfileLockState()) {
+      event.preventDefault();
+      setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+      return;
+    }
+
     eccentricOverrideEnabled = !eccentricOverrideEnabled;
     elements.eccentricToggle.textContent = eccentricOverrideEnabled
       ? 'Disable eccentric profile'
@@ -607,7 +672,14 @@ if (elements.eccentricToggle) {
 }
 
 if (elements.eccentricSelect) {
-  elements.eccentricSelect.addEventListener('change', () => {
+  elements.eccentricSelect.addEventListener('change', (event) => {
+    if (updateForceProfileLockState()) {
+      event.target.value = lastEccentricMode;
+      setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
+      return;
+    }
+
+    lastEccentricMode = elements.eccentricSelect.value;
     updateForceCurveDescriptions();
     updateForceCurveLabel();
     redrawForceCurves();
@@ -740,6 +812,7 @@ motors.forEach((motor) => {
     motor.lastForceTravel = sliderDistance;
     drawWave(motor);
     refreshMotorResistance(motor);
+    updateForceProfileLockState();
   });
   motor.simSlider.addEventListener('change', () => {
     const distance = Number(motor.simSlider.value || 0);
@@ -758,6 +831,7 @@ motors.forEach((motor) => {
       setMotorEngagementDistance(motor, distance, { source: 'set-button' });
       disarmMotorCableSet(motor, { silent: true });
     }
+    updateForceProfileLockState();
   });
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
   refreshMotorResistance(motor);
@@ -1217,6 +1291,7 @@ function update(timestamp) {
       drawGauge(motor);
       drawWave(motor);
     });
+    updateForceProfileLockState();
     requestAnimationFrame(update);
     return;
   }
@@ -1342,6 +1417,8 @@ function update(timestamp) {
     drawWave(motor);
   });
 
+  updateForceProfileLockState();
+
   requestAnimationFrame(update);
 }
 
@@ -1416,6 +1493,8 @@ if (elements.eccentricPanel) {
   elements.eccentricPanel.hidden = true;
 }
 applyPowerState();
+
+updateForceProfileLockState();
 
 requestAnimationFrame(() => {
   syncWaveCanvasSizes();
