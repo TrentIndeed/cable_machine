@@ -6,14 +6,7 @@ const REP_SPAN_THRESHOLD = 3;
 const MOVEMENT_EPSILON = 0.05;
 const DEFAULT_REP_TARGET = 12;
 const TRAIL_LENGTH = 600;
-const INCHES_PER_MILE = 63360;
-const SECONDS_PER_HOUR = 3600;
-const RETRACTION_SPEED_MPH = 0.2;
-const RETRACTION_SPEED_IPS =
-  (RETRACTION_SPEED_MPH * INCHES_PER_MILE) / SECONDS_PER_HOUR;
-const SIM_SLIDER_STEP = 0.1;
-const DEFAULT_RETRACTION_BOTTOM = 1;
-const WEIGHT_ENGAGE_OFFSET = 1;
+
 const elements = {
   workoutState: document.getElementById('workoutState'),
   startToggle: document.getElementById('toggleWorkout'),
@@ -35,7 +28,9 @@ const elements = {
   eccentricDescription: document.getElementById('eccentricCurveDescription'),
   forceCurveIntensity: document.getElementById('forceCurveIntensity'),
   forcePanel: document.getElementById('forceCurvePanel'),
-  forceLockHint: document.getElementById('forceCurveLockHint'),
+  engageSlider: document.getElementById('engageDistance'),
+  engageDisplay: document.getElementById('engageDisplay'),
+  setCableButton: document.getElementById('setCableLength'),
   powerToggle: document.getElementById('powerToggle'),
   motorToggle: document.getElementById('motorToggle'),
   logList: document.getElementById('workoutLogList'),
@@ -44,64 +39,6 @@ const elements = {
   exerciseImagePlaceholder: document.getElementById('exerciseImagePlaceholder'),
   exerciseVideoPlaceholder: document.getElementById('exerciseVideoPlaceholder'),
 };
-
-function setStatusMessage(message, options = {}) {
-  if (!elements.message) return;
-  const { tone = 'info' } = options;
-  elements.message.textContent = message;
-  if (tone === 'error') {
-    elements.message.classList.add('is-error');
-  } else {
-    elements.message.classList.remove('is-error');
-  }
-}
-
-function motorBeyondEngagement(motor) {
-  if (!motor) {
-    return false;
-  }
-  const travel = motor.normalized * MAX_TRAVEL_INCHES;
-  return travel > motor.engagementDistance + MOVEMENT_EPSILON;
-}
-
-let forceProfileLockHintVisible = false;
-
-function updateForceProfileLockState() {
-  const locked = motors.some((motor) => motorBeyondEngagement(motor));
-
-  if (elements.forcePanel) {
-    elements.forcePanel.classList.toggle('is-locked', locked);
-  }
-
-  if (elements.forceLockHint) {
-    if (!locked) {
-      forceProfileLockHintVisible = false;
-    }
-    elements.forceLockHint.hidden = !(locked && forceProfileLockHintVisible);
-  }
-
-  const controls = [
-    elements.forceSelect,
-    elements.forceCurveIntensity,
-    elements.eccentricToggle,
-    elements.eccentricSelect,
-  ];
-  controls.forEach((control) => {
-    if (!control) return;
-    if (locked) {
-      control.setAttribute('aria-disabled', 'true');
-    } else {
-      control.removeAttribute('aria-disabled');
-    }
-  });
-
-  return locked;
-}
-
-function notifyForceProfileLock() {
-  forceProfileLockHintVisible = true;
-  updateForceProfileLockState();
-}
 
 function getForceCurveCopy(mode, intensityPercent) {
   const pct = Math.round(intensityPercent);
@@ -155,9 +92,6 @@ let eccentricOverrideEnabled = false;
 let forceCurveIntensity = 20;
 const workoutLog = [];
 
-let lastForceCurveMode = elements.forceSelect ? elements.forceSelect.value : 'linear';
-let lastEccentricMode = elements.eccentricSelect ? elements.eccentricSelect.value : 'eccentric';
-
 const exerciseCatalog = {
   'incline-bench': 'Incline Bench',
   'weighted-pullups': 'Weighted Pull Ups',
@@ -179,15 +113,10 @@ function createMotor(id, refs) {
 
   const slider = document.getElementById(refs.sliderId);
   const simSlider = document.getElementById(refs.simId);
-  const engagementSlider = document.getElementById(`${id}EngagementSlider`);
   const currentLabel = document.getElementById(refs.currentId);
   const baseLabel = document.getElementById(refs.baseId);
   const repsLabel = document.getElementById(refs.repsId);
   const cableLabel = document.getElementById(refs.cableId);
-  const engageDisplay = document.getElementById(`${id}EngageDisplay`);
-  const engageThresholdDisplay = document.getElementById(`${id}EngageThreshold`);
-  const setCableButton = document.getElementById(`${id}SetCableLength`);
-  const retractCableButton = document.getElementById(`${id}RetractCable`);
 
   const initialTravel = Number(simSlider.value);
   const normalized = Math.max(0, Math.min(1, initialTravel / MAX_TRAVEL_INCHES));
@@ -201,36 +130,22 @@ function createMotor(id, refs) {
     waveCtx,
     slider,
     simSlider,
-    engagementSlider,
     currentLabel,
     baseLabel,
     repsLabel,
     cableLabel,
-    engageDisplay,
-    engageThresholdDisplay,
-    setCableButton,
-    retractCableButton,
     baseResistance: Number(slider.value),
     currentResistance: 0,
     reps: 0,
     engaged: false,
-    engagementDistance: Math.max(DEFAULT_RETRACTION_BOTTOM, travelInches),
-    setArmed: false,
-    retractionActive: false,
-    retractionTarget: DEFAULT_RETRACTION_BOTTOM,
-    retractionSpeed: RETRACTION_SPEED_IPS,
     normalized,
-    direction: 1,
+    direction: 0,
     trail: new Array(TRAIL_LENGTH).fill(normalized),
     lastTravel: travelInches,
     phase: 'idle',
     lastPeak: travelInches,
     lastTrough: travelInches,
     repCounted: false,
-    resistanceSuspended: false,
-    armedTravelStart: null,
-    forceDirection: 1,
-    lastForceTravel: travelInches,
   };
 }
 
@@ -288,238 +203,23 @@ function resetMotorTracking(motor, travel) {
   motor.lastTrough = travel;
   motor.lastTravel = travel;
   motor.direction = 0;
-  motor.lastForceTravel = travel;
 }
 
 function calculateEngagementProgress(travel, engageDistance) {
-  const engageStart = Math.max(
-    0,
-    Math.min(MAX_TRAVEL_INCHES, engageDistance + WEIGHT_ENGAGE_OFFSET)
-  );
-  const rampEnd = Math.min(MAX_TRAVEL_INCHES, engageStart + ENGAGEMENT_RAMP_INCHES);
-  if (travel <= engageStart) {
+  const clampedStart = Math.max(0, Math.min(MAX_TRAVEL_INCHES, engageDistance));
+  const rampEnd = Math.min(MAX_TRAVEL_INCHES, clampedStart + ENGAGEMENT_RAMP_INCHES);
+  if (travel <= clampedStart) {
     return 0;
   }
   if (travel >= rampEnd) {
     return 1;
   }
-  const span = Math.max(0.001, rampEnd - engageStart);
-  return Math.max(0, Math.min(1, (travel - engageStart) / span));
-}
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function quantize(value, step) {
-  if (!step) return value;
-  return Math.round(value / step) * step;
-}
-
-function formatMotorLabel(id) {
-  if (!id) return 'System';
-  return `${id.charAt(0).toUpperCase()}${id.slice(1)}`;
-}
-
-function toggleButtonPulse(button, active) {
-  if (!button) return;
-  const shouldPulse = Boolean(active);
-  button.classList.toggle('is-pulsing', shouldPulse);
-  if (shouldPulse) {
-    button.setAttribute('aria-busy', 'true');
-  } else {
-    button.removeAttribute('aria-busy');
-  }
-}
-
-function setMotorResistanceSuspended(motor, suspended) {
-  if (!motor) return;
-  motor.resistanceSuspended = Boolean(suspended);
-  if (motor.resistanceSuspended) {
-    motor.currentResistance = 0;
-    drawGauge(motor);
-  } else {
-    refreshMotorResistance(motor);
-  }
-}
-
-
-function renderMotorEngagement(motor, options = {}) {
-  if (!motor) return;
-  const { preview } = options;
-  const distanceSource =
-    preview !== undefined ? preview : motor.engagementDistance;
-  const clampedValue = clamp(
-    distanceSource,
-    DEFAULT_RETRACTION_BOTTOM,
-    MAX_TRAVEL_INCHES
-  );
-  const formatted = `${clampedValue.toFixed(1)} in`;
-  const threshold = Math.min(
-    MAX_TRAVEL_INCHES,
-    clampedValue + WEIGHT_ENGAGE_OFFSET
-  );
-  const thresholdFormatted = `${threshold.toFixed(1)} in`;
-  if (motor.engageDisplay) {
-    motor.engageDisplay.textContent = formatted;
-  }
-  if (motor.engageThresholdDisplay) {
-    motor.engageThresholdDisplay.textContent = thresholdFormatted;
-  }
-}
-
-function announceMotorEngagementChange(motor, distance, source) {
-  if (!elements.message || !motor) return;
-  const clampedDistance = clamp(
-    distance,
-    DEFAULT_RETRACTION_BOTTOM,
-    MAX_TRAVEL_INCHES
-  );
-  const actualEngage = Math.min(
-    MAX_TRAVEL_INCHES,
-    clampedDistance + WEIGHT_ENGAGE_OFFSET
-  );
-  const engageNote = ` Weight engages at ${actualEngage.toFixed(1)} in.`;
-  const label = formatMotorLabel(motor.id);
-  let message;
-  switch (source) {
-    case 'set-button':
-      message = `${label} cable length locked at ${clampedDistance.toFixed(1)} in.`;
-      break;
-    case 'simulation':
-      message = `${label} cable length synchronized to ${clampedDistance.toFixed(
-        1
-      )} in from the simulator.`;
-      break;
-    case 'retraction':
-      message = `${label} cable retracted to ${clampedDistance.toFixed(1)} in.`;
-      break;
-    case 'engagement':
-    default:
-      message = `${label} engagement distance set to ${clampedDistance.toFixed(
-        1
-      )} in.`;
-      break;
-  }
-  if (source !== 'retraction') {
-    message = `${message}${engageNote}`;
-  }
-  setStatusMessage(message);
-}
-
-function setMotorEngagementDistance(motor, distance, options = {}) {
-  if (!motor) return null;
-  const { skipSimSync = false, source = 'engagement', announce = true } = options;
-  const clamped = clamp(distance, DEFAULT_RETRACTION_BOTTOM, MAX_TRAVEL_INCHES);
-  const quantized = quantize(clamped, SIM_SLIDER_STEP);
-  motor.engagementDistance = quantized;
-  renderMotorEngagement(motor);
-  if (motor.engagementSlider) {
-    motor.engagementSlider.value = quantized.toFixed(1);
-  }
-  refreshMotorResistance(motor);
-
-  if (!skipSimSync && motor.simSlider) {
-    motor.simSlider.value = quantized.toFixed(1);
-  }
-
-  if (announce) {
-    announceMotorEngagementChange(motor, quantized, source);
-  }
-
-  updateForceProfileLockState();
-
-  return quantized;
-}
-
-function disarmMotorCableSet(motor, options = {}) {
-  if (!motor || !motor.setArmed) return;
-  const { silent = false } = options;
-  motor.setArmed = false;
-  motor.armedTravelStart = null;
-  setMotorResistanceSuspended(motor, false);
-  toggleButtonPulse(motor.setCableButton, false);
-  if (!silent) {
-    const label = formatMotorLabel(motor.id);
-    setStatusMessage(`${label} cable length arming canceled.`);
-  }
-}
-
-function toggleMotorCableSet(motor) {
-  if (!motor || !powerOn) return;
-  if (motor.setArmed) {
-    disarmMotorCableSet(motor);
-    return;
-  }
-  const label = formatMotorLabel(motor.id);
-  if (motor.retractionActive) {
-    setStatusMessage(
-      `${label} cable is retracting. Wait for it to reach ${DEFAULT_RETRACTION_BOTTOM.toFixed(
-        1
-      )} in before arming.`,
-      { tone: 'error' }
-    );
-    return;
-  }
-  const current = Number(motor.simSlider.value || 0);
-  const tolerance = SIM_SLIDER_STEP / 2;
-  if (current > DEFAULT_RETRACTION_BOTTOM + tolerance) {
-    setStatusMessage(
-      `${label} cable must be fully retracted to ${DEFAULT_RETRACTION_BOTTOM.toFixed(
-        1
-      )} in before setting length.`,
-      { tone: 'error' }
-    );
-    return;
-  }
-
-  motor.setArmed = true;
-  motor.armedTravelStart = current;
-  setMotorResistanceSuspended(motor, true);
-  toggleButtonPulse(motor.setCableButton, true);
-  setStatusMessage(
-    `${label} cable length armed. Adjust the motor travel slider and release after at least 1.0 in of travel to lock it.`,
-    { tone: 'info' }
-  );
-}
-
-function markRetractActive(motor, active) {
-  if (!motor || !motor.retractCableButton) return;
-  toggleButtonPulse(motor.retractCableButton, active);
-}
-
-function startMotorRetraction(motor) {
-  if (!powerOn || !motor) return false;
-  if (motor.retractionActive) return false;
-  disarmMotorCableSet(motor, { silent: true });
-  const current = Number(motor.simSlider.value || 0);
-  if (current <= DEFAULT_RETRACTION_BOTTOM + SIM_SLIDER_STEP / 2) {
-    const label = formatMotorLabel(motor.id);
-    setStatusMessage(
-      `${label} control reports cable already at the retraction stop.`,
-      { tone: 'info' }
-    );
-    return false;
-  }
-
-  motor.retractionActive = true;
-  motor.retractionTarget = DEFAULT_RETRACTION_BOTTOM;
-  motor.retractionSpeed = RETRACTION_SPEED_IPS;
-  markRetractActive(motor, true);
-
-  const label = formatMotorLabel(motor.id);
-  setStatusMessage(
-    `${label} cable retracting to ${motor.retractionTarget.toFixed(1)} in at ${RETRACTION_SPEED_MPH.toFixed(
-      1
-    )} mph.`,
-    { tone: 'info' }
-  );
-
-  return true;
+  const span = Math.max(0.001, rampEnd - clampedStart);
+  return Math.max(0, Math.min(1, (travel - clampedStart) / span));
 }
 
 function resolveMotorResistance(motor, engageDistance, mode) {
-  if (!powerOn || !motorsRunning || motor.resistanceSuspended) {
+  if (!powerOn || !motorsRunning) {
     return 0;
   }
 
@@ -529,15 +229,17 @@ function resolveMotorResistance(motor, engageDistance, mode) {
     return 0;
   }
 
-  const direction = motor.forceDirection || motor.direction || 1;
-  const multiplier = computeForceMultiplier(mode, motor.normalized, direction);
+  const derivative = motor.direction || 1;
+  const multiplier = computeForceMultiplier(mode, motor.normalized, derivative);
   const applied = motor.baseResistance * rampProgress * multiplier;
   return Math.min(MAX_RESISTANCE, Math.max(0, applied));
 }
 
 function refreshMotorResistance(motor) {
   if (!motor) return;
-  const engageDistance = motor.engagementDistance;
+  const engageDistance = elements.engageSlider
+    ? Number(elements.engageSlider.value)
+    : 0;
   const mode = elements.forceSelect ? elements.forceSelect.value : 'linear';
   motor.currentResistance = resolveMotorResistance(motor, engageDistance, mode);
   drawGauge(motor);
@@ -545,6 +247,11 @@ function refreshMotorResistance(motor) {
 
 function refreshAllMotorResistances() {
   motors.forEach((motor) => refreshMotorResistance(motor));
+}
+
+function updateEngageDisplay() {
+  elements.engageDisplay.textContent = Number(elements.engageSlider.value).toFixed(1);
+  refreshAllMotorResistances();
 }
 
 function updateSetToggleAppearance() {
@@ -594,7 +301,7 @@ function toggleWorkout() {
       elements.workoutState.classList.remove('active');
       elements.workoutState.textContent = 'Workout Not Started';
     }
-    setStatusMessage('Tap “Start Workout” to arm the set controls.');
+    elements.message.textContent = 'Tap “Start Workout” to arm the set controls.';
     eccentricOverrideEnabled = false;
     if (elements.eccentricToggle) {
       elements.eccentricToggle.textContent = 'Enable eccentric profile';
@@ -612,7 +319,7 @@ function toggleWorkout() {
       elements.workoutState.classList.add('active');
       elements.workoutState.textContent = 'Workout Started';
     }
-    setStatusMessage('Press “Start Set” to begin counting reps.');
+    elements.message.textContent = 'Press “Start Set” to begin counting reps.';
     updateStatuses();
     requestAnimationFrame(() => {
       syncForceCurveCanvasSizes();
@@ -626,14 +333,7 @@ function toggleWorkout() {
 
 elements.startToggle.addEventListener('click', toggleWorkout);
 
-elements.forceSelect.addEventListener('change', (event) => {
-  if (updateForceProfileLockState()) {
-    event.target.value = lastForceCurveMode;
-    notifyForceProfileLock();
-    return;
-  }
-
-  lastForceCurveMode = elements.forceSelect.value;
+elements.forceSelect.addEventListener('change', () => {
   updateForceCurveDescriptions();
   updateForceCurveLabel();
   redrawForceCurves();
@@ -642,26 +342,13 @@ elements.forceSelect.addEventListener('change', (event) => {
 
 if (elements.forceCurveIntensity) {
   setForceCurveIntensity(elements.forceCurveIntensity.value || forceCurveIntensity);
-  const handleForceIntensityInput = (event) => {
-    if (updateForceProfileLockState()) {
-      event.target.value = String(forceCurveIntensity);
-      notifyForceProfileLock();
-      return;
-    }
+  elements.forceCurveIntensity.addEventListener('input', (event) => {
     setForceCurveIntensity(event.target.value);
-  };
-  elements.forceCurveIntensity.addEventListener('input', handleForceIntensityInput);
-  elements.forceCurveIntensity.addEventListener('change', handleForceIntensityInput);
+  });
 }
 
 if (elements.eccentricToggle) {
-  elements.eccentricToggle.addEventListener('click', (event) => {
-    if (updateForceProfileLockState()) {
-      event.preventDefault();
-      notifyForceProfileLock();
-      return;
-    }
-
+  elements.eccentricToggle.addEventListener('click', () => {
     eccentricOverrideEnabled = !eccentricOverrideEnabled;
     elements.eccentricToggle.textContent = eccentricOverrideEnabled
       ? 'Disable eccentric profile'
@@ -687,14 +374,7 @@ if (elements.eccentricToggle) {
 }
 
 if (elements.eccentricSelect) {
-  elements.eccentricSelect.addEventListener('change', (event) => {
-    if (updateForceProfileLockState()) {
-      event.target.value = lastEccentricMode;
-      notifyForceProfileLock();
-      return;
-    }
-
-    lastEccentricMode = elements.eccentricSelect.value;
+  elements.eccentricSelect.addEventListener('change', () => {
     updateForceCurveDescriptions();
     updateForceCurveLabel();
     redrawForceCurves();
@@ -702,6 +382,25 @@ if (elements.eccentricSelect) {
   });
 }
 
+elements.engageSlider.addEventListener('input', updateEngageDisplay);
+if (elements.setCableButton) {
+  elements.setCableButton.addEventListener('click', () => {
+    if (!elements.engageSlider) return;
+    if (!motors.length) return;
+    const totalDistance = motors.reduce(
+      (sum, motor) => sum + Number(motor.simSlider.value || 0),
+      0
+    );
+    const average = totalDistance / motors.length;
+    const quantized = Math.round(Math.max(0, Math.min(MAX_TRAVEL_INCHES, average)) * 2) / 2;
+    elements.engageSlider.value = String(quantized);
+    updateEngageDisplay();
+    if (elements.message) {
+      elements.message.textContent = `Engagement distance set to ${quantized.toFixed(1)} in based on cable position.`;
+    }
+  });
+}
+updateEngageDisplay();
 updateSetToggleAppearance();
 updateWorkoutToggleAppearance();
 
@@ -722,7 +421,7 @@ function startSet() {
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
     resetMotorTracking(motor, travel);
   });
-  setStatusMessage(`Set ${currentSet} active. Cable movement will arm the servos.`);
+  elements.message.textContent = `Set ${currentSet} active. Cable movement will arm the servos.`;
   updateStatuses();
   updateSetToggleAppearance();
 }
@@ -749,7 +448,7 @@ elements.reset.addEventListener('click', () => {
   workoutLog.length = 0;
   elements.logList.innerHTML = '';
   updateStatuses();
-  setStatusMessage('Workout reset. Adjust engagement or force curve when ready.');
+  elements.message.textContent = 'Workout reset. Adjust engagement or force curve when ready.';
   if (elements.workoutState) {
     elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
   }
@@ -769,21 +468,17 @@ function stopSet(options = {}) {
     if (elements.workoutState) {
       elements.workoutState.textContent = partial ? 'Set Logged' : 'Set Complete';
     }
-    setStatusMessage(
-      partial
-        ? `Set ${currentSet} logged with ${currentRep} reps.`
-        : `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`
-    );
+    elements.message.textContent = partial
+      ? `Set ${currentSet} logged with ${currentRep} reps.`
+      : `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
     recorded = true;
   } else {
     if (elements.workoutState) {
       elements.workoutState.textContent = workoutActive ? 'Workout Started' : 'Workout Not Started';
     }
-    setStatusMessage(
-      currentRep >= totalReps
-        ? 'Set complete. Press “Start Set” for the next round.'
-        : 'Set paused. Press “Start Set” to resume.'
-    );
+    elements.message.textContent = currentRep >= totalReps
+      ? 'Set complete. Press “Start Set” for the next round.'
+      : 'Set paused. Press “Start Set” to resume.';
   }
 
   motors.forEach((motor) => {
@@ -809,98 +504,17 @@ motors.forEach((motor) => {
   motor.simSlider.addEventListener('input', () => {
     const sliderDistance = Number(motor.simSlider.value);
     const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
-    const previous = motor.normalized;
-    const previousDistance = previous * MAX_TRAVEL_INCHES;
-    if (sliderDistance > previousDistance + SIM_SLIDER_STEP / 2) {
-      motor.direction = 1;
-      motor.forceDirection = 1;
-    } else if (sliderDistance < previousDistance - SIM_SLIDER_STEP / 2) {
-      motor.direction = -1;
-      motor.forceDirection = -1;
-    }
     motor.normalized = normalized;
     motor.trail.push(normalized);
     if (motor.trail.length > TRAIL_LENGTH) {
       motor.trail.shift();
     }
     motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
-    motor.lastForceTravel = sliderDistance;
     drawWave(motor);
     refreshMotorResistance(motor);
-    updateForceProfileLockState();
   });
-  motor.simSlider.addEventListener('change', () => {
-    const distance = Number(motor.simSlider.value || 0);
-    if (motor.setArmed) {
-      const start = motor.armedTravelStart ?? DEFAULT_RETRACTION_BOTTOM;
-      const required = start + 1;
-      const tolerance = SIM_SLIDER_STEP / 2;
-      if (distance < required - tolerance) {
-        const label = formatMotorLabel(motor.id);
-        setStatusMessage(
-          `${label} cable must be pulled at least 1.0 in before locking the length.`,
-          { tone: 'error' }
-        );
-        return;
-      }
-      setMotorEngagementDistance(motor, distance, { source: 'set-button' });
-      disarmMotorCableSet(motor, { silent: true });
-    }
-    updateForceProfileLockState();
-  });
-  if (motor.engagementSlider) {
-    motor.engagementSlider.addEventListener('input', () => {
-      if (!motor.setArmed) {
-        motor.engagementSlider.value = motor.engagementDistance.toFixed(1);
-        renderMotorEngagement(motor);
-        return;
-      }
-      const distance = Number(motor.engagementSlider.value || 0);
-      renderMotorEngagement(motor, { preview: distance });
-    });
-    motor.engagementSlider.addEventListener('change', () => {
-      const distance = Number(motor.engagementSlider.value || 0);
-      if (!motor.setArmed) {
-        const label = formatMotorLabel(motor.id);
-        setStatusMessage(
-          `${label} cable length must be armed before adjusting the engagement slider.`,
-          { tone: 'error' }
-        );
-        motor.engagementSlider.value = motor.engagementDistance.toFixed(1);
-        renderMotorEngagement(motor);
-        return;
-      }
-      const start = motor.armedTravelStart ?? DEFAULT_RETRACTION_BOTTOM;
-      const required = start + 1;
-      const tolerance = SIM_SLIDER_STEP / 2;
-      if (distance < required - tolerance) {
-        const label = formatMotorLabel(motor.id);
-        setStatusMessage(
-          `${label} cable must be pulled at least 1.0 in before locking the length.`,
-          { tone: 'error' }
-        );
-        motor.engagementSlider.value = motor.engagementDistance.toFixed(1);
-        renderMotorEngagement(motor);
-        return;
-      }
-      setMotorEngagementDistance(motor, distance, { source: 'engagement' });
-      disarmMotorCableSet(motor, { silent: true });
-      updateForceProfileLockState();
-    });
-  }
   motor.baseLabel.textContent = `${motor.baseResistance} lb`;
   refreshMotorResistance(motor);
-
-  if (motor.setCableButton) {
-    motor.setCableButton.addEventListener('click', () => {
-      toggleMotorCableSet(motor);
-    });
-  }
-  if (motor.retractCableButton) {
-    motor.retractCableButton.addEventListener('click', () => {
-      startMotorRetraction(motor);
-    });
-  }
 });
 
 function updateMotorToggle() {
@@ -935,21 +549,14 @@ function applyPowerState() {
     elements.reset,
     elements.forceSelect,
     elements.forceCurveIntensity,
+    elements.engageSlider,
+    elements.setCableButton,
     elements.motorToggle,
   ];
 
   motors.forEach((motor) => {
-    if (motor.setCableButton) {
-      interactive.push(motor.setCableButton);
-    }
-    if (motor.retractCableButton) {
-      interactive.push(motor.retractCableButton);
-    }
     motor.slider.disabled = !powerOn;
     motor.simSlider.disabled = !powerOn;
-    if (motor.engagementSlider) {
-      motor.engagementSlider.disabled = !powerOn;
-    }
   });
 
   interactive.forEach((el) => {
@@ -972,13 +579,6 @@ function applyPowerState() {
   }
 
   if (!powerOn) {
-    motors.forEach((motor) => {
-      disarmMotorCableSet(motor, { silent: true });
-      if (motor.retractionActive) {
-        motor.retractionActive = false;
-        markRetractActive(motor, false);
-      }
-    });
     stopSet();
     workoutActive = false;
     updateWorkoutToggleAppearance();
@@ -986,7 +586,7 @@ function applyPowerState() {
       elements.workoutState.textContent = 'System Offline';
       elements.workoutState.classList.remove('active');
     }
-    setStatusMessage('Power system on to resume control.');
+    elements.message.textContent = 'Power system on to resume control.';
     motorsRunning = false;
     updateMotorToggle();
   } else {
@@ -1068,18 +668,12 @@ function getForceCurveMultiplier(mode, normalized, direction) {
   }
 }
 
-function getActiveEccentricMode(fallbackMode) {
-  if (!elements.eccentricSelect) {
-    return fallbackMode;
+function computeForceMultiplier(mode, normalized, derivative) {
+  const direction = derivative < 0 ? -1 : 1;
+  let activeMode = mode;
+  if (direction < 0 && eccentricOverrideEnabled && elements.eccentricSelect) {
+    activeMode = elements.eccentricSelect.value;
   }
-  return eccentricOverrideEnabled ? elements.eccentricSelect.value : fallbackMode;
-}
-
-function computeForceMultiplier(mode, normalized, directionHint) {
-  const direction = directionHint < 0 ? -1 : 1;
-  const descending = direction < 0;
-  const eccentricMode = getActiveEccentricMode(mode);
-  const activeMode = descending ? eccentricMode : mode;
   return getForceCurveMultiplier(activeMode, normalized, direction);
 }
 
@@ -1196,7 +790,10 @@ function redrawForceCurves() {
   const mode = elements.forceSelect.value;
   drawForceProfile(elements.forceCurveConcentric, mode, 1);
 
-  const eccentricMode = getActiveEccentricMode(mode);
+  const eccentricMode =
+    eccentricOverrideEnabled && elements.eccentricSelect
+      ? elements.eccentricSelect.value
+      : mode;
   drawForceProfile(elements.forceCurveEccentric, eccentricMode, -1);
 }
 
@@ -1204,19 +801,15 @@ function updateForceCurveDescriptions() {
   const concentricMode = elements.forceSelect.value;
   const intensity = forceCurveIntensity;
   if (elements.forceDescription) {
-    elements.forceDescription.textContent = `Force curve: ${getForceCurveCopy(
-      concentricMode,
-      intensity
-    )}`;
+    elements.forceDescription.textContent = `Concentric: ${getForceCurveCopy(concentricMode, intensity)}`;
   }
 
   if (elements.eccentricDescription) {
-    const eccMode = getActiveEccentricMode(concentricMode);
-    const prefix = eccentricOverrideEnabled ? 'Eccentric override' : 'Eccentric';
-    elements.eccentricDescription.textContent = `${prefix}: ${getForceCurveCopy(
-      eccMode,
-      intensity
-    )}`;
+    const eccMode =
+      elements.eccentricSelect && eccentricOverrideEnabled
+        ? elements.eccentricSelect.value
+        : concentricMode;
+    elements.eccentricDescription.textContent = `Eccentric: ${getForceCurveCopy(eccMode, intensity)}`;
   }
 }
 
@@ -1227,7 +820,7 @@ function updateForceCurveLabel() {
 
   if (eccentricOverrideEnabled && elements.eccentricSelect) {
     const eccentricLabel = elements.eccentricSelect.options[elements.eccentricSelect.selectedIndex].text;
-    elements.forceLabel.textContent = `${concentricLabel} / ${eccentricLabel}`;
+    elements.forceLabel.textContent = `${concentricLabel} / ${eccentricLabel} (eccentric)`;
   } else {
     elements.forceLabel.textContent = concentricLabel;
   }
@@ -1292,15 +885,14 @@ function drawWave(motor) {
   const topPadding = 20;
   const bottomPadding = 24;
   const usableHeight = height - topPadding - bottomPadding;
-  const circleRadius = 16;
   const circleX = width - 46;
-  const availableWidth = circleX - circleRadius;
+  const availableWidth = circleX - 16;
   const headY = topPadding + (1 - motor.normalized) * usableHeight;
 
-  ctx.lineWidth = 8;
+  ctx.lineWidth = 4;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  const gradient = ctx.createLinearGradient(0, 0, circleX - circleRadius, 0);
+  const gradient = ctx.createLinearGradient(0, 0, circleX, 0);
   gradient.addColorStop(0, 'rgba(31, 139, 255, 0)');
   gradient.addColorStop(0.18, 'rgba(31, 139, 255, 0.45)');
   gradient.addColorStop(1, 'rgba(127, 255, 212, 0.95)');
@@ -1323,18 +915,17 @@ function drawWave(motor) {
   } else {
     ctx.moveTo(0, headY);
   }
-  ctx.lineTo(circleX - circleRadius, headY);
+  ctx.lineTo(circleX, headY);
   ctx.stroke();
 
   ctx.fillStyle = 'rgba(31, 139, 255, 0.35)';
   ctx.beginPath();
-  ctx.arc(circleX, headY, circleRadius, 0, TWO_PI);
+  ctx.arc(circleX, headY, 16, 0, TWO_PI);
   ctx.fill();
   ctx.lineWidth = 2;
   ctx.strokeStyle = 'rgba(127, 255, 212, 0.85)';
   ctx.stroke();
 }
-
 
 function update(timestamp) {
   const delta = (timestamp - lastTimestamp) / 1000;
@@ -1349,73 +940,31 @@ function update(timestamp) {
       drawGauge(motor);
       drawWave(motor);
     });
-    updateForceProfileLockState();
     requestAnimationFrame(update);
     return;
   }
 
+  const engageDistance = elements.engageSlider
+    ? Math.max(0, Math.min(MAX_TRAVEL_INCHES, Number(elements.engageSlider.value)))
+    : 0;
+  const engageThreshold = Math.min(0.98, engageDistance / MAX_TRAVEL_INCHES);
   const mode = elements.forceSelect ? elements.forceSelect.value : 'linear';
 
   motors.forEach((motor) => {
-    if (motor.retractionActive) {
-      const tolerance = SIM_SLIDER_STEP / 2;
-      const currentValue = Number(motor.simSlider.value);
-      if (currentValue > motor.retractionTarget + tolerance) {
-        const next = Math.max(
-          motor.retractionTarget,
-          currentValue - motor.retractionSpeed * delta
-        );
-        const quantized = quantize(next, SIM_SLIDER_STEP);
-        motor.simSlider.value = quantized.toFixed(1);
-      } else if (currentValue > motor.retractionTarget) {
-        const quantized = quantize(motor.retractionTarget, SIM_SLIDER_STEP);
-        motor.simSlider.value = quantized.toFixed(1);
-      } else {
-        motor.retractionActive = false;
-        markRetractActive(motor, false);
-        setMotorEngagementDistance(motor, motor.retractionTarget, {
-          skipSimSync: true,
-          source: 'retraction',
-          announce: true,
-        });
-      }
-    }
-
     const sliderDistance = Number(motor.simSlider.value);
     const normalized = Math.max(0, Math.min(1, sliderDistance / MAX_TRAVEL_INCHES));
     const previous = motor.normalized;
     motor.normalized = normalized;
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
-    const forceDelta = travel - motor.lastForceTravel;
-    if (Math.abs(forceDelta) > MOVEMENT_EPSILON) {
-      motor.forceDirection = forceDelta > 0 ? 1 : -1;
-      motor.lastForceTravel = travel;
-    }
+    const derivative = delta > 0 ? (normalized - previous) / delta : 0;
+    motor.direction = derivative >= 0 ? 1 : -1;
 
-    const engageDistance = motor.engagementDistance;
-    const engageThresholdDistance = Math.min(
-      MAX_TRAVEL_INCHES,
-      engageDistance + WEIGHT_ENGAGE_OFFSET
-    );
-    const engageThreshold = Math.min(
-      0.98,
-      engageThresholdDistance / MAX_TRAVEL_INCHES
-    );
-
-    if (
-      motorsRunning &&
-      setActive &&
-      !motor.engaged &&
-      motor.normalized >= engageThreshold
-    ) {
+    if (motorsRunning && setActive && !motor.engaged && motor.normalized >= engageThreshold) {
       motor.engaged = true;
-      const label = formatMotorLabel(motor.id);
-      setStatusMessage(
-        `${label} motor engaged at ${engageThresholdDistance.toFixed(1)} in. Rep tracking armed.`
-      );
+      if (motor.id === 'left') {
+        elements.message.textContent = `Left motor engaged at ${elements.engageSlider.value} in. Rep tracking armed.`;
+      }
     }
-
-    const resistance = resolveMotorResistance(motor, engageDistance, mode);
 
     if (!setActive) {
       motor.engaged = false;
@@ -1426,7 +975,7 @@ function update(timestamp) {
       resetMotorTracking(motor, travel);
     }
 
-    motor.currentResistance = resistance;
+    motor.currentResistance = resolveMotorResistance(motor, engageDistance, mode);
 
     motor.cableLabel.textContent = travel.toFixed(1);
 
@@ -1440,7 +989,6 @@ function update(timestamp) {
       motor.lastTravel = travel;
       if (Math.abs(deltaTravel) > MOVEMENT_EPSILON) {
         motor.direction = deltaTravel > 0 ? 1 : -1;
-        motor.forceDirection = motor.direction;
       }
 
       if (motor.direction >= 0) {
@@ -1475,8 +1023,6 @@ function update(timestamp) {
     drawWave(motor);
   });
 
-  updateForceProfileLockState();
-
   requestAnimationFrame(update);
 }
 
@@ -1491,7 +1037,7 @@ function finishSet() {
   if (elements.workoutState) {
     elements.workoutState.textContent = 'Set Complete';
   }
-  setStatusMessage(`Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`);
+  elements.message.textContent = `Set ${currentSet} complete. Press “Start Set” when you are ready for the next round.`;
   recordWorkoutSet();
   updateStatuses();
 }
@@ -1510,7 +1056,7 @@ function synchronizeRepProgress() {
     return;
   }
 
-  setStatusMessage(`Set ${currentSet}: rep ${currentRep} complete.`);
+  elements.message.textContent = `Set ${currentSet}: rep ${currentRep} complete.`;
   updateStatuses();
 }
 
@@ -1536,10 +1082,6 @@ function recordWorkoutSet(partial = false) {
   elements.logList.prepend(item);
 }
 
-motors.forEach((motor) => {
-  setMotorEngagementDistance(motor, DEFAULT_RETRACTION_BOTTOM, { announce: false });
-});
-
 requestAnimationFrame(update);
 
 updateStatuses();
@@ -1551,8 +1093,6 @@ if (elements.eccentricPanel) {
   elements.eccentricPanel.hidden = true;
 }
 applyPowerState();
-
-updateForceProfileLockState();
 
 requestAnimationFrame(() => {
   syncWaveCanvasSizes();
