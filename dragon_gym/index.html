@@ -77,20 +77,9 @@
         </div>
         <p class="status-message" id="workoutMessage">Tap “Start Workout” to arm the set controls.</p>
       </article>
-      <article class="engagement-card" aria-label="Cable engagement distance">
-        <h3>Cable Engagement</h3>
-        <label for="engageDistance" class="slider-field">
-          <span>Engagement distance</span>
-          <input type="range" id="engageDistance" min="0" max="24" step="0.5" value="1.5" />
-        </label>
-        <p class="hint">Engage after <span id="engageDisplay">1.5</span> in of travel.</p>
-        <div class="engagement-actions">
-          <button type="button" class="ghost" id="setCableLength">Set Cable Length</button>
-        </div>
-      </article>
       <article class="motor-card" data-motor="left">
         <div class="gauge-wrapper">
-          <canvas class="resistance-gauge" id="leftGauge" width="320" height="320" aria-hidden="true"></canvas>
+          <canvas class="resistance-gauge" id="leftGauge" width="540" height="540" aria-hidden="true"></canvas>
           <div class="gauge-center">
             <span class="motor-name">Left</span>
             <span class="current-resistance" id="leftCurrentResistance">0 lb</span>
@@ -106,15 +95,41 @@
             <dd id="leftRepCount">0</dd>
           </div>
         </dl>
-        <label class="slider-field">
-          <span>Adjust resistance</span>
-          <input type="range" id="leftResistance" min="0" max="300" value="120" />
-        </label>
+        <div class="resistance-control">
+          <label class="slider-field">
+            <span>Adjust resistance</span>
+            <input type="range" id="leftResistance" min="0" max="300" value="120" />
+          </label>
+        </div>
+        <div class="motor-engagement" aria-label="Left motor cable engagement">
+          <div class="engagement-control">
+            <label class="slider-field">
+              <span>Set engagement distance</span>
+              <input
+                type="range"
+                id="leftEngagementSlider"
+                min="1"
+                max="24"
+                step="0.1"
+                value="1"
+              />
+            </label>
+          </div>
+          <div class="engagement-readout" aria-live="polite">
+            <span class="label">Current engagement distance</span>
+            <span class="value" id="leftEngageDisplay">1.0 in</span>
+          </div>
+          <p class="hint">Weight engages at <span id="leftEngageThreshold">2.0 in</span>.</p>
+          <div class="engagement-actions">
+            <button type="button" class="ghost" id="leftSetCableLength">Set Cable Length</button>
+            <button type="button" class="ghost" id="leftRetractCable">Retract Cable</button>
+          </div>
+        </div>
       </article>
 
       <article class="motor-card" data-motor="right">
         <div class="gauge-wrapper">
-          <canvas class="resistance-gauge" id="rightGauge" width="320" height="320" aria-hidden="true"></canvas>
+          <canvas class="resistance-gauge" id="rightGauge" width="540" height="540" aria-hidden="true"></canvas>
           <div class="gauge-center">
             <span class="motor-name">Right</span>
             <span class="current-resistance" id="rightCurrentResistance">0 lb</span>
@@ -130,10 +145,36 @@
             <dd id="rightRepCount">0</dd>
           </div>
         </dl>
-        <label class="slider-field">
-          <span>Adjust resistance</span>
-          <input type="range" id="rightResistance" min="0" max="300" value="120" />
-        </label>
+        <div class="resistance-control">
+          <label class="slider-field">
+            <span>Adjust resistance</span>
+            <input type="range" id="rightResistance" min="0" max="300" value="120" />
+          </label>
+        </div>
+        <div class="motor-engagement" aria-label="Right motor cable engagement">
+          <div class="engagement-control">
+            <label class="slider-field">
+              <span>Set engagement distance</span>
+              <input
+                type="range"
+                id="rightEngagementSlider"
+                min="1"
+                max="24"
+                step="0.1"
+                value="1"
+              />
+            </label>
+          </div>
+          <div class="engagement-readout" aria-live="polite">
+            <span class="label">Current engagement distance</span>
+            <span class="value" id="rightEngageDisplay">1.0 in</span>
+          </div>
+          <p class="hint">Weight engages at <span id="rightEngageThreshold">2.0 in</span>.</p>
+          <div class="engagement-actions">
+            <button type="button" class="ghost" id="rightSetCableLength">Set Cable Length</button>
+            <button type="button" class="ghost" id="rightRetractCable">Retract Cable</button>
+          </div>
+        </div>
       </article>
     </section>
 
@@ -160,31 +201,46 @@
           <div class="sim-slider-group">
             <label class="sim-slider">
               <span>Left cable length</span>
-              <input type="range" id="leftSim" min="0" max="24" step="0.1" value="0" />
+              <input type="range" id="leftSim" min="1" max="24" step="0.1" value="1" />
             </label>
             <label class="sim-slider">
               <span>Right cable length</span>
-              <input type="range" id="rightSim" min="0" max="24" step="0.1" value="0" />
+              <input type="range" id="rightSim" min="1" max="24" step="0.1" value="1" />
             </label>
           </div>
         </section>
       </section>
       <section class="force-panel" aria-label="Force curve profiles" id="forceCurvePanel" hidden>
         <h3>Force Curve Profiles</h3>
+        <p class="hint lock-hint" id="forceCurveLockHint" hidden aria-live="polite">
+          Retract both cables to or below their engagement distance to adjust these settings.
+        </p>
         <div class="force-curve-group">
-          <label>
-            <span>Force curve mode (concentric)</span>
-            <select id="forceCurve">
-              <option value="linear">Linear</option>
-              <option value="chain">Chain mode</option>
-              <option value="band">Band mode</option>
-              <option value="reverse-chain">Reverse chain</option>
-            </select>
-          </label>
-          <label>
-            <span>Force curve intensity (%)</span>
-            <input type="number" id="forceCurveIntensity" min="0" max="100" step="1" value="20" />
-          </label>
+          <div class="force-curve-header">
+            <div class="force-curve-inputs">
+              <label>
+                <span>Force curve mode</span>
+                <select id="forceCurve">
+                  <option value="linear">Linear</option>
+                  <option value="chain">Chain mode</option>
+                  <option value="band">Band mode</option>
+                  <option value="reverse-chain">Reverse chain</option>
+                </select>
+              </label>
+              <label>
+                <span>Force curve intensity (%)</span>
+                <input type="number" id="forceCurveIntensity" min="0" max="100" step="1" value="20" />
+              </label>
+            </div>
+            <button
+              class="ghost eccentric-toggle"
+              id="eccentricToggle"
+              type="button"
+              aria-expanded="false"
+            >
+              Enable eccentric profile
+            </button>
+          </div>
           <canvas
             class="force-curve-graph"
             id="forceCurveConcentric"
@@ -192,15 +248,7 @@
             height="220"
             aria-hidden="true"
           ></canvas>
-          <p class="hint" id="forceCurveDescription">Concentric: Equal load through the pull and return.</p>
-          <button
-            class="ghost eccentric-toggle"
-            id="eccentricToggle"
-            type="button"
-            aria-expanded="false"
-          >
-            Enable eccentric profile
-          </button>
+          <p class="hint" id="forceCurveDescription">Force curve: Equal load through the pull and return.</p>
           <div class="eccentric-panel" id="eccentricPanel" hidden>
             <label>
               <span>Eccentric force curve</span>
