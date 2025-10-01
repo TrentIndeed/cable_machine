@@ -1246,10 +1246,10 @@ function drawWave(motor) {
   const availableWidth = circleX - circleRadius;
   const headY = topPadding + (1 - motor.normalized) * usableHeight;
 
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 8;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  const gradient = ctx.createLinearGradient(0, 0, circleX, 0);
+  const gradient = ctx.createLinearGradient(0, 0, circleX - circleRadius, 0);
   gradient.addColorStop(0, 'rgba(31, 139, 255, 0)');
   gradient.addColorStop(0.18, 'rgba(31, 139, 255, 0.45)');
   gradient.addColorStop(1, 'rgba(127, 255, 212, 0.95)');
@@ -1272,7 +1272,7 @@ function drawWave(motor) {
   } else {
     ctx.moveTo(0, headY);
   }
-  ctx.lineTo(circleX, headY);
+  ctx.lineTo(circleX - circleRadius, headY);
   ctx.stroke();
 
   ctx.fillStyle = 'rgba(31, 139, 255, 0.35)';
