@@ -177,6 +177,8 @@ function createMotor(id, refs) {
     repCounted: false,
     resistanceSuspended: false,
     armedTravelStart: null,
+    forceDirection: 1,
+    lastForceTravel: travelInches,
   };
 }
 
@@ -234,6 +236,7 @@ function resetMotorTracking(motor, travel) {
   motor.lastTrough = travel;
   motor.lastTravel = travel;
   motor.direction = 0;
+  motor.lastForceTravel = travel;
 }
 
 function calculateEngagementProgress(travel, engageDistance) {
@@ -466,8 +469,8 @@ function resolveMotorResistance(motor, engageDistance, mode) {
     return 0;
   }
 
-  const derivative = motor.direction || 1;
-  const multiplier = computeForceMultiplier(mode, motor.normalized, derivative);
+  const direction = motor.forceDirection || motor.direction || 1;
+  const multiplier = computeForceMultiplier(mode, motor.normalized, direction);
   const applied = motor.baseResistance * rampProgress * multiplier;
   return Math.min(MAX_RESISTANCE, Math.max(0, applied));
 }
@@ -723,8 +726,10 @@ motors.forEach((motor) => {
     const previousDistance = previous * MAX_TRAVEL_INCHES;
     if (sliderDistance > previousDistance + SIM_SLIDER_STEP / 2) {
       motor.direction = 1;
+      motor.forceDirection = 1;
     } else if (sliderDistance < previousDistance - SIM_SLIDER_STEP / 2) {
       motor.direction = -1;
+      motor.forceDirection = -1;
     }
     motor.normalized = normalized;
     motor.trail.push(normalized);
@@ -732,6 +737,7 @@ motors.forEach((motor) => {
       motor.trail.shift();
     }
     motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
+    motor.lastForceTravel = sliderDistance;
     drawWave(motor);
     refreshMotorResistance(motor);
   });
@@ -937,8 +943,8 @@ function getActiveEccentricMode(fallbackMode) {
   return eccentricOverrideEnabled ? elements.eccentricSelect.value : fallbackMode;
 }
 
-function computeForceMultiplier(mode, normalized, derivative) {
-  const direction = derivative < 0 ? -1 : 1;
+function computeForceMultiplier(mode, normalized, directionHint) {
+  const direction = directionHint < 0 ? -1 : 1;
   const descending = direction < 0;
   const eccentricMode = getActiveEccentricMode(mode);
   const activeMode = descending ? eccentricMode : mode;
@@ -1247,11 +1253,10 @@ function update(timestamp) {
     const previous = motor.normalized;
     motor.normalized = normalized;
     const travel = motor.normalized * MAX_TRAVEL_INCHES;
-    const derivative = delta > 0 ? (normalized - previous) / delta : 0;
-    if (derivative > 0) {
-      motor.direction = 1;
-    } else if (derivative < 0) {
-      motor.direction = -1;
+    const forceDelta = travel - motor.lastForceTravel;
+    if (Math.abs(forceDelta) > MOVEMENT_EPSILON) {
+      motor.forceDirection = forceDelta > 0 ? 1 : -1;
+      motor.lastForceTravel = travel;
     }
 
     const engageDistance = motor.engagementDistance;
@@ -1302,6 +1307,7 @@ function update(timestamp) {
       motor.lastTravel = travel;
       if (Math.abs(deltaTravel) > MOVEMENT_EPSILON) {
         motor.direction = deltaTravel > 0 ? 1 : -1;
+        motor.forceDirection = motor.direction;
       }
 
       if (motor.direction >= 0) {
