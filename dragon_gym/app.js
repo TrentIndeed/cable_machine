@@ -14,9 +14,6 @@ const RETRACTION_SPEED_IPS =
 const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
 const WEIGHT_ENGAGE_OFFSET = 1;
-const FORCE_PROFILE_LOCK_MESSAGE =
-  'Retract both cables to or below their engagement distance to adjust these';
-
 const elements = {
   workoutState: document.getElementById('workoutState'),
   startToggle: document.getElementById('toggleWorkout'),
@@ -104,7 +101,6 @@ function updateForceProfileLockState() {
 function notifyForceProfileLock() {
   forceProfileLockHintVisible = true;
   updateForceProfileLockState();
-  setStatusMessage(FORCE_PROFILE_LOCK_MESSAGE, { tone: 'error' });
 }
 
 function getForceCurveCopy(mode, intensityPercent) {
