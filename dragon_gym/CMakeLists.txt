@@ -1,21 +1,33 @@
-cmake_minimum_required(VERSION 3.5)
-project(dragon_gym CXX)
+cmake_minimum_required(VERSION 3.18)
+project(dragon_gym LANGUAGES CXX)
 
-# Specify the location of the WebUI source directory
-# Relative to this CMakeLists.txt
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(WEBUI_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/webui")
+add_subdirectory("${WEBUI_SOURCE_DIR}")
 
-# Add the WebUI include directory so your program can find webui.hpp
-target_include_directories(dragon_gym PRIVATE
-    "${WEBUI_SOURCE_DIR}/include"
-)
-
-# Add WebUI as a subdirectory to build the library alongside your project
-add_subdirectory("${WEBUI_SOURCE_DIR}" EXCLUDE_FROM_ALL)
-
-# Add your executable
 add_executable(dragon_gym main.cpp)
 
-# Link your executable with the WebUI library
-# The WebUI library target is named "webui" by default
+target_include_directories(dragon_gym PRIVATE
+  "${WEBUI_SOURCE_DIR}/include"
+)
+
 target_link_libraries(dragon_gym PRIVATE webui)
+
+if(MSVC)
+  target_compile_definitions(dragon_gym PRIVATE _CRT_SECURE_NO_WARNINGS)
+endif()
+
+set(WEBSITE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/website")
+set(ASSETS_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+
+add_custom_command(TARGET dragon_gym POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          "${WEBSITE_SOURCE_DIR}"
+          "$<TARGET_FILE_DIR:dragon_gym>/website"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory
+          "${ASSETS_SOURCE_DIR}"
+          "$<TARGET_FILE_DIR:dragon_gym>/website/assets"
+  COMMENT "Copying website and media assets for runtime"
+)
