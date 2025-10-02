@@ -1,0 +1,3 @@
+[submodule "dragon_gym/webui"]
+	path = dragon_gym/webui
+	url = https://github.com/webui-dev/webui.git
