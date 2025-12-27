@@ -27,6 +27,7 @@ function App() {
   const [eccentricEnabled, setEccentricEnabled] = useState(false);
   const [forceCurveOpen, setForceCurveOpen] = useState(false);
   const [selectorOpen, setSelectorOpen] = useState(false);
+  const [videoSrc, setVideoSrc] = useState('/assets/dragon_incline_bench.mp4');
 
   const forceCurveModeRef = useRef(forceCurveMode);
   const forceCurveIntensityRef = useRef(forceCurveIntensity);
@@ -63,8 +64,6 @@ function App() {
   const logListRef = useRef(null);
   const exerciseSelectRef = useRef(null);
   const exerciseTitleRef = useRef(null);
-  const exerciseImagePlaceholderRef = useRef(null);
-  const exerciseVideoPlaceholderRef = useRef(null);
 
   const leftGaugeRef = useRef(null);
   const leftSimRef = useRef(null);
@@ -103,6 +102,19 @@ function App() {
       'leg-curl': 'Leg Curl',
       'calve-raise': 'Calve Raise',
     }),
+    []
+  );
+
+  const exerciseVideos = useMemo(
+    () => [
+      '/assets/cable_broll.mp4',
+      '/assets/design_broll.mp4',
+      '/assets/dragon_chilling.mp4',
+      '/assets/dragon_incline_bench.mp4',
+      '/assets/dragon_loading_screen.mp4',
+      '/assets/dragon_pullups.mp4',
+      '/assets/spool_broll.mp4',
+    ],
     []
   );
 
@@ -150,8 +162,6 @@ function App() {
       logList: logListRef.current,
       exerciseSelect: exerciseSelectRef.current,
       exerciseTitle: exerciseTitleRef.current,
-      exerciseImagePlaceholder: exerciseImagePlaceholderRef.current,
-      exerciseVideoPlaceholder: exerciseVideoPlaceholderRef.current,
       eccentricDescription: eccentricDescriptionRef.current,
     };
 
@@ -1167,18 +1177,23 @@ function App() {
       elements.motorToggle.addEventListener('click', toggleMotors);
     }
 
+    function pickVideoForSelection(selection) {
+      const list = exerciseVideos;
+      if (!list.length) return '';
+      let hash = 0;
+      for (let i = 0; i < selection.length; i += 1) {
+        hash = (hash * 31 + selection.charCodeAt(i)) >>> 0;
+      }
+      return list[hash % list.length];
+    }
+
     function renderExercisePreview() {
       const selection = elements.exerciseSelect.value;
       const label = exerciseCatalog[selection] || 'Custom';
       if (elements.exerciseTitle) {
         elements.exerciseTitle.textContent = label;
       }
-      if (elements.exerciseImagePlaceholder) {
-        elements.exerciseImagePlaceholder.textContent = `${label} image placeholder`;
-      }
-      if (elements.exerciseVideoPlaceholder) {
-        elements.exerciseVideoPlaceholder.textContent = `${label} video placeholder`;
-      }
+      setVideoSrc(pickVideoForSelection(selection));
     }
 
     const handleExerciseChange = () => {
@@ -2163,7 +2178,7 @@ function App() {
         }
       });
     };
-  }, [exerciseCatalog]);
+  }, [exerciseCatalog, exerciseVideos]);
 
   return (
     <main className="app-shell">
@@ -2204,7 +2219,6 @@ function App() {
       <section className="resistance-overview" aria-label="Resistance overview">
         <article className="status-card" aria-label="Workout status" aria-live="polite">
           <header className="status-header">
-            <h2>Workout Status</h2>
             <span className="status-pill sr-only" id="workoutState" ref={workoutStateRef}>
               Workout Not Started
             </span>
@@ -2587,20 +2601,14 @@ function App() {
               Incline Bench
             </p>
             <div className="exercise-preview">
-              <div
-                className="media-placeholder image"
-                id="exerciseImagePlaceholder"
-                ref={exerciseImagePlaceholderRef}
-              >
-                Image placeholder
-              </div>
-              <div
-                className="media-placeholder video"
-                id="exerciseVideoPlaceholder"
-                ref={exerciseVideoPlaceholderRef}
-              >
-                Video placeholder
-              </div>
+            <video
+              className="media-placeholder video"
+              src={videoSrc}
+              muted
+              loop
+              playsInline
+              autoPlay
+            ></video>
             </div>
           </div>
         </section>

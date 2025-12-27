@@ -320,7 +320,7 @@ body {
   background: transparent;
   border-radius: 0;
   border: none;
-  padding: 20px 24px;
+  padding: 8px 24px;
   display: grid;
   gap: 16px;
   box-shadow: none;
@@ -910,7 +910,13 @@ button.is-pulsing {
   border: 1px solid rgba(31, 139, 255, 0.16);
   border-radius: 14px;
   padding: 14px 16px;
-  gap: 10px;
+  gap: 16px;
+  row-gap: 18px;
+}
+
+.status-stack > div {
+  display: grid;
+  gap: 6px;
 }
 
 .status-stack .label {
