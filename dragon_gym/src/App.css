@@ -1002,6 +1002,39 @@ button.is-pulsing {
   gap: 14px;
 }
 
+.card-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: "Rajdhani", sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0;
+}
+
+.card-toggle::after {
+  content: "▾";
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  transition: transform var(--transition), color var(--transition);
+}
+
+.card-toggle[aria-expanded="true"]::after {
+  transform: rotate(180deg);
+  color: var(--accent-secondary);
+}
+
+.card-body[hidden] {
+  display: none;
+}
+
 .force-panel {
   justify-items: center;
   text-align: center;

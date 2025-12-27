@@ -25,6 +25,8 @@ function App() {
   const [forceCurveIntensity, setForceCurveIntensityState] = useState(20);
   const [eccentricMode, setEccentricMode] = useState('eccentric');
   const [eccentricEnabled, setEccentricEnabled] = useState(false);
+  const [forceCurveOpen, setForceCurveOpen] = useState(false);
+  const [selectorOpen, setSelectorOpen] = useState(false);
 
   const forceCurveModeRef = useRef(forceCurveMode);
   const forceCurveIntensityRef = useRef(forceCurveIntensity);
@@ -2290,83 +2292,93 @@ function App() {
           ref={forcePanelRef}
           hidden
         >
-          <h3>Force Curve Profiles</h3>
-          <p
-            className="hint lock-hint"
-            id="forceCurveLockHint"
-            ref={forceLockHintRef}
-            hidden
-            aria-live="polite"
+          <button
+            className="card-toggle"
+            type="button"
+            aria-expanded={forceCurveOpen}
+            aria-controls="forceCurveBody"
+            onClick={() => setForceCurveOpen((prev) => !prev)}
           >
-            Retract both cables to or below their engagement distance to adjust these settings.
-          </p>
-          <div className="force-curve-group">
-            <div className="force-curve-header">
-              <div className="force-curve-inputs">
+            <span>Force Curve Profiles</span>
+          </button>
+          <div id="forceCurveBody" className="card-body" hidden={!forceCurveOpen}>
+            <p
+              className="hint lock-hint"
+              id="forceCurveLockHint"
+              ref={forceLockHintRef}
+              hidden
+              aria-live="polite"
+            >
+              Retract both cables to or below their engagement distance to adjust these settings.
+            </p>
+            <div className="force-curve-group">
+              <div className="force-curve-header">
+                <div className="force-curve-inputs">
+                  <label>
+                    <span>Force curve mode</span>
+                    <select id="forceCurve" ref={forceSelectRef} defaultValue="linear">
+                      <option value="linear">Linear</option>
+                      <option value="chain">Chain mode</option>
+                      <option value="band">Band mode</option>
+                      <option value="reverse-chain">Reverse chain</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Force curve intensity (%)</span>
+                    <input
+                      type="number"
+                      id="forceCurveIntensity"
+                      ref={forceCurveIntensityRefElement}
+                      min="0"
+                      max="100"
+                      step="1"
+                      defaultValue="20"
+                    />
+                  </label>
+                </div>
+                <button
+                  className="ghost eccentric-toggle"
+                  id="eccentricToggle"
+                  ref={eccentricToggleRef}
+                  type="button"
+                  aria-expanded="false"
+                >
+                  Enable eccentric profile
+                </button>
+              </div>
+              <canvas
+                className="force-curve-graph"
+                id="forceCurveConcentric"
+                ref={forceCurveConcentricRef}
+                width="640"
+                height="220"
+                aria-hidden="true"
+              ></canvas>
+              <p className="hint" id="forceCurveDescription" ref={forceDescriptionRef}>
+                Force curve: Equal load through the pull and return.
+              </p>
+              <div className="eccentric-panel" id="eccentricPanel" ref={eccentricPanelRef} hidden>
                 <label>
-                  <span>Force curve mode</span>
-                  <select id="forceCurve" ref={forceSelectRef} defaultValue="linear">
-                    <option value="linear">Linear</option>
+                  <span>Eccentric force curve</span>
+                  <select id="eccentricCurve" ref={eccentricSelectRef} defaultValue="eccentric">
+                    <option value="eccentric">Eccentric mode</option>
                     <option value="chain">Chain mode</option>
                     <option value="band">Band mode</option>
                     <option value="reverse-chain">Reverse chain</option>
                   </select>
                 </label>
-                <label>
-                  <span>Force curve intensity (%)</span>
-                  <input
-                    type="number"
-                    id="forceCurveIntensity"
-                    ref={forceCurveIntensityRefElement}
-                    min="0"
-                    max="100"
-                    step="1"
-                    defaultValue="20"
-                  />
-                </label>
+                <canvas
+                  className="force-curve-graph"
+                  id="forceCurveEccentric"
+                  ref={forceCurveEccentricRef}
+                  width="640"
+                  height="220"
+                  aria-hidden="true"
+                ></canvas>
+                <p className="hint" id="eccentricCurveDescription" ref={eccentricDescriptionRef}>
+                  Eccentric: +20% load on the lowering phase.
+                </p>
               </div>
-              <button
-                className="ghost eccentric-toggle"
-                id="eccentricToggle"
-                ref={eccentricToggleRef}
-                type="button"
-                aria-expanded="false"
-              >
-                Enable eccentric profile
-              </button>
-            </div>
-            <canvas
-              className="force-curve-graph"
-              id="forceCurveConcentric"
-              ref={forceCurveConcentricRef}
-              width="640"
-              height="220"
-              aria-hidden="true"
-            ></canvas>
-            <p className="hint" id="forceCurveDescription" ref={forceDescriptionRef}>
-              Force curve: Equal load through the pull and return.
-            </p>
-            <div className="eccentric-panel" id="eccentricPanel" ref={eccentricPanelRef} hidden>
-              <label>
-                <span>Eccentric force curve</span>
-                <select id="eccentricCurve" ref={eccentricSelectRef} defaultValue="eccentric">
-                  <option value="eccentric">Eccentric mode</option>
-                  <option value="chain">Chain mode</option>
-                  <option value="band">Band mode</option>
-                  <option value="reverse-chain">Reverse chain</option>
-                </select>
-              </label>
-              <canvas
-                className="force-curve-graph"
-                id="forceCurveEccentric"
-                ref={forceCurveEccentricRef}
-                width="640"
-                height="220"
-                aria-hidden="true"
-              ></canvas>
-              <p className="hint" id="eccentricCurveDescription" ref={eccentricDescriptionRef}>
-                Eccentric: +20% load on the lowering phase.
-              </p>
             </div>
           </div>
         </section>
@@ -2378,34 +2390,44 @@ function App() {
           <ul className="log-list" id="workoutLogList" ref={logListRef}></ul>
         </section>
         <section className="selector-panel" aria-label="Workout selector">
-          <h3>Workout Selector</h3>
-          <div className="selector-controls">
-            <label htmlFor="exerciseSelect">Choose an exercise</label>
-            <select id="exerciseSelect" ref={exerciseSelectRef} defaultValue="incline-bench">
-              {Object.entries(exerciseCatalog).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <p className="exercise-title" id="exerciseTitle" ref={exerciseTitleRef}>
-            Incline Bench
-          </p>
-          <div className="exercise-preview">
-            <div
-              className="media-placeholder image"
-              id="exerciseImagePlaceholder"
-              ref={exerciseImagePlaceholderRef}
-            >
-              Image placeholder
+          <button
+            className="card-toggle"
+            type="button"
+            aria-expanded={selectorOpen}
+            aria-controls="selectorBody"
+            onClick={() => setSelectorOpen((prev) => !prev)}
+          >
+            <span>Workout Selector</span>
+          </button>
+          <div id="selectorBody" className="card-body" hidden={!selectorOpen}>
+            <div className="selector-controls">
+              <label htmlFor="exerciseSelect">Choose an exercise</label>
+              <select id="exerciseSelect" ref={exerciseSelectRef} defaultValue="incline-bench">
+                {Object.entries(exerciseCatalog).map(([key, label]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
             </div>
-            <div
-              className="media-placeholder video"
-              id="exerciseVideoPlaceholder"
-              ref={exerciseVideoPlaceholderRef}
-            >
-              Video placeholder
+            <p className="exercise-title" id="exerciseTitle" ref={exerciseTitleRef}>
+              Incline Bench
+            </p>
+            <div className="exercise-preview">
+              <div
+                className="media-placeholder image"
+                id="exerciseImagePlaceholder"
+                ref={exerciseImagePlaceholderRef}
+              >
+                Image placeholder
+              </div>
+              <div
+                className="media-placeholder video"
+                id="exerciseVideoPlaceholder"
+                ref={exerciseVideoPlaceholderRef}
+              >
+                Video placeholder
+              </div>
             </div>
           </div>
         </section>
