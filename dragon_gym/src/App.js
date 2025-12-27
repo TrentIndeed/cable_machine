@@ -2066,6 +2066,39 @@ function App() {
           </p>
         </article>
         <article className="motor-card" data-motor="left">
+          <div className="motor-engagement" aria-label="Left motor cable engagement">
+            <div className="engagement-readout" aria-live="polite">
+              <span className="label">Engagement distance</span>
+              <span className="value" id="leftEngageDisplay" ref={leftEngageDisplayRef}>
+                1.0 in
+              </span>
+            </div>
+            <p className="hint">
+              Weight engages at{' '}
+              <span id="leftEngageThreshold" ref={leftEngageThresholdRef}>
+                2.0 in
+              </span>
+              .
+            </p>
+            <div className="engagement-actions">
+              <button
+                type="button"
+                className="ghost"
+                id="leftSetCableLength"
+                ref={leftSetCableLengthRef}
+              >
+                Set Cable Length
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                id="leftRetractCable"
+                ref={leftRetractCableRef}
+              >
+                Retract Cable
+              </button>
+            </div>
+          </div>
           <div className="gauge-wrapper">
             <canvas
               className="resistance-gauge"
@@ -2102,16 +2135,19 @@ function App() {
               </dd>
             </div>
           </dl>
-          <div className="motor-engagement" aria-label="Left motor cable engagement">
+        </article>
+
+        <article className="motor-card" data-motor="right">
+          <div className="motor-engagement" aria-label="Right motor cable engagement">
             <div className="engagement-readout" aria-live="polite">
               <span className="label">Engagement distance</span>
-              <span className="value" id="leftEngageDisplay" ref={leftEngageDisplayRef}>
+              <span className="value" id="rightEngageDisplay" ref={rightEngageDisplayRef}>
                 1.0 in
               </span>
             </div>
             <p className="hint">
               Weight engages at{' '}
-              <span id="leftEngageThreshold" ref={leftEngageThresholdRef}>
+              <span id="rightEngageThreshold" ref={rightEngageThresholdRef}>
                 2.0 in
               </span>
               .
@@ -2120,24 +2156,21 @@ function App() {
               <button
                 type="button"
                 className="ghost"
-                id="leftSetCableLength"
-                ref={leftSetCableLengthRef}
+                id="rightSetCableLength"
+                ref={rightSetCableLengthRef}
               >
                 Set Cable Length
               </button>
               <button
                 type="button"
                 className="ghost"
-                id="leftRetractCable"
-                ref={leftRetractCableRef}
+                id="rightRetractCable"
+                ref={rightRetractCableRef}
               >
                 Retract Cable
               </button>
             </div>
           </div>
-        </article>
-
-        <article className="motor-card" data-motor="right">
           <div className="gauge-wrapper">
             <canvas
               className="resistance-gauge"
@@ -2174,39 +2207,6 @@ function App() {
               </dd>
             </div>
           </dl>
-          <div className="motor-engagement" aria-label="Right motor cable engagement">
-            <div className="engagement-readout" aria-live="polite">
-              <span className="label">Engagement distance</span>
-              <span className="value" id="rightEngageDisplay" ref={rightEngageDisplayRef}>
-                1.0 in
-              </span>
-            </div>
-            <p className="hint">
-              Weight engages at{' '}
-              <span id="rightEngageThreshold" ref={rightEngageThresholdRef}>
-                2.0 in
-              </span>
-              .
-            </p>
-            <div className="engagement-actions">
-              <button
-                type="button"
-                className="ghost"
-                id="rightSetCableLength"
-                ref={rightSetCableLengthRef}
-              >
-                Set Cable Length
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                id="rightRetractCable"
-                ref={rightRetractCableRef}
-              >
-                Retract Cable
-              </button>
-            </div>
-          </div>
         </article>
       </section>
       <section className="workspace">

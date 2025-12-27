@@ -415,7 +415,7 @@ body {
 }
 
 .motor-engagement {
-  margin: 28px auto 0;
+  margin: 0 auto 12px;
   width: min(100%, 760px);
   display: grid;
   gap: 18px;
@@ -461,7 +461,13 @@ body {
 }
 
 .motor-engagement .engagement-actions {
+  flex-wrap: nowrap;
   justify-content: center;
+  width: 100%;
+}
+
+.motor-engagement .engagement-actions button {
+  flex: 1 1 0;
 }
 
 button.is-pulsing {
@@ -515,6 +521,9 @@ button.is-pulsing {
   width: 100%;
   min-height: 100%;
   align-content: start;
+  outline: 2px solid transparent;
+  outline-offset: 0;
+  transition: outline-offset var(--transition), outline-color var(--transition), transform 220ms ease;
 }
 
 .motor-card::before {
@@ -523,12 +532,17 @@ button.is-pulsing {
   inset: 0;
   background: radial-gradient(circle at top, rgba(31, 139, 255, 0.16), transparent 55%);
   opacity: 0;
-  transition: opacity var(--transition);
   pointer-events: none;
 }
 
 .motor-card:hover::before {
-  opacity: 1;
+  opacity: 0;
+}
+
+.motor-card:hover {
+  outline-color: rgba(200, 200, 200, 0.45);
+  outline-offset: 6px;
+  transform: scale(1.02);
 }
 
 .gauge-wrapper {
