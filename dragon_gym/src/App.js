@@ -42,6 +42,8 @@ function App() {
   const resetRef = useRef(null);
   const setStatusRef = useRef(null);
   const repStatusRef = useRef(null);
+  const waveRepRef = useRef(null);
+  const waveRepBounceTimeoutRef = useRef(null);
   const leftStatusRepsRef = useRef(null);
   const rightStatusRepsRef = useRef(null);
   const messageRef = useRef(null);
@@ -128,6 +130,7 @@ function App() {
       reset: resetRef.current,
       setStatus: setStatusRef.current,
       repStatus: repStatusRef.current,
+      waveRep: waveRepRef.current,
       leftStatusReps: leftStatusRepsRef.current,
       rightStatusReps: rightStatusRepsRef.current,
       message: messageRef.current,
@@ -1190,6 +1193,19 @@ function App() {
     function updateStatuses() {
       elements.setStatus.textContent = `${currentSet}`;
       elements.repStatus.textContent = `${currentRep} / ${totalReps}`;
+      if (elements.waveRep) {
+        elements.waveRep.textContent = `${currentRep}`;
+        elements.waveRep.classList.remove('is-bouncing');
+        if (waveRepBounceTimeoutRef.current) {
+          clearTimeout(waveRepBounceTimeoutRef.current);
+        }
+        elements.waveRep.classList.add('is-bouncing');
+        waveRepBounceTimeoutRef.current = setTimeout(() => {
+          if (elements.waveRep) {
+            elements.waveRep.classList.remove('is-bouncing');
+          }
+        }, 450);
+      }
       if (elements.leftStatusReps) {
         elements.leftStatusReps.textContent = `${motors[0].reps}`;
       }
@@ -1673,8 +1689,8 @@ function App() {
         ctx.lineWidth = 12;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.shadowBlur = 18;
-        ctx.shadowColor = palette.glow;
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
         const gradient = ctx.createLinearGradient(0, 0, circleX - circleRadius, 0);
         gradient.addColorStop(0, palette.primary);
         gradient.addColorStop(1, palette.primary);
@@ -2398,7 +2414,9 @@ function App() {
           <div className="wave-grid">
             <article className="wave-card" data-motor="combined">
               <header>
-                <span className="motor-name">Cable Travel</span>
+                <span className="wave-rep-label">
+                <span className="wave-rep-count" ref={waveRepRef}>0</span>
+                </span>
               </header>
               <canvas
                 className="wave-canvas"

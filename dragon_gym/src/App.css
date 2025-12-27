@@ -280,7 +280,7 @@ body {
 }
 
 .battery-body::after {
-  content: "";
+  content: "v";
   position: absolute;
   top: 50%;
   right: -6px;
@@ -536,7 +536,7 @@ button.is-pulsing {
 }
 
 .motor-card::before {
-  content: "";
+  content: "v";
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at top, rgba(31, 139, 255, 0.16), transparent 55%);
@@ -1029,7 +1029,7 @@ button.is-pulsing {
 }
 
 .card-toggle::after {
-  content: "â–¾";
+  content: "v";
   font-size: 1.2rem;
   color: var(--text-muted);
   transition: transform var(--transition), color var(--transition);
@@ -1187,10 +1187,41 @@ button.is-pulsing {
 
 .wave-card header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: baseline;
   font-size: 0.95rem;
   color: var(--text-muted);
+}
+
+.wave-rep-label {
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wave-rep-count {
+  font-size: 4rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wave-rep-count.is-bouncing {
+  animation: rep-bounce 450ms ease;
+}
+
+@keyframes rep-bounce {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12);
+  }
+  70% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .wave-canvas {
@@ -1392,4 +1423,5 @@ button.is-pulsing {
     align-items: flex-start;
   }
 }
+
 
