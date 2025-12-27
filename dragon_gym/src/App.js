@@ -1192,6 +1192,25 @@ function App() {
         : fallbackMode;
     }
 
+    function getMotorPalette(motorId) {
+      if (motorId === 'right') {
+        return {
+          primary: 'rgba(255, 128, 200, 0.95)',
+          secondary: 'rgba(255, 72, 170, 0.95)',
+          glow: 'rgba(255, 128, 200, 0.85)',
+          waveFade: 'rgba(255, 128, 200, 0.55)',
+          waveDot: 'rgba(255, 128, 200, 0.35)',
+        };
+      }
+      return {
+        primary: 'rgba(127, 255, 212, 0.95)',
+        secondary: 'rgba(31, 139, 255, 0.95)',
+        glow: 'rgba(64, 200, 255, 0.85)',
+        waveFade: 'rgba(31, 139, 255, 0.55)',
+        waveDot: 'rgba(31, 139, 255, 0.35)',
+      };
+    }
+
     function computeForceMultiplier(mode, normalized, directionHint) {
       const direction = directionHint < 0 ? -1 : 1;
       const descending = direction < 0;
@@ -1369,12 +1388,14 @@ function App() {
       const centerY = height / 2;
       const radius = Math.min(width, height) / 2 - 10;
       const startAngle = -Math.PI / 2;
-      const strokeWidth = Math.max(8, radius * 0.08);
+      const strokeWidth = Math.max(14, radius * 0.12);
 
       ctx.lineCap = 'round';
       ctx.lineWidth = strokeWidth;
 
-      ctx.strokeStyle = 'rgba(40, 54, 82, 0.55)';
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = 'transparent';
+      ctx.strokeStyle = 'rgba(180, 180, 180, 0.28)';
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, TWO_PI, false);
       ctx.stroke();
@@ -1383,12 +1404,15 @@ function App() {
         0,
         Math.min(1, motor.currentResistance / MAX_RESISTANCE)
       );
+      const palette = getMotorPalette(motor.id);
       const gradient = ctx.createLinearGradient(0, 0, width, height);
-      gradient.addColorStop(0, 'rgba(127, 255, 212, 0.95)');
-      gradient.addColorStop(1, 'rgba(31, 139, 255, 0.95)');
+      gradient.addColorStop(0, palette.primary);
+      gradient.addColorStop(1, palette.secondary);
 
       if (progress > 0) {
         ctx.strokeStyle = gradient;
+        ctx.shadowBlur = 24;
+        ctx.shadowColor = palette.glow;
         ctx.beginPath();
         ctx.arc(
           centerX,
@@ -1402,7 +1426,7 @@ function App() {
       }
 
       if (motor.currentLabel) {
-        motor.currentLabel.textContent = `${Math.round(motor.currentResistance)} lb`;
+        motor.currentLabel.textContent = `${Math.round(motor.currentResistance)}`;
       }
       if (motor.repsLabel) {
         motor.repsLabel.textContent = `${motor.reps}`;
@@ -1423,13 +1447,16 @@ function App() {
       const availableWidth = circleX - circleRadius;
       const headY = topPadding + (1 - motor.normalized) * usableHeight;
 
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 12;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+      ctx.shadowBlur = 18;
+      const palette = getMotorPalette(motor.id);
+      ctx.shadowColor = palette.glow;
       const gradient = ctx.createLinearGradient(0, 0, circleX - circleRadius, 0);
-      gradient.addColorStop(0, 'rgba(31, 139, 255, 0)');
-      gradient.addColorStop(0.18, 'rgba(31, 139, 255, 0.45)');
-      gradient.addColorStop(1, 'rgba(127, 255, 212, 0.95)');
+      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      gradient.addColorStop(0.18, palette.waveFade);
+      gradient.addColorStop(1, palette.primary);
       ctx.strokeStyle = gradient;
       ctx.beginPath();
 
@@ -1452,13 +1479,14 @@ function App() {
       ctx.lineTo(circleX - circleRadius, headY);
       ctx.stroke();
 
-      ctx.fillStyle = 'rgba(31, 139, 255, 0.35)';
+      ctx.fillStyle = palette.waveDot;
       ctx.beginPath();
       ctx.arc(circleX, headY, circleRadius, 0, TWO_PI);
       ctx.fill();
       ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(127, 255, 212, 0.85)';
+      ctx.strokeStyle = palette.primary;
       ctx.stroke();
+      ctx.shadowBlur = 0;
     }
     function update(timestamp) {
       const delta = (timestamp - lastTimestamp) / 1000;
@@ -1926,13 +1954,15 @@ function App() {
               aria-hidden="true"
             ></canvas>
             <div className="gauge-center">
-              <span className="motor-name">Left</span>
-              <span
-                className="current-resistance"
-                id="leftCurrentResistance"
-                ref={leftCurrentResistanceRef}
-              >
-                0 lb
+              <span className="current-resistance">
+                <span
+                  className="current-resistance-value"
+                  id="leftCurrentResistance"
+                  ref={leftCurrentResistanceRef}
+                >
+                  0
+                </span>
+                <span className="current-resistance-unit">LB</span>
               </span>
             </div>
           </div>
@@ -2009,13 +2039,15 @@ function App() {
               aria-hidden="true"
             ></canvas>
             <div className="gauge-center">
-              <span className="motor-name">Right</span>
-              <span
-                className="current-resistance"
-                id="rightCurrentResistance"
-                ref={rightCurrentResistanceRef}
-              >
-                0 lb
+              <span className="current-resistance">
+                <span
+                  className="current-resistance-value"
+                  id="rightCurrentResistance"
+                  ref={rightCurrentResistanceRef}
+                >
+                  0
+                </span>
+                <span className="current-resistance-unit">LB</span>
               </span>
             </div>
           </div>

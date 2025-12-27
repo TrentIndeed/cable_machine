@@ -79,7 +79,7 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: 24px;
-  background: linear-gradient(135deg, rgba(18, 30, 55, 0.9), rgba(6, 13, 24, 0.9));
+  background: linear-gradient(135deg, rgba(32, 32, 32, 0.92), rgba(14, 14, 14, 0.92));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
   padding: 22px 26px;
@@ -277,7 +277,7 @@ body {
 }
 
 .status-card {
-  background: linear-gradient(150deg, rgba(8, 14, 25, 0.94), rgba(4, 7, 15, 0.9));
+  background: linear-gradient(150deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.92));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
   padding: 20px 24px;
@@ -308,7 +308,7 @@ body {
 
 .engagement-card {
   grid-column: 1 / -1;
-  background: linear-gradient(160deg, rgba(10, 16, 28, 0.94), rgba(6, 11, 20, 0.9));
+  background: linear-gradient(160deg, rgba(28, 28, 28, 0.94), rgba(12, 12, 12, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
   padding: 20px 24px;
@@ -464,7 +464,7 @@ button.is-pulsing {
 }
 
 .motor-card {
-  background: linear-gradient(160deg, rgba(12, 18, 32, 0.95), rgba(6, 10, 20, 0.9));
+  background: linear-gradient(160deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
   padding: 24px;
@@ -511,13 +511,12 @@ button.is-pulsing {
   left: 50%;
   width: min(68%, 360px);
   height: min(68%, 360px);
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
+  transform: translate(-50%, -46%);
   display: grid;
   place-items: center;
-  background: rgba(8, 12, 22, 0.8);
-  border: 1px solid rgba(31, 139, 255, 0.2);
-  box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.55);
+  background: transparent;
+  border: none;
+  box-shadow: none;
   padding: 10px;
   text-align: center;
 }
@@ -531,8 +530,23 @@ button.is-pulsing {
 }
 
 .current-resistance {
-  font-size: clamp(2.2rem, 5vw, 3.4rem);
-  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.current-resistance-value {
+  font-size: clamp(5.6rem, 12.6vw, 10.5rem);
+  font-weight: 300;
+  line-height: 0.9;
+}
+
+.current-resistance-unit {
+  font-size: 2.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 .motor-meta {
@@ -860,7 +874,7 @@ button.is-pulsing {
 }
 
 .visual-panel {
-  background: linear-gradient(160deg, rgba(9, 16, 27, 0.92), rgba(4, 7, 15, 0.9));
+  background: linear-gradient(160deg, rgba(28, 28, 28, 0.92), rgba(12, 12, 12, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
   padding: 24px;
@@ -875,7 +889,7 @@ button.is-pulsing {
 }
 
 .simulator-panel {
-  background: rgba(4, 9, 18, 0.78);
+  background: rgba(20, 20, 20, 0.86);
   border-radius: 16px;
   border: 1px solid rgba(31, 139, 255, 0.2);
   padding: 22px;
@@ -914,7 +928,7 @@ button.is-pulsing {
 }
 
 .wave-card {
-  background: rgba(4, 9, 18, 0.78);
+  background: rgba(20, 20, 20, 0.86);
   border-radius: 16px;
   border: 1px solid rgba(31, 139, 255, 0.18);
   padding: 18px 18px 10px;
@@ -925,7 +939,7 @@ button.is-pulsing {
 .force-panel,
 .log-panel,
 .selector-panel {
-  background: rgba(4, 9, 18, 0.78);
+  background: rgba(20, 20, 20, 0.86);
   border-radius: 16px;
   border: 1px solid rgba(31, 139, 255, 0.18);
   padding: 20px;
