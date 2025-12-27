@@ -52,7 +52,8 @@ body {
 }
 
 .app-shell {
-  width: min(100%, 1080px);
+  width: 1080px;
+  max-width: 100%;
   min-height: 1920px;
   margin: 0 auto;
   padding: clamp(28px, 6vw, 50px) clamp(20px, 4vw, 32px) 60px;
@@ -304,6 +305,7 @@ body {
   grid-template-columns: repeat(2, minmax(320px, 1fr));
   gap: clamp(20px, 3vw, 32px);
   align-items: stretch;
+  width: 100%;
 }
 
 
@@ -417,7 +419,7 @@ body {
 
 .motor-engagement {
   margin: 0 auto 12px;
-  width: min(100%, 760px);
+  width: 100%;
   display: grid;
   gap: 18px;
   text-align: center;
@@ -433,7 +435,7 @@ body {
   display: grid;
   gap: 6px;
   width: 100%;
-  max-width: 640px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -654,6 +656,7 @@ button.is-pulsing {
   display: grid;
   gap: 28px;
   grid-template-columns: 1fr;
+  width: 100%;
 }
 
 .panel-intro {
@@ -672,7 +675,7 @@ button.is-pulsing {
 .force-curve-group {
   display: grid;
   gap: 16px;
-  max-width: 620px;
+  max-width: 100%;
   justify-items: stretch;
   margin: 0 auto;
   text-align: center;
@@ -950,12 +953,14 @@ button.is-pulsing {
   padding: 24px;
   display: grid;
   gap: 20px;
+  width: 100%;
 }
 
 .wave-grid {
   display: grid;
   gap: 22px;
   grid-template-columns: 1fr;
+  width: 100%;
 }
 
 .simulator-panel {
@@ -1004,6 +1009,7 @@ button.is-pulsing {
   padding: 0;
   display: grid;
   gap: 12px;
+  width: 100%;
 }
 
 .force-panel,
@@ -1015,6 +1021,7 @@ button.is-pulsing {
   padding: 20px;
   display: grid;
   gap: 14px;
+  width: 100%;
 }
 
 .card-toggle {
@@ -1176,6 +1183,7 @@ button.is-pulsing {
   margin-top: 18px;
   display: grid;
   gap: 16px;
+  width: 100%;
 }
 
 .media-placeholder {
@@ -1189,6 +1197,15 @@ button.is-pulsing {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(127, 255, 212, 0.75);
+  width: 100%;
+}
+
+.selector-panel video {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 14px;
 }
 
 .wave-card header {
