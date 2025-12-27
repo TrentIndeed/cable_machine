@@ -32,6 +32,9 @@ function App() {
   const forceCurveIntensityRef = useRef(forceCurveIntensity);
   const eccentricModeRef = useRef(eccentricMode);
   const eccentricEnabledRef = useRef(eccentricEnabled);
+  const waveScaleMaxRef = useRef(10);
+  const waveScaleMinRef = useRef(0);
+  const waveScaleSamplesRef = useRef([]);
 
   const workoutStateRef = useRef(null);
   const startToggleRef = useRef(null);
@@ -68,7 +71,6 @@ function App() {
   const leftRepCountRef = useRef(null);
   const leftCableDistanceRef = useRef(null);
   const leftEngageDisplayRef = useRef(null);
-  const leftEngageThresholdRef = useRef(null);
   const leftSetCableLengthRef = useRef(null);
   const leftRetractCableRef = useRef(null);
 
@@ -80,7 +82,6 @@ function App() {
   const rightRepCountRef = useRef(null);
   const rightCableDistanceRef = useRef(null);
   const rightEngageDisplayRef = useRef(null);
-  const rightEngageThresholdRef = useRef(null);
   const rightSetCableLengthRef = useRef(null);
   const rightRetractCableRef = useRef(null);
 
@@ -239,7 +240,6 @@ function App() {
       const repsLabel = refs.repsLabel;
       const cableLabel = refs.cableLabel;
       const engageDisplay = refs.engageDisplay;
-      const engageThresholdDisplay = refs.engageThresholdDisplay;
       const setCableButton = refs.setCableButton;
       const retractCableButton = refs.retractCableButton;
 
@@ -257,7 +257,6 @@ function App() {
         repsLabel,
         cableLabel,
         engageDisplay,
-        engageThresholdDisplay,
         setCableButton,
         retractCableButton,
         baseResistance: initialResistance,
@@ -271,7 +270,7 @@ function App() {
         retractionSpeed: RETRACTION_SPEED_IPS,
         normalized,
         direction: 1,
-        trail: new Array(TRAIL_LENGTH).fill(normalized),
+        trail: new Array(TRAIL_LENGTH).fill(travelInches),
         lastTravel: travelInches,
         phase: 'idle',
         lastPeak: travelInches,
@@ -293,7 +292,6 @@ function App() {
         repsLabel: leftRepCountRef.current,
         cableLabel: leftCableDistanceRef.current,
         engageDisplay: leftEngageDisplayRef.current,
-        engageThresholdDisplay: leftEngageThresholdRef.current,
         setCableButton: leftSetCableLengthRef.current,
         retractCableButton: leftRetractCableRef.current,
       }, leftBaseResistance),
@@ -305,11 +303,36 @@ function App() {
         repsLabel: rightRepCountRef.current,
         cableLabel: rightCableDistanceRef.current,
         engageDisplay: rightEngageDisplayRef.current,
-        engageThresholdDisplay: rightEngageThresholdRef.current,
         setCableButton: rightSetCableLengthRef.current,
         retractCableButton: rightRetractCableRef.current,
       }, rightBaseResistance),
     ];
+
+    const updateWaveScale = () => {
+      const avgPeak =
+        motors.reduce((sum, motor) => sum + (motor.lastPeak || 0), 0) /
+        (motors.length || 1);
+      const now = Date.now();
+      const windowMs = 3000;
+      const samples = waveScaleSamplesRef.current;
+      samples.push({ time: now, value: avgPeak });
+      waveScaleSamplesRef.current = samples.filter(
+        (sample) => now - sample.time <= windowMs
+      );
+
+      const values = waveScaleSamplesRef.current.map((sample) => sample.value);
+      const minValue = values.length ? Math.min(...values) : 0;
+      const maxValue = values.length ? Math.max(...values) : 10;
+      const rangeSpan = maxValue - minValue;
+      const targetSpan = rangeSpan > 0 ? rangeSpan / 0.8 : 10;
+      const scaleSpan = Math.max(10, targetSpan);
+      const center = (maxValue + minValue) / 2;
+      const scaleMin = Math.max(0, center - scaleSpan / 2);
+      const scaleMax = scaleMin + scaleSpan;
+
+      waveScaleMinRef.current = scaleMin;
+      waveScaleMaxRef.current = scaleMax;
+    };
 
     let workoutActive = false;
     let setActive = false;
@@ -451,9 +474,6 @@ function App() {
       const thresholdFormatted = `${threshold.toFixed(1)} in`;
       if (motor.engageDisplay) {
         motor.engageDisplay.textContent = formatted;
-      }
-      if (motor.engageThresholdDisplay) {
-        motor.engageThresholdDisplay.textContent = thresholdFormatted;
       }
     }
 
@@ -915,6 +935,8 @@ function App() {
         return;
       }
 
+      updateWaveScale();
+      drawWaveCombined();
       setStatusMessage(`Set ${currentSet}: rep ${currentRep} complete.`);
       updateStatuses();
     }
@@ -1208,19 +1230,19 @@ function App() {
     function getMotorPalette(motorId) {
       if (motorId === 'right') {
         return {
-          primary: 'rgba(255, 128, 200, 0.95)',
-          secondary: 'rgba(255, 72, 170, 0.95)',
-          glow: 'rgba(255, 128, 200, 0.85)',
-          waveFade: 'rgba(255, 128, 200, 0.55)',
-          waveDot: 'rgba(255, 128, 200, 0.35)',
+          primary: 'rgba(255, 88, 140, 0.95)',
+          secondary: 'rgba(220, 55, 110, 0.95)',
+          glow: 'rgba(255, 88, 140, 0.85)',
+          waveFade: 'rgba(255, 88, 140, 0.6)',
+          waveDot: 'rgba(255, 88, 140, 0.35)',
         };
       }
       return {
-        primary: 'rgba(127, 255, 212, 0.95)',
-        secondary: 'rgba(31, 139, 255, 0.95)',
-        glow: 'rgba(64, 200, 255, 0.85)',
-        waveFade: 'rgba(31, 139, 255, 0.55)',
-        waveDot: 'rgba(31, 139, 255, 0.35)',
+        primary: 'rgba(72, 170, 255, 0.95)',
+        secondary: 'rgba(45, 140, 230, 0.95)',
+        glow: 'rgba(72, 170, 255, 0.85)',
+        waveFade: 'rgba(72, 170, 255, 0.6)',
+        waveDot: 'rgba(72, 170, 255, 0.35)',
       };
     }
 
@@ -1433,6 +1455,32 @@ function App() {
       }
     }
 
+    function scaleToGraph(inches) {
+      const scaleMin = waveScaleMinRef.current || 0;
+      const scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
+      const scaleSpan = Math.max(1, scaleMax - scaleMin);
+      return Math.min(1, Math.max(0, (inches - scaleMin) / scaleSpan));
+    }
+
+    function ensureWaveScaleForTravel(travelInches) {
+      let scaleMin = waveScaleMinRef.current || 0;
+      let scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
+      const scaleSpan = Math.max(1, scaleMax - scaleMin);
+
+      if (travelInches > scaleMax) {
+        scaleMax = travelInches;
+        scaleMin = Math.max(0, scaleMax - scaleSpan);
+      } else if (travelInches < scaleMin) {
+        scaleMin = travelInches;
+        scaleMax = scaleMin + scaleSpan;
+      } else {
+        return;
+      }
+
+      waveScaleMinRef.current = scaleMin;
+      waveScaleMaxRef.current = scaleMax;
+    }
+
     function drawGauge(motor) {
       const ctx = motor.gaugeCtx;
       if (!ctx || !motor.gaugeCanvas) return;
@@ -1546,44 +1594,68 @@ function App() {
       const usableHeight = height - topPadding - bottomPadding;
       const circleRadius = 16;
       const circleX = width - 46;
-      const availableWidth = circleX - circleRadius;
+      const labelPadding = 36;
+      const plotLeft = labelPadding;
+      const availableWidth = circleX - circleRadius - plotLeft;
       const axisColor = 'rgba(220, 220, 220, 0.45)';
       const gridColor = 'rgba(220, 220, 220, 0.2)';
+      let scaleMin = waveScaleMinRef.current || 0;
+      let scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
+      const currentMaxTravel = Math.max(
+        ...motors.map((motor) => motor.normalized * MAX_TRAVEL_INCHES)
+      );
+      const scaleSpan = Math.max(1, scaleMax - scaleMin);
+      if (currentMaxTravel > scaleMax) {
+        scaleMax = currentMaxTravel;
+        scaleMin = Math.max(0, scaleMax - scaleSpan);
+        waveScaleMaxRef.current = scaleMax;
+        waveScaleMinRef.current = scaleMin;
+      }
+      if (currentMaxTravel < scaleMin) {
+        scaleMin = currentMaxTravel;
+        scaleMax = scaleMin + scaleSpan;
+        waveScaleMaxRef.current = scaleMax;
+        waveScaleMinRef.current = Math.max(0, scaleMin);
+      }
+      const scaleValue = (inches) =>
+        Math.min(1, Math.max(0, (inches - scaleMin) / scaleSpan));
+      const yLabels = Array.from({ length: 5 }, (_, idx) =>
+        Number((scaleMin + scaleSpan * (idx / 4)).toFixed(1))
+      );
+      const yLineCount = yLabels.length - 1;
 
       ctx.save();
       ctx.strokeStyle = axisColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(0, height - bottomPadding);
+      ctx.moveTo(plotLeft, height - bottomPadding);
       ctx.lineTo(circleX - circleRadius, height - bottomPadding);
       ctx.stroke();
 
       ctx.beginPath();
-      ctx.moveTo(0, topPadding);
-      ctx.lineTo(0, height - bottomPadding);
+      ctx.moveTo(plotLeft, topPadding);
+      ctx.lineTo(plotLeft, height - bottomPadding);
       ctx.stroke();
 
-      const yLines = 5;
-      const travelStep = MAX_TRAVEL_INCHES / yLines;
       ctx.fillStyle = 'rgba(220, 220, 220, 0.85)';
       ctx.font = '12px "Roboto", sans-serif';
-      ctx.textAlign = 'right';
+      ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
 
-      for (let i = 0; i <= yLines; i += 1) {
-        const y = height - bottomPadding - (usableHeight / yLines) * i;
+      for (let i = 0; i <= yLineCount; i += 1) {
+        const y = height - bottomPadding - (usableHeight / yLineCount) * i;
         ctx.strokeStyle = i === 0 ? axisColor : gridColor;
         ctx.beginPath();
-        ctx.moveTo(0, y);
+        ctx.moveTo(plotLeft, y);
         ctx.lineTo(circleX - circleRadius, y);
         ctx.stroke();
-        const rawValue = travelStep * i;
-        ctx.fillText(`${rawValue.toFixed(1)} in`, -6, y);
+        const labelValue = yLabels[i] ?? 0;
+        ctx.fillText(`${labelValue.toFixed(1)} in`, 6, y);
       }
 
       ctx.strokeStyle = gridColor;
-      for (let i = 1; i < yLines; i += 1) {
-        const x = (availableWidth / yLines) * i;
+      for (let i = 1; i < yLineCount; i += 1) {
+        const x = plotLeft + (availableWidth / yLineCount) * i;
         ctx.beginPath();
         ctx.moveTo(x, topPadding);
         ctx.lineTo(x, height - bottomPadding);
@@ -1592,7 +1664,10 @@ function App() {
       ctx.restore();
 
       motors.forEach((motor) => {
-        const headY = topPadding + (1 - motor.normalized) * usableHeight;
+        const headY =
+          topPadding +
+          (1 - scaleValue(motor.normalized * MAX_TRAVEL_INCHES)) *
+            usableHeight;
         const palette = getMotorPalette(motor.id);
         const fillAlpha = motor.id === 'right' ? 0.38 : 0.22;
         ctx.lineWidth = 12;
@@ -1611,8 +1686,8 @@ function App() {
         if (len > 0) {
           for (let i = 0; i < len; i += 1) {
             const progress = i / (len - 1 || 1);
-            const x = progress * availableWidth;
-            const y = topPadding + (1 - points[i]) * usableHeight;
+            const x = plotLeft + progress * availableWidth;
+            const y = topPadding + (1 - scaleValue(points[i])) * usableHeight;
             if (i === 0) {
               ctx.moveTo(x, y);
             } else {
@@ -1620,11 +1695,11 @@ function App() {
             }
           }
         } else {
-          ctx.moveTo(0, headY);
+          ctx.moveTo(plotLeft, headY);
         }
         ctx.lineTo(circleX - circleRadius, headY);
         ctx.lineTo(circleX - circleRadius, height - bottomPadding);
-        ctx.lineTo(0, height - bottomPadding);
+        ctx.lineTo(plotLeft, height - bottomPadding);
         ctx.closePath();
         const fillLayer = getWaveFillContext(canvas, width, height);
         if (fillLayer) {
@@ -1634,8 +1709,8 @@ function App() {
           if (len > 0) {
             for (let i = 0; i < len; i += 1) {
               const progress = i / (len - 1 || 1);
-              const x = progress * availableWidth;
-              const y = topPadding + (1 - points[i]) * usableHeight;
+              const x = plotLeft + progress * availableWidth;
+              const y = topPadding + (1 - scaleValue(points[i])) * usableHeight;
               if (i === 0) {
                 fillCtx.moveTo(x, y);
               } else {
@@ -1643,11 +1718,11 @@ function App() {
               }
             }
           } else {
-            fillCtx.moveTo(0, headY);
+            fillCtx.moveTo(plotLeft, headY);
           }
           fillCtx.lineTo(circleX - circleRadius, headY);
           fillCtx.lineTo(circleX - circleRadius, height - bottomPadding);
-          fillCtx.lineTo(0, height - bottomPadding);
+          fillCtx.lineTo(plotLeft, height - bottomPadding);
           fillCtx.closePath();
           const fillGradient = fillCtx.createLinearGradient(0, 0, circleX - circleRadius, 0);
           fillGradient.addColorStop(0, palette.waveFade);
@@ -1675,8 +1750,8 @@ function App() {
         if (len > 0) {
           for (let i = 0; i < len; i += 1) {
             const progress = i / (len - 1 || 1);
-            const x = progress * availableWidth;
-            const y = topPadding + (1 - points[i]) * usableHeight;
+            const x = plotLeft + progress * availableWidth;
+            const y = topPadding + (1 - scaleValue(points[i])) * usableHeight;
             if (i === 0) {
               ctx.moveTo(x, y);
             } else {
@@ -1684,7 +1759,7 @@ function App() {
             }
           }
         } else {
-          ctx.moveTo(0, headY);
+          ctx.moveTo(plotLeft, headY);
         }
         ctx.lineTo(circleX - circleRadius, headY);
         ctx.stroke();
@@ -1753,6 +1828,7 @@ function App() {
         );
         motor.normalized = normalized;
         const travel = motor.normalized * MAX_TRAVEL_INCHES;
+        ensureWaveScaleForTravel(travel);
         const forceDelta = travel - motor.lastForceTravel;
         if (Math.abs(forceDelta) > MOVEMENT_EPSILON) {
           motor.forceDirection = forceDelta > 0 ? 1 : -1;
@@ -1796,7 +1872,7 @@ function App() {
           motor.cableLabel.textContent = travel.toFixed(1);
         }
 
-        motor.trail.push(motor.normalized);
+        motor.trail.push(travel);
         if (motor.trail.length > TRAIL_LENGTH) {
           motor.trail.shift();
         }
@@ -1907,7 +1983,9 @@ function App() {
           motor.forceDirection = -1;
         }
         motor.normalized = normalized;
-        motor.trail.push(normalized);
+        const travel = normalized * MAX_TRAVEL_INCHES;
+        ensureWaveScaleForTravel(travel);
+        motor.trail.push(travel);
         if (motor.trail.length > TRAIL_LENGTH) {
           motor.trail.shift();
         }
@@ -1991,6 +2069,7 @@ function App() {
     }
 
     updateStatusesInitial();
+    updateWaveScale();
     applyPowerState();
     updateForceProfileLockState();
 
@@ -2083,13 +2162,7 @@ function App() {
         <div className="header-center" aria-label="Dragon Gym overview">
           <h1 className="header-title">Dragon Gym</h1>
         </div>
-        <div className="header-actions" aria-label="Power and battery">
-          <div className="battery-indicator header-battery">
-            <div className="battery-body">
-              <div className="battery-fill" style={{ width: '50%' }}></div>
-            </div>
-            <span>50%</span>
-          </div>
+        <div className="header-actions" aria-label="Power controls">
           <button
             className="status-toggle"
             id="motorToggle"
@@ -2198,13 +2271,6 @@ function App() {
                 1.0 in
               </span>
             </div>
-            <p className="hint">
-              Weight engages at{' '}
-              <span id="leftEngageThreshold" ref={leftEngageThresholdRef}>
-                2.0 in
-              </span>
-              .
-            </p>
             <div className="engagement-actions">
               <button
                 type="button"
@@ -2270,13 +2336,6 @@ function App() {
                 1.0 in
               </span>
             </div>
-            <p className="hint">
-              Weight engages at{' '}
-              <span id="rightEngageThreshold" ref={rightEngageThresholdRef}>
-                2.0 in
-              </span>
-              .
-            </p>
             <div className="engagement-actions">
               <button
                 type="button"
