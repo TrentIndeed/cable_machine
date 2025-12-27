@@ -1820,37 +1820,24 @@ function App() {
 
   return (
     <main className="app-shell">
-      <div className="hud-corner top-left" aria-label="Power control">
-        <button
-          className="power-toggle"
-          id="powerToggle"
-          ref={powerToggleRef}
-          type="button"
-        >
-          Power On
-        </button>
-      </div>
-      <div className="hud-corner top-right" aria-label="Battery level">
-        <div className="battery-indicator">
-          <div className="battery-body">
-            <div className="battery-fill" style={{ width: '50%' }}></div>
-          </div>
-          <span>50%</span>
-        </div>
-      </div>
-      <section className="system-card" aria-label="Dragon Gym overview">
-        <div className="logo-block">
+      <header className="app-header" aria-label="System header">
+        <div className="header-brand" aria-label="Dragon Gym logo">
           <img
             src="/assets/dragonai-logo.png"
             alt="DragonAI neon dragon"
             className="logo-image"
           />
-          <div className="branding-copy">
-            <p className="eyebrow">600 lb smart gym</p>
-            <h1>Dragon Gym</h1>
-          </div>
         </div>
-        <div className="system-meta">
+        <div className="header-center" aria-label="Dragon Gym overview">
+          <h1 className="header-title">Dragon Gym</h1>
+        </div>
+        <div className="header-actions" aria-label="Power and battery">
+          <div className="battery-indicator header-battery">
+            <div className="battery-body">
+              <div className="battery-fill" style={{ width: '50%' }}></div>
+            </div>
+            <span>50%</span>
+          </div>
           <button
             className="status-toggle"
             id="motorToggle"
@@ -1862,8 +1849,16 @@ function App() {
             <span className="status-line">Motors Offline</span>
             <span className="action-line">Tap to start</span>
           </button>
+          <button
+            className="power-toggle"
+            id="powerToggle"
+            ref={powerToggleRef}
+            type="button"
+          >
+            Power On
+          </button>
         </div>
-      </section>
+      </header>
 
       <section className="resistance-overview" aria-label="Resistance overview">
         <article className="status-card" aria-label="Workout status" aria-live="polite">

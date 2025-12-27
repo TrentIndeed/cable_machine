@@ -45,20 +45,9 @@ body {
 }
 
 .hud-corner {
-  position: absolute;
   display: flex;
   gap: 10px;
   z-index: 10;
-}
-
-.hud-corner.top-left {
-  top: clamp(16px, 3vw, 32px);
-  left: clamp(16px, 3vw, 32px);
-}
-
-.hud-corner.top-right {
-  top: clamp(16px, 3vw, 32px);
-  right: clamp(16px, 3vw, 32px);
   align-items: center;
 }
 
@@ -66,11 +55,61 @@ body {
   width: min(100%, 1080px);
   min-height: 1920px;
   margin: 0 auto;
-  padding: clamp(75px, 9vw, 110px) clamp(20px, 4vw, 32px) 60px;
+  padding: clamp(28px, 6vw, 50px) clamp(20px, 4vw, 32px) 60px;
   display: flex;
   flex-direction: column;
   gap: 28px;
   position: relative;
+}
+
+.app-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-self: start;
+}
+
+.header-center {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.header-title {
+  margin: 0;
+  font-family: "Rajdhani", sans-serif;
+  font-size: 4.4rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  justify-self: end;
+}
+
+.header-actions .status-toggle,
+.header-actions .power-toggle {
+  width: 100%;
+}
+
+.header-battery {
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .system-card {
@@ -1117,28 +1156,13 @@ button.is-pulsing {
   }
 
   .app-shell {
-    padding-top: clamp(130px, 20vw, 200px);
+    padding-top: clamp(32px, 8vw, 60px);
   }
 }
 
 @media (max-width: 900px) {
   .app-shell {
-    padding-top: 96px;
-  }
-
-  .hud-corner {
-    position: static;
-    width: 100%;
-    justify-content: center;
-    margin-bottom: 12px;
-  }
-
-  .hud-corner.top-left {
-    justify-content: flex-start;
-  }
-
-  .hud-corner.top-right {
-    justify-content: flex-end;
+    padding-top: 56px;
   }
 
   .resistance-overview {
@@ -1156,9 +1180,21 @@ button.is-pulsing {
   }
 
   .app-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 18px;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .header-brand {
+    justify-self: center;
+  }
+
+  .header-actions {
+    justify-content: space-between;
+  }
+
+  .header-title {
+    text-align: center;
+    font-size: clamp(2.4rem, 10vw, 3.4rem);
   }
 
   .status-stack {
