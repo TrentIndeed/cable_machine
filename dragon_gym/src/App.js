@@ -61,7 +61,6 @@ function App() {
 
   const leftGaugeRef = useRef(null);
   const leftWaveRef = useRef(null);
-  const leftResistanceRef = useRef(null);
   const leftSimRef = useRef(null);
   const leftCurrentResistanceRef = useRef(null);
   const leftBaseResistanceRef = useRef(null);
@@ -74,7 +73,6 @@ function App() {
 
   const rightGaugeRef = useRef(null);
   const rightWaveRef = useRef(null);
-  const rightResistanceRef = useRef(null);
   const rightSimRef = useRef(null);
   const rightCurrentResistanceRef = useRef(null);
   const rightBaseResistanceRef = useRef(null);
@@ -230,13 +228,12 @@ function App() {
           return 'Equal load through the pull and return.';
       }
     }
-    function createMotor(id, refs) {
+    function createMotor(id, refs, initialResistance) {
       const gaugeCanvas = refs.gaugeCanvas;
       const gaugeCtx = gaugeCanvas ? gaugeCanvas.getContext('2d') : null;
       const waveCanvas = refs.waveCanvas;
       const waveCtx = waveCanvas ? waveCanvas.getContext('2d') : null;
 
-      const slider = refs.slider;
       const simSlider = refs.simSlider;
       const currentLabel = refs.currentLabel;
       const baseLabel = refs.baseLabel;
@@ -257,7 +254,6 @@ function App() {
         gaugeCtx,
         waveCanvas,
         waveCtx,
-        slider,
         simSlider,
         currentLabel,
         baseLabel,
@@ -267,7 +263,7 @@ function App() {
         engageThresholdDisplay,
         setCableButton,
         retractCableButton,
-        baseResistance: Number(slider.value),
+        baseResistance: initialResistance,
         currentResistance: 0,
         reps: 0,
         engaged: false,
@@ -295,7 +291,6 @@ function App() {
       createMotor('left', {
         gaugeCanvas: leftGaugeRef.current,
         waveCanvas: leftWaveRef.current,
-        slider: leftResistanceRef.current,
         simSlider: leftSimRef.current,
         currentLabel: leftCurrentResistanceRef.current,
         baseLabel: leftBaseResistanceRef.current,
@@ -305,11 +300,10 @@ function App() {
         engageThresholdDisplay: leftEngageThresholdRef.current,
         setCableButton: leftSetCableLengthRef.current,
         retractCableButton: leftRetractCableRef.current,
-      }),
+      }, leftBaseResistance),
       createMotor('right', {
         gaugeCanvas: rightGaugeRef.current,
         waveCanvas: rightWaveRef.current,
-        slider: rightResistanceRef.current,
         simSlider: rightSimRef.current,
         currentLabel: rightCurrentResistanceRef.current,
         baseLabel: rightBaseResistanceRef.current,
@@ -319,7 +313,7 @@ function App() {
         engageThresholdDisplay: rightEngageThresholdRef.current,
         setCableButton: rightSetCableLengthRef.current,
         retractCableButton: rightRetractCableRef.current,
-      }),
+      }, rightBaseResistance),
     ];
 
     let workoutActive = false;
@@ -644,6 +638,34 @@ function App() {
 
     function refreshAllMotorResistances() {
       motors.forEach((motor) => refreshMotorResistance(motor));
+    }
+
+    function setMotorBaseResistance(motor, value) {
+      if (!motor) return;
+      const clamped = Math.max(0, Math.min(MAX_RESISTANCE, value));
+      motor.baseResistance = clamped;
+      if (motor.baseLabel) {
+        motor.baseLabel.textContent = `${Math.round(clamped)} lb`;
+      }
+      if (motor.id === 'left') {
+        setLeftBaseResistance(clamped);
+      } else {
+        setRightBaseResistance(clamped);
+      }
+      refreshMotorResistance(motor);
+    }
+
+    function updateResistanceFromGauge(motor, clientX, clientY) {
+      if (!motor || !motor.gaugeCanvas || !powerOn) return;
+      const rect = motor.gaugeCanvas.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = clientX - centerX;
+      const dy = clientY - centerY;
+      const angle = Math.atan2(dy, dx);
+      const normalized = (angle + Math.PI / 2 + TWO_PI) % TWO_PI;
+      const value = (normalized / TWO_PI) * MAX_RESISTANCE;
+      setMotorBaseResistance(motor, value);
     }
 
     function updateSetToggleAppearance() {
@@ -1011,7 +1033,6 @@ function App() {
         if (motor.retractCableButton) {
           interactive.push(motor.retractCableButton);
         }
-        motor.slider.disabled = !powerOn;
         motor.simSlider.disabled = !powerOn;
       });
 
@@ -1218,6 +1239,32 @@ function App() {
       const activeMode = descending ? eccentricModeValue : mode;
       return getForceCurveMultiplier(activeMode, normalized, direction);
     }
+
+    function getGaugeGeometry(canvas) {
+      if (!canvas) {
+        return null;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const radius = Math.min(rect.width, rect.height) / 2 - 10;
+      return { rect, centerX, centerY, radius };
+    }
+
+    function getGaugeHandlePosition(motor) {
+      if (!motor || !motor.gaugeCanvas) return null;
+      const geometry = getGaugeGeometry(motor.gaugeCanvas);
+      if (!geometry) return null;
+      const baseProgress = Math.max(
+        0,
+        Math.min(1, motor.baseResistance / MAX_RESISTANCE)
+      );
+      const angle = -Math.PI / 2 + TWO_PI * baseProgress;
+      const x = geometry.centerX + Math.cos(angle) * geometry.radius;
+      const y = geometry.centerY + Math.sin(angle) * geometry.radius;
+      const handleRadius = Math.max(10, geometry.radius * 0.08);
+      return { x, y, handleRadius };
+    }
     function drawForceProfile(canvas, mode, direction) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -1409,6 +1456,29 @@ function App() {
       gradient.addColorStop(0, palette.primary);
       gradient.addColorStop(1, palette.secondary);
 
+      const resistanceLocked = motorBeyondEngagement(motor);
+
+      if (motor.baseResistance > 0) {
+        const baseProgress = Math.max(
+          0,
+          Math.min(1, motor.baseResistance / MAX_RESISTANCE)
+        );
+        ctx.save();
+        ctx.strokeStyle = gradient;
+        ctx.globalAlpha = 0.25;
+        ctx.beginPath();
+        ctx.arc(
+          centerX,
+          centerY,
+          radius,
+          startAngle,
+          startAngle + TWO_PI * baseProgress,
+          false
+        );
+        ctx.stroke();
+        ctx.restore();
+      }
+
       if (progress > 0) {
         ctx.strokeStyle = gradient;
         ctx.shadowBlur = 24;
@@ -1423,6 +1493,28 @@ function App() {
           false
         );
         ctx.stroke();
+      }
+
+      if (!resistanceLocked) {
+        const handleProgress = Math.max(
+          0,
+          Math.min(1, motor.baseResistance / MAX_RESISTANCE)
+        );
+        const handleAngle = startAngle + TWO_PI * handleProgress;
+        const handleX = centerX + Math.cos(handleAngle) * radius;
+        const handleY = centerY + Math.sin(handleAngle) * radius;
+        const handleRadius = Math.max(10, radius * 0.08);
+        ctx.save();
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = palette.glow;
+        ctx.fillStyle = palette.primary;
+        ctx.beginPath();
+        ctx.arc(handleX, handleY, handleRadius, 0, TWO_PI);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = palette.secondary;
+        ctx.stroke();
+        ctx.restore();
       }
 
       if (motor.currentLabel) {
@@ -1636,17 +1728,44 @@ function App() {
     });
 
     const motorHandlers = motors.map((motor) => {
-      const handleSliderInput = () => {
-        motor.baseResistance = Number(motor.slider.value);
-        if (motor.baseLabel) {
-          motor.baseLabel.textContent = `${motor.baseResistance} lb`;
+      const handleGaugePointer = (event) => {
+        if (!powerOn) return;
+        updateResistanceFromGauge(motor, event.clientX, event.clientY);
+      };
+
+      const handleGaugePointerDown = (event) => {
+        if (motorBeyondEngagement(motor)) {
+          return;
         }
-        if (motor.id === 'left') {
-          setLeftBaseResistance(motor.baseResistance);
-        } else {
-          setRightBaseResistance(motor.baseResistance);
+        const handle = getGaugeHandlePosition(motor);
+        if (!handle) return;
+        const dx = event.clientX - handle.x;
+        const dy = event.clientY - handle.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance > handle.handleRadius + 10) {
+          return;
         }
-        refreshMotorResistance(motor);
+        motor.gaugeDragging = true;
+        motor.gaugePointerId = event.pointerId;
+        motor.gaugeCanvas.setPointerCapture(event.pointerId);
+        handleGaugePointer(event);
+      };
+
+      const handleGaugePointerMove = (event) => {
+        if (!motor.gaugeDragging) return;
+        updateResistanceFromGauge(motor, event.clientX, event.clientY);
+      };
+
+      const handleGaugePointerUp = () => {
+        if (motor.gaugePointerId !== undefined) {
+          try {
+            motor.gaugeCanvas.releasePointerCapture(motor.gaugePointerId);
+          } catch (err) {
+            // Ignore if capture is already released.
+          }
+        }
+        motor.gaugeDragging = false;
+        motor.gaugePointerId = undefined;
       };
 
       const handleSimInput = () => {
@@ -1696,7 +1815,10 @@ function App() {
         updateForceProfileLockState();
       };
 
-      motor.slider.addEventListener('input', handleSliderInput);
+      motor.gaugeCanvas.addEventListener('pointerdown', handleGaugePointerDown);
+      motor.gaugeCanvas.addEventListener('pointermove', handleGaugePointerMove);
+      motor.gaugeCanvas.addEventListener('pointerup', handleGaugePointerUp);
+      motor.gaugeCanvas.addEventListener('pointerleave', handleGaugePointerUp);
       motor.simSlider.addEventListener('input', handleSimInput);
       motor.simSlider.addEventListener('change', handleSimChange);
 
@@ -1719,7 +1841,9 @@ function App() {
 
       return {
         motor,
-        handleSliderInput,
+        handleGaugePointerDown,
+        handleGaugePointerMove,
+        handleGaugePointerUp,
         handleSimInput,
         handleSimChange,
         handleSetCableClick,
@@ -1805,7 +1929,10 @@ function App() {
 
       motorHandlers.forEach((handler) => {
         const motor = handler.motor;
-        motor.slider.removeEventListener('input', handler.handleSliderInput);
+        motor.gaugeCanvas.removeEventListener('pointerdown', handler.handleGaugePointerDown);
+        motor.gaugeCanvas.removeEventListener('pointermove', handler.handleGaugePointerMove);
+        motor.gaugeCanvas.removeEventListener('pointerup', handler.handleGaugePointerUp);
+        motor.gaugeCanvas.removeEventListener('pointerleave', handler.handleGaugePointerUp);
         motor.simSlider.removeEventListener('input', handler.handleSimInput);
         motor.simSlider.removeEventListener('change', handler.handleSimChange);
         if (motor.setCableButton) {
@@ -1975,19 +2102,6 @@ function App() {
               </dd>
             </div>
           </dl>
-          <div className="resistance-control">
-            <label className="slider-field">
-              <span>Adjust resistance</span>
-              <input
-                type="range"
-                id="leftResistance"
-                ref={leftResistanceRef}
-                min="0"
-                max="300"
-                defaultValue={leftBaseResistance}
-              />
-            </label>
-          </div>
           <div className="motor-engagement" aria-label="Left motor cable engagement">
             <div className="engagement-readout" aria-live="polite">
               <span className="label">Engagement distance</span>
@@ -2060,19 +2174,6 @@ function App() {
               </dd>
             </div>
           </dl>
-          <div className="resistance-control">
-            <label className="slider-field">
-              <span>Adjust resistance</span>
-              <input
-                type="range"
-                id="rightResistance"
-                ref={rightResistanceRef}
-                min="0"
-                max="300"
-                defaultValue={rightBaseResistance}
-              />
-            </label>
-          </div>
           <div className="motor-engagement" aria-label="Right motor cable engagement">
             <div className="engagement-readout" aria-live="polite">
               <span className="label">Engagement distance</span>
