@@ -1547,7 +1547,8 @@ function App() {
       const circleRadius = 16;
       const circleX = width - 46;
       const availableWidth = circleX - circleRadius;
-      const axisColor = 'rgba(220, 220, 220, 0.65)';
+      const axisColor = 'rgba(220, 220, 220, 0.45)';
+      const gridColor = 'rgba(220, 220, 220, 0.2)';
 
       ctx.save();
       ctx.strokeStyle = axisColor;
@@ -1562,25 +1563,31 @@ function App() {
       ctx.lineTo(0, height - bottomPadding);
       ctx.stroke();
 
-      const yTicks = 5;
-      const travelStep = MAX_TRAVEL_INCHES / yTicks;
-      const engagementBaseline =
-        motors.reduce((sum, motor) => sum + motor.engagementDistance, 0) /
-        (motors.length || 1);
+      const yLines = 5;
+      const travelStep = MAX_TRAVEL_INCHES / yLines;
       ctx.fillStyle = 'rgba(220, 220, 220, 0.85)';
       ctx.font = '12px "Roboto", sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
 
-      for (let i = 0; i <= yTicks; i += 1) {
-        const y = height - bottomPadding - (usableHeight / yTicks) * i;
+      for (let i = 0; i <= yLines; i += 1) {
+        const y = height - bottomPadding - (usableHeight / yLines) * i;
+        ctx.strokeStyle = i === 0 ? axisColor : gridColor;
         ctx.beginPath();
         ctx.moveTo(0, y);
-        ctx.lineTo(6, y);
+        ctx.lineTo(circleX - circleRadius, y);
         ctx.stroke();
         const rawValue = travelStep * i;
-        const offsetValue = Math.max(0, rawValue - engagementBaseline);
-        ctx.fillText(`${offsetValue.toFixed(1)} in`, -4, y);
+        ctx.fillText(`${rawValue.toFixed(1)} in`, -6, y);
+      }
+
+      ctx.strokeStyle = gridColor;
+      for (let i = 1; i < yLines; i += 1) {
+        const x = (availableWidth / yLines) * i;
+        ctx.beginPath();
+        ctx.moveTo(x, topPadding);
+        ctx.lineTo(x, height - bottomPadding);
+        ctx.stroke();
       }
       ctx.restore();
 
