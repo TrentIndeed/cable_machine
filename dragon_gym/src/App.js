@@ -62,7 +62,6 @@ function App() {
   const exerciseVideoPlaceholderRef = useRef(null);
 
   const leftGaugeRef = useRef(null);
-  const leftWaveRef = useRef(null);
   const leftSimRef = useRef(null);
   const leftCurrentResistanceRef = useRef(null);
   const leftBaseResistanceRef = useRef(null);
@@ -74,7 +73,7 @@ function App() {
   const leftRetractCableRef = useRef(null);
 
   const rightGaugeRef = useRef(null);
-  const rightWaveRef = useRef(null);
+  const waveCombinedRef = useRef(null);
   const rightSimRef = useRef(null);
   const rightCurrentResistanceRef = useRef(null);
   const rightBaseResistanceRef = useRef(null);
@@ -233,8 +232,6 @@ function App() {
     function createMotor(id, refs, initialResistance) {
       const gaugeCanvas = refs.gaugeCanvas;
       const gaugeCtx = gaugeCanvas ? gaugeCanvas.getContext('2d') : null;
-      const waveCanvas = refs.waveCanvas;
-      const waveCtx = waveCanvas ? waveCanvas.getContext('2d') : null;
 
       const simSlider = refs.simSlider;
       const currentLabel = refs.currentLabel;
@@ -254,8 +251,6 @@ function App() {
         id,
         gaugeCanvas,
         gaugeCtx,
-        waveCanvas,
-        waveCtx,
         simSlider,
         currentLabel,
         baseLabel,
@@ -292,7 +287,6 @@ function App() {
     const motors = [
       createMotor('left', {
         gaugeCanvas: leftGaugeRef.current,
-        waveCanvas: leftWaveRef.current,
         simSlider: leftSimRef.current,
         currentLabel: leftCurrentResistanceRef.current,
         baseLabel: leftBaseResistanceRef.current,
@@ -305,7 +299,6 @@ function App() {
       }, leftBaseResistance),
       createMotor('right', {
         gaugeCanvas: rightGaugeRef.current,
-        waveCanvas: rightWaveRef.current,
         simSlider: rightSimRef.current,
         currentLabel: rightCurrentResistanceRef.current,
         baseLabel: rightBaseResistanceRef.current,
@@ -354,12 +347,9 @@ function App() {
     }
 
     function syncWaveCanvasSizes() {
-      let resized = false;
-      motors.forEach((motor) => {
-        resized = resizeCanvasToDisplaySize(motor.waveCanvas) || resized;
-      });
+      const resized = resizeCanvasToDisplaySize(waveCombinedRef.current);
       if (resized) {
-        motors.forEach((motor) => drawWave(motor));
+        drawWaveCombined();
       }
     }
 
@@ -1267,6 +1257,22 @@ function App() {
       const handleRadius = Math.max(10, geometry.radius * 0.08);
       return { x, y, handleRadius };
     }
+
+    function getWaveFillContext(canvas, width, height) {
+      if (!canvas) return null;
+      if (!canvas._waveFillCanvas) {
+        canvas._waveFillCanvas = document.createElement('canvas');
+        canvas._waveFillCtx = canvas._waveFillCanvas.getContext('2d');
+      }
+      const fillCanvas = canvas._waveFillCanvas;
+      const fillCtx = canvas._waveFillCtx;
+      if (!fillCtx) return null;
+      if (fillCanvas.width !== width || fillCanvas.height !== height) {
+        fillCanvas.width = width;
+        fillCanvas.height = height;
+      }
+      return { fillCanvas, fillCtx };
+    }
     function drawForceProfile(canvas, mode, direction) {
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -1527,10 +1533,12 @@ function App() {
       }
     }
 
-    function drawWave(motor) {
-      const ctx = motor.waveCtx;
-      if (!ctx || !motor.waveCanvas) return;
-      const { width, height } = motor.waveCanvas;
+    function drawWaveCombined() {
+      const canvas = waveCombinedRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
       const topPadding = 20;
@@ -1539,48 +1547,150 @@ function App() {
       const circleRadius = 16;
       const circleX = width - 46;
       const availableWidth = circleX - circleRadius;
-      const headY = topPadding + (1 - motor.normalized) * usableHeight;
+      const axisColor = 'rgba(220, 220, 220, 0.65)';
 
-      ctx.lineWidth = 12;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.shadowBlur = 18;
-      const palette = getMotorPalette(motor.id);
-      ctx.shadowColor = palette.glow;
-      const gradient = ctx.createLinearGradient(0, 0, circleX - circleRadius, 0);
-      gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      gradient.addColorStop(0.18, palette.waveFade);
-      gradient.addColorStop(1, palette.primary);
-      ctx.strokeStyle = gradient;
+      ctx.save();
+      ctx.strokeStyle = axisColor;
+      ctx.lineWidth = 1;
       ctx.beginPath();
+      ctx.moveTo(0, height - bottomPadding);
+      ctx.lineTo(circleX - circleRadius, height - bottomPadding);
+      ctx.stroke();
 
-      const points = motor.trail;
-      const len = points.length;
-      if (len > 0) {
-        for (let i = 0; i < len; i += 1) {
-          const progress = i / (len - 1 || 1);
-          const x = progress * availableWidth;
-          const y = topPadding + (1 - points[i]) * usableHeight;
-          if (i === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        }
-      } else {
-        ctx.moveTo(0, headY);
+      ctx.beginPath();
+      ctx.moveTo(0, topPadding);
+      ctx.lineTo(0, height - bottomPadding);
+      ctx.stroke();
+
+      const yTicks = 5;
+      const travelStep = MAX_TRAVEL_INCHES / yTicks;
+      const engagementBaseline =
+        motors.reduce((sum, motor) => sum + motor.engagementDistance, 0) /
+        (motors.length || 1);
+      ctx.fillStyle = 'rgba(220, 220, 220, 0.85)';
+      ctx.font = '12px "Roboto", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+
+      for (let i = 0; i <= yTicks; i += 1) {
+        const y = height - bottomPadding - (usableHeight / yTicks) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(6, y);
+        ctx.stroke();
+        const rawValue = travelStep * i;
+        const offsetValue = Math.max(0, rawValue - engagementBaseline);
+        ctx.fillText(`${offsetValue.toFixed(1)} in`, -4, y);
       }
-      ctx.lineTo(circleX - circleRadius, headY);
-      ctx.stroke();
+      ctx.restore();
 
-      ctx.fillStyle = palette.waveDot;
-      ctx.beginPath();
-      ctx.arc(circleX, headY, circleRadius, 0, TWO_PI);
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = palette.primary;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
+      motors.forEach((motor) => {
+        const headY = topPadding + (1 - motor.normalized) * usableHeight;
+        const palette = getMotorPalette(motor.id);
+        const fillAlpha = motor.id === 'right' ? 0.38 : 0.22;
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = palette.glow;
+        const gradient = ctx.createLinearGradient(0, 0, circleX - circleRadius, 0);
+        gradient.addColorStop(0, palette.primary);
+        gradient.addColorStop(1, palette.primary);
+        ctx.strokeStyle = gradient;
+        ctx.beginPath();
+
+        const points = motor.trail;
+        const len = points.length;
+        if (len > 0) {
+          for (let i = 0; i < len; i += 1) {
+            const progress = i / (len - 1 || 1);
+            const x = progress * availableWidth;
+            const y = topPadding + (1 - points[i]) * usableHeight;
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+        } else {
+          ctx.moveTo(0, headY);
+        }
+        ctx.lineTo(circleX - circleRadius, headY);
+        ctx.lineTo(circleX - circleRadius, height - bottomPadding);
+        ctx.lineTo(0, height - bottomPadding);
+        ctx.closePath();
+        const fillLayer = getWaveFillContext(canvas, width, height);
+        if (fillLayer) {
+          const { fillCanvas, fillCtx } = fillLayer;
+          fillCtx.clearRect(0, 0, width, height);
+          fillCtx.beginPath();
+          if (len > 0) {
+            for (let i = 0; i < len; i += 1) {
+              const progress = i / (len - 1 || 1);
+              const x = progress * availableWidth;
+              const y = topPadding + (1 - points[i]) * usableHeight;
+              if (i === 0) {
+                fillCtx.moveTo(x, y);
+              } else {
+                fillCtx.lineTo(x, y);
+              }
+            }
+          } else {
+            fillCtx.moveTo(0, headY);
+          }
+          fillCtx.lineTo(circleX - circleRadius, headY);
+          fillCtx.lineTo(circleX - circleRadius, height - bottomPadding);
+          fillCtx.lineTo(0, height - bottomPadding);
+          fillCtx.closePath();
+          const fillGradient = fillCtx.createLinearGradient(0, 0, circleX - circleRadius, 0);
+          fillGradient.addColorStop(0, palette.waveFade);
+          fillGradient.addColorStop(1, palette.waveFade);
+          fillCtx.globalAlpha = fillAlpha;
+          fillCtx.fillStyle = fillGradient;
+          fillCtx.fill();
+          fillCtx.globalAlpha = 1;
+          fillCtx.globalCompositeOperation = 'destination-in';
+          const verticalFade = fillCtx.createLinearGradient(
+            0,
+            topPadding,
+            0,
+            height - bottomPadding
+          );
+          verticalFade.addColorStop(0, 'rgba(0, 0, 0, 1)');
+          verticalFade.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
+          verticalFade.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          fillCtx.fillStyle = verticalFade;
+          fillCtx.fillRect(0, topPadding, width, height - topPadding - bottomPadding);
+          fillCtx.globalCompositeOperation = 'source-over';
+          ctx.drawImage(fillCanvas, 0, 0);
+        }
+        ctx.beginPath();
+        if (len > 0) {
+          for (let i = 0; i < len; i += 1) {
+            const progress = i / (len - 1 || 1);
+            const x = progress * availableWidth;
+            const y = topPadding + (1 - points[i]) * usableHeight;
+            if (i === 0) {
+              ctx.moveTo(x, y);
+            } else {
+              ctx.lineTo(x, y);
+            }
+          }
+        } else {
+          ctx.moveTo(0, headY);
+        }
+        ctx.lineTo(circleX - circleRadius, headY);
+        ctx.stroke();
+
+        ctx.fillStyle = palette.waveDot;
+        ctx.beginPath();
+        ctx.arc(circleX, headY, circleRadius, 0, TWO_PI);
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = palette.primary;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      });
     }
     function update(timestamp) {
       const delta = (timestamp - lastTimestamp) / 1000;
@@ -1591,10 +1701,12 @@ function App() {
           motor.currentResistance = 0;
           motor.normalized = 0;
           motor.trail.fill(0);
+        if (motor.cableLabel) {
           motor.cableLabel.textContent = '0.0';
+        }
           drawGauge(motor);
-          drawWave(motor);
         });
+        drawWaveCombined();
         updateForceProfileLockState();
         animationFrameRef.current = requestAnimationFrame(update);
         return;
@@ -1673,7 +1785,9 @@ function App() {
 
         motor.currentResistance = resistance;
 
-        motor.cableLabel.textContent = travel.toFixed(1);
+        if (motor.cableLabel) {
+          motor.cableLabel.textContent = travel.toFixed(1);
+        }
 
         motor.trail.push(motor.normalized);
         if (motor.trail.length > TRAIL_LENGTH) {
@@ -1717,9 +1831,9 @@ function App() {
         }
 
         drawGauge(motor);
-        drawWave(motor);
       });
 
+      drawWaveCombined();
       updateForceProfileLockState();
 
       animationFrameRef.current = requestAnimationFrame(update);
@@ -1790,9 +1904,11 @@ function App() {
         if (motor.trail.length > TRAIL_LENGTH) {
           motor.trail.shift();
         }
-        motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
+        if (motor.cableLabel) {
+          motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
+        }
         motor.lastForceTravel = sliderDistance;
-        drawWave(motor);
+        drawWaveCombined();
         refreshMotorResistance(motor);
         updateForceProfileLockState();
       };
@@ -2214,41 +2330,14 @@ function App() {
       <section className="workspace">
         <section className="visual-panel" aria-label="Cable travel visualizations">
           <div className="wave-grid">
-            <article className="wave-card" data-motor="left">
+            <article className="wave-card" data-motor="combined">
               <header>
-                <span className="motor-name">Left Arm</span>
-                <span className="distance-readout">
-                  Cable:{' '}
-                  <span id="leftCableDistance" ref={leftCableDistanceRef}>
-                    0.0
-                  </span>{' '}
-                  in
-                </span>
+                <span className="motor-name">Cable Travel</span>
               </header>
               <canvas
                 className="wave-canvas"
-                id="leftWave"
-                ref={leftWaveRef}
-                width="960"
-                height="260"
-                aria-hidden="true"
-              ></canvas>
-            </article>
-            <article className="wave-card" data-motor="right">
-              <header>
-                <span className="motor-name">Right Arm</span>
-                <span className="distance-readout">
-                  Cable:{' '}
-                  <span id="rightCableDistance" ref={rightCableDistanceRef}>
-                    0.0
-                  </span>{' '}
-                  in
-                </span>
-              </header>
-              <canvas
-                className="wave-canvas"
-                id="rightWave"
-                ref={rightWaveRef}
+                id="combinedWave"
+                ref={waveCombinedRef}
                 width="960"
                 height="260"
                 aria-hidden="true"

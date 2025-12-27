@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   color-scheme: dark;
   --bg-primary: #04070f;
   --bg-secondary: #0c1424;
@@ -88,7 +88,7 @@ body {
 
 .header-title {
   margin: 0;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 4.4rem;
   letter-spacing: 0.08em;
   text-align: center;
@@ -147,7 +147,7 @@ body {
 }
 
 .branding-copy h1 {
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 2.2rem;
   letter-spacing: 0.08em;
   margin: 0;
@@ -358,7 +358,7 @@ body {
 
 .engagement-card h3 {
   margin: 0;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -404,7 +404,7 @@ body {
 }
 
 .slider-field span {
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 1.15rem;
 }
 
@@ -442,7 +442,7 @@ body {
 }
 
 .motor-engagement .engagement-readout .label {
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 0.95rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -450,7 +450,7 @@ body {
 }
 
 .motor-engagement .engagement-readout .value {
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 1.45rem;
   letter-spacing: 0.1em;
   color: #7fffd4;
@@ -499,7 +499,7 @@ button.is-pulsing {
 
 .status-card h2 {
   margin: 0;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -577,7 +577,7 @@ button.is-pulsing {
 }
 
 .motor-name {
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: clamp(1rem, 2.1vw, 1.35rem);
@@ -690,7 +690,7 @@ button.is-pulsing {
   font-size: 0.9rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   justify-items: center;
   width: min(100%, 420px);
 }
@@ -710,7 +710,7 @@ button.is-pulsing {
   color: var(--text-primary);
   padding: 12px 14px;
   font-size: 0.95rem;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transition: border-color var(--transition), box-shadow var(--transition);
@@ -954,7 +954,7 @@ button.is-pulsing {
 
 .simulator-panel h3 {
   margin: 0;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -983,10 +983,10 @@ button.is-pulsing {
 }
 
 .wave-card {
-  background: rgba(20, 20, 20, 0.86);
-  border-radius: 16px;
-  border: 1px solid rgba(31, 139, 255, 0.18);
-  padding: 18px 18px 10px;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  padding: 0;
   display: grid;
   gap: 12px;
 }
@@ -1011,7 +1011,7 @@ button.is-pulsing {
   background: none;
   border: none;
   color: var(--text-muted);
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 1rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1020,7 +1020,7 @@ button.is-pulsing {
 }
 
 .card-toggle::after {
-  content: "▾";
+  content: "â–¾";
   font-size: 1.2rem;
   color: var(--text-muted);
   transition: transform var(--transition), color var(--transition);
@@ -1062,14 +1062,14 @@ button.is-pulsing {
   font-size: 0.82rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
 }
 
 .force-panel h3,
 .log-panel h3,
 .selector-panel h3 {
   margin: 0;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -1188,13 +1188,13 @@ button.is-pulsing {
   width: 100%;
   height: 280px;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(6, 12, 25, 0.8), rgba(3, 6, 13, 0.95));
-  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(31, 139, 255, 0.15);
+  background: transparent;
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .distance-readout span {
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   letter-spacing: 0.08em;
 }
 
@@ -1285,7 +1285,7 @@ button.is-pulsing {
 }
 
 .template-status-pill .value {
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 1.15rem;
   letter-spacing: 0.3em;
   color: var(--accent-secondary);
@@ -1327,7 +1327,7 @@ button.is-pulsing {
 
 .template-card header h2 {
   margin: 0;
-  font-family: "Rajdhani", sans-serif;
+  font-family: inherit;
   font-size: 1.5rem;
   letter-spacing: 0.12em;
 }
@@ -1383,3 +1383,4 @@ button.is-pulsing {
     align-items: flex-start;
   }
 }
+
