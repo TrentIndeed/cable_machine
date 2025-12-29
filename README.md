@@ -45,3 +45,33 @@ Single-command option (repo root):
 - `npm start`
 
 When using the single-command option, the UI runs on port 3001 and the ADS bridge runs on port 3002.
+
+## Hybrid mobile app (Play Store wrapper + hosted UI)
+
+The Android app is a thin wrapper that loads the hosted web UI. Updates are primarily done by redeploying the web UI.
+
+1) Build and host the UI
+   - Set `REACT_APP_API_BASE` and `REACT_APP_WS_URL` to your ADS bridge host.
+   - Build the UI:
+     - `npm run build:ui`
+   - Deploy `dragon_gym/build` to your web host.
+
+2) Point the Android wrapper at the hosted UI
+   - Update `capacitor.config.json` `server.url` to your hosted URL.
+   - Use `https` for Play Store builds.
+
+3) Android setup (first time)
+   - `npm install`
+   - `npm run setup`
+   - `npm run cap:add:android`
+
+4) Sync and open in Android Studio
+   - `npm run cap:sync`
+   - `npm run cap:open:android`
+
+Update flow:
+- Web-only changes: redeploy the web UI (no Play Store update needed).
+- Native wrapper or config changes: rebuild and upload a new AAB via Android Studio.
+
+Local-only build:
+- `npm run build:ui:local` uses `http://localhost:3002` for the ADS bridge.

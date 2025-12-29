@@ -1,0 +1,9 @@
+{
+  "appId": "com.dragongym.cablemachine",
+  "appName": "Dragon Gym",
+  "webDir": "dragon_gym/build",
+  "server": {
+    "url": "https://your-host-url.example",
+    "cleartext": false
+  }
+}

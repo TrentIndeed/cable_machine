@@ -6,7 +6,8 @@ const express = require('express');
 const { Client } = require('ads-client');
 const { WebSocket, WebSocketServer } = require('ws');
 
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+const envPath = process.env.ADS_ENV_PATH || path.join(__dirname, '.env');
+require('dotenv').config({ path: envPath });
 
 const {
   AMS_NET_ID,
@@ -41,9 +42,11 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 let adsClient = null;
 let adsConnecting = false;
 let adsConnected = false;
+let adsDisconnecting = false;
 let reconnectDelay = 500;
 let reconnectTimer = null;
 let seqCounter = 0;
+let telemetrySymbolMissingLogged = false;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -75,12 +78,19 @@ function scheduleReconnect() {
 }
 
 function markDisconnected(error) {
+  if (adsDisconnecting) {
+    return;
+  }
   adsConnected = false;
   if (adsClient) {
+    adsDisconnecting = true;
     try {
       adsClient.disconnect();
     } catch (err) {
       // Best-effort disconnect.
+    } finally {
+      adsDisconnecting = false;
+      adsClient = null;
     }
   }
   if (error) {
@@ -140,6 +150,16 @@ async function readSymbolValue(symbolName) {
     }
     return result;
   } catch (error) {
+    const message = error?.message || '';
+    if (message.includes('Reading symbol info failed')) {
+      if (!telemetrySymbolMissingLogged) {
+        telemetrySymbolMissingLogged = true;
+        console.warn(
+          '[ADS] Symbol lookup failed for GVL.Telemetry. Ensure the PLC is in Run and symbols are generated.'
+        );
+      }
+      return null;
+    }
     markDisconnected(error);
     return null;
   }
@@ -150,7 +170,7 @@ async function writeSymbolValue(symbolName, payload) {
     throw new Error('ADS not connected');
   }
   try {
-    await adsClient.writeSymbol(symbolName, { value: payload, autoFill: true });
+    await adsClient.writeSymbol(symbolName, payload, true);
   } catch (error) {
     markDisconnected(error);
     throw error;
@@ -195,13 +215,13 @@ function validateCommand(body) {
 }
 
 async function readAckState() {
-  const ackSeqDirect = await readSymbolValue('GVL_UI.Cmd.AckSeq');
-  const statusDirect = await readSymbolValue('GVL_UI.Cmd.Status');
+  const ackSeqDirect = await readSymbolValue('GVL.Cmd.AckSeq');
+  const statusDirect = await readSymbolValue('GVL.Cmd.Status');
   if (Number.isFinite(ackSeqDirect)) {
     return { ackSeq: ackSeqDirect, status: statusDirect };
   }
 
-  const cmdStruct = await readSymbolValue('GVL_UI.Cmd');
+  const cmdStruct = await readSymbolValue('GVL.Cmd');
   if (cmdStruct && typeof cmdStruct === 'object') {
     const ackSeq = cmdStruct.AckSeq;
     const status = cmdStruct.Status;
@@ -210,7 +230,7 @@ async function readAckState() {
     }
   }
 
-  const telemetry = await readSymbolValue('GVL_UI.Telemetry');
+  const telemetry = await readSymbolValue('GVL.Telemetry');
   if (telemetry && typeof telemetry === 'object') {
     const ackSeq = telemetry.AckSeq;
     const status = telemetry.CmdStatus || telemetry.Status;
@@ -257,7 +277,7 @@ app.post('/api/cmd', async (req, res) => {
   };
 
   try {
-    await writeSymbolValue('GVL_UI.Cmd', payload);
+    await writeSymbolValue('GVL.Cmd', payload);
     const ack = await waitForAck(seq);
     res.json({ ok: true, seq, ack });
   } catch (error) {
@@ -276,7 +296,7 @@ setInterval(async () => {
   if (!adsConnected) {
     await connectAds();
   }
-  const telemetry = (await readSymbolValue('GVL_UI.Telemetry')) || { Connected: false };
+  const telemetry = (await readSymbolValue('GVL.Telemetry')) || { Connected: false };
   const payload = JSON.stringify(telemetry);
   wss.clients.forEach((clientSocket) => {
     if (clientSocket.readyState === WebSocket.OPEN) {

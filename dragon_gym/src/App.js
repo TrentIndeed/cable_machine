@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { sendCommand } from './api/sendCommand';
 import { useTelemetry } from './hooks/useTelemetry';
 import './App.css';
@@ -568,7 +568,6 @@ function App() {
         MAX_TRAVEL_INCHES,
         clampedValue + WEIGHT_ENGAGE_OFFSET
       );
-      const thresholdFormatted = `${threshold.toFixed(1)} in`;
       if (motor.engageDisplay) {
         motor.engageDisplay.textContent = formatted;
       }
@@ -1570,13 +1569,6 @@ function App() {
       }
     }
 
-    function scaleToGraph(inches) {
-      const scaleMin = waveScaleMinRef.current || 0;
-      const scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
-      const scaleSpan = Math.max(1, scaleMax - scaleMin);
-      return Math.min(1, Math.max(0, (inches - scaleMin) / scaleSpan));
-    }
-
     function ensureWaveScaleForTravel(travelInches) {
       let scaleMin = waveScaleMinRef.current || 0;
       let scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
@@ -2051,12 +2043,12 @@ function App() {
         if (motorBeyondEngagement(motor)) {
           return;
         }
-        const handle = getGaugeHandlePosition(motor);
-        if (!handle) return;
-        const dx = event.clientX - handle.x;
-        const dy = event.clientY - handle.y;
+        const geometry = getGaugeGeometry(motor.gaugeCanvas);
+        if (!geometry) return;
+        const dx = event.clientX - geometry.centerX;
+        const dy = event.clientY - geometry.centerY;
         const distance = Math.hypot(dx, dy);
-        if (distance > handle.handleRadius + 10) {
+        if (distance > geometry.radius + 12) {
           return;
         }
         motor.gaugeDragging = true;
@@ -2262,7 +2254,7 @@ function App() {
         }
       });
     };
-  }, [exerciseCatalog, exerciseVideos]);
+  }, [exerciseCatalog, exerciseVideos, leftBaseResistance, rightBaseResistance]);
 
   return (
     <main className="app-shell">

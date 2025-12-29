@@ -3,10 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "start": "concurrently \"cross-env PORT=3001 REACT_APP_API_BASE=http://localhost:3002 REACT_APP_WS_URL=ws://localhost:3002/ws npm start --prefix dragon_gym\" \"cross-env SERVER_PORT=3002 npm start --prefix server\"",
-    "setup": "npm install --prefix dragon_gym && npm install --prefix server"
+    "start": "concurrently \"cross-env PORT=3001 REACT_APP_API_BASE=http://localhost:3002 REACT_APP_WS_URL=ws://localhost:3002/ws npm start --prefix dragon_gym\" \"cross-env SERVER_PORT=3002 npm start --prefix server\" \"npm run start:pwa\"",
+    "start:pwa": "powershell -NoProfile -Command \"if (-not (Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*--app-id=jaecofbdpipjafphofeaceimgcclphin*' })) { Start-Process 'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome_proxy.exe' '--profile-directory=Default --app-id=jaecofbdpipjafphofeaceimgcclphin' }\"",
+    "setup": "npm install --prefix dragon_gym && npm install --prefix server",
+    "build:ui": "npm run build --prefix dragon_gym",
+    "build:ui:local": "cross-env REACT_APP_API_BASE=http://localhost:3002 REACT_APP_WS_URL=ws://localhost:3002/ws npm run build --prefix dragon_gym",
+    "cap:add:android": "npx cap add android",
+    "cap:sync": "npm run build:ui && npx cap sync android",
+    "cap:open:android": "npx cap open android"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3"
   }
