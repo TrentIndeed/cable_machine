@@ -1,0 +1,13 @@
+{
+  "name": "cable-machine",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"cross-env PORT=3001 REACT_APP_API_BASE=http://localhost:3002 REACT_APP_WS_URL=ws://localhost:3002/ws npm start --prefix dragon_gym\" \"cross-env SERVER_PORT=3002 npm start --prefix server\"",
+    "setup": "npm install --prefix dragon_gym && npm install --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "cross-env": "^7.0.3"
+  }
+}

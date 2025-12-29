@@ -1,4 +1,6 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { sendCommand } from './api/sendCommand';
+import { useTelemetry } from './hooks/useTelemetry';
 import './App.css';
 
 const MAX_RESISTANCE = 300;
@@ -17,6 +19,37 @@ const RETRACTION_SPEED_IPS =
 const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
 const WEIGHT_ENGAGE_OFFSET = 1;
+const COMMAND_TYPES = {
+  ENABLE: 'Enable',
+  DISABLE: 'Disable',
+  STOP: 'Stop',
+  SET_RESISTANCE: 'SetResistance',
+};
+const AXIS_OPTIONS = [
+  { value: 1, label: 'Left' },
+  { value: 2, label: 'Right' },
+  { value: 3, label: 'Both' },
+];
+
+function pickTelemetryNumber(source, keys) {
+  if (!source) {
+    return null;
+  }
+  for (const key of keys) {
+    const value = source[key];
+    if (Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function formatTelemetryValue(value) {
+  if (!Number.isFinite(value)) {
+    return '--';
+  }
+  return value.toFixed(2);
+}
 
 function App() {
   const [leftBaseResistance, setLeftBaseResistance] = useState(120);
@@ -28,6 +61,11 @@ function App() {
   const [forceCurveOpen, setForceCurveOpen] = useState(false);
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [videoSrc, setVideoSrc] = useState('/assets/dragon_incline_bench.mp4');
+  const { telemetry, status: telemetryStatus } = useTelemetry();
+  const [axisMask, setAxisMask] = useState(3);
+  const [commandResistance, setCommandResistance] = useState(120);
+  const [commandStatus, setCommandStatus] = useState('idle');
+  const [commandMessage, setCommandMessage] = useState('');
 
   const forceCurveModeRef = useRef(forceCurveMode);
   const forceCurveIntensityRef = useRef(forceCurveIntensity);
@@ -117,6 +155,52 @@ function App() {
     ],
     []
   );
+
+  const telemetryConnected =
+    typeof telemetry?.Connected === 'boolean'
+      ? telemetry.Connected
+      : telemetryStatus === 'connected';
+  const telemetryFault = Boolean(telemetry?.Fault);
+  const resistanceLabel = Number.isFinite(commandResistance)
+    ? Math.round(commandResistance)
+    : 0;
+
+  const leftPos = pickTelemetryNumber(telemetry, ['LeftPos', 'LeftPosition']);
+  const rightPos = pickTelemetryNumber(telemetry, ['RightPos', 'RightPosition']);
+  const leftVel = pickTelemetryNumber(telemetry, ['LeftVel', 'LeftVelocity']);
+  const rightVel = pickTelemetryNumber(telemetry, ['RightVel', 'RightVelocity']);
+  const leftForce = pickTelemetryNumber(telemetry, ['LeftForce', 'LeftTorque', 'LeftLoad']);
+  const rightForce = pickTelemetryNumber(telemetry, ['RightForce', 'RightTorque', 'RightLoad']);
+
+  const handleAxisChange = (event) => {
+    setAxisMask(Number(event.target.value));
+  };
+
+  const handleResistanceChange = (event) => {
+    setCommandResistance(Number(event.target.value));
+  };
+
+  const handleCommand = async (type, overrides = {}) => {
+    setCommandStatus('sending');
+    setCommandMessage('');
+    try {
+      const response = await sendCommand({
+        type,
+        axisMask,
+        ...overrides,
+      });
+      const ackMessage = response?.ack?.timedOut
+        ? 'Ack timed out'
+        : response?.seq !== undefined
+          ? `Seq ${response.seq}`
+          : 'Command sent';
+      setCommandStatus('sent');
+      setCommandMessage(ackMessage);
+    } catch (error) {
+      setCommandStatus('error');
+      setCommandMessage(error.message || 'Command failed');
+    }
+  };
 
   useEffect(() => {
     forceCurveModeRef.current = forceCurveMode;
@@ -2291,6 +2375,123 @@ function App() {
           </div>
           <p className="status-message" id="workoutMessage" ref={messageRef}>
             Tap Start Workout to arm the set controls.
+          </p>
+        </article>
+        <article className="telemetry-card" aria-label="Live controls">
+          <header className="telemetry-header">
+            <div>
+              <h2>Live Control</h2>
+              <p className="telemetry-subtitle">TwinCAT ADS</p>
+            </div>
+            <div className="telemetry-status">
+              <span
+                className={`telemetry-connection ${telemetryConnected ? 'is-online' : 'is-offline'}`}
+              >
+                {telemetryConnected ? 'Connected' : 'Disconnected'}
+              </span>
+              {telemetryFault ? <span className="telemetry-fault">Fault</span> : null}
+            </div>
+          </header>
+          <div className="telemetry-grid">
+            <div className="telemetry-block">
+              <h3>Left Motor</h3>
+              <div className="telemetry-row">
+                <span>Pos</span>
+                <span>{formatTelemetryValue(leftPos)}</span>
+              </div>
+              <div className="telemetry-row">
+                <span>Vel</span>
+                <span>{formatTelemetryValue(leftVel)}</span>
+              </div>
+              <div className="telemetry-row">
+                <span>Force</span>
+                <span>{formatTelemetryValue(leftForce)}</span>
+              </div>
+            </div>
+            <div className="telemetry-block">
+              <h3>Right Motor</h3>
+              <div className="telemetry-row">
+                <span>Pos</span>
+                <span>{formatTelemetryValue(rightPos)}</span>
+              </div>
+              <div className="telemetry-row">
+                <span>Vel</span>
+                <span>{formatTelemetryValue(rightVel)}</span>
+              </div>
+              <div className="telemetry-row">
+                <span>Force</span>
+                <span>{formatTelemetryValue(rightForce)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="command-controls">
+            <div className="command-buttons">
+              <button
+                type="button"
+                className="accent"
+                onClick={() => handleCommand(COMMAND_TYPES.ENABLE)}
+                disabled={!telemetryConnected || commandStatus === 'sending'}
+              >
+                Enable
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => handleCommand(COMMAND_TYPES.DISABLE)}
+                disabled={!telemetryConnected || commandStatus === 'sending'}
+              >
+                Disable
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => handleCommand(COMMAND_TYPES.STOP)}
+                disabled={!telemetryConnected || commandStatus === 'sending'}
+              >
+                Stop
+              </button>
+            </div>
+            <div className="command-inputs">
+              <label>
+                <span>Axis</span>
+                <select value={axisMask} onChange={handleAxisChange}>
+                  {AXIS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Resistance</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="300"
+                  step="1"
+                  value={commandResistance}
+                  onChange={handleResistanceChange}
+                />
+              </label>
+              <div className="command-apply">
+                <span>{resistanceLabel} lb</span>
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() =>
+                    handleCommand(COMMAND_TYPES.SET_RESISTANCE, {
+                      param1: Number.isFinite(commandResistance) ? commandResistance : 0,
+                    })
+                  }
+                  disabled={!telemetryConnected || commandStatus === 'sending'}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+          <p className="command-status" data-state={commandStatus}>
+            {commandMessage || 'Ready to send commands.'}
           </p>
         </article>
         <article className="motor-card" data-motor="left">

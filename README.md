@@ -24,3 +24,24 @@ Target performance (with 100 mm drum OD, 22→60 then 22→48):
 * Fit **shaft guards** and belt covers.
 * Bond all metalwork to **PE ground**. Use **strain relief** on the mains.
 * Validate load paths (cable, sheaves, anchor, drum) with a **2× safety factor** minimum.
+
+## Running the UI + server
+
+In two terminals:
+
+1. UI
+   - `cd dragon_gym`
+   - `npm install`
+   - `npm start`
+2. ADS bridge
+   - `cd server`
+   - `npm install`
+   - `copy ..\.env.example .env` (then edit values)
+   - `npm start`
+
+Single-command option (repo root):
+- `npm install`
+- `npm run setup`
+- `npm start`
+
+When using the single-command option, the UI runs on port 3001 and the ADS bridge runs on port 3002.
