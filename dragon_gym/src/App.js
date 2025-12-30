@@ -18,6 +18,7 @@ const RETRACTION_SPEED_IPS =
   (RETRACTION_SPEED_MPH * INCHES_PER_MILE) / SECONDS_PER_HOUR;
 const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
+const INITIAL_BASE_RESISTANCE = 120;
 const WEIGHT_ENGAGE_OFFSET = 1;
 const COMMAND_TYPES = {
   ENABLE: 'Enable',
@@ -52,8 +53,6 @@ function formatTelemetryValue(value) {
 }
 
 function App() {
-  const [leftBaseResistance, setLeftBaseResistance] = useState(120);
-  const [rightBaseResistance, setRightBaseResistance] = useState(120);
   const [forceCurveMode, setForceCurveMode] = useState('linear');
   const [forceCurveIntensity, setForceCurveIntensityState] = useState(20);
   const [eccentricMode, setEccentricMode] = useState('eccentric');
@@ -391,7 +390,7 @@ function App() {
         engageDisplay: leftEngageDisplayRef.current,
         setCableButton: leftSetCableLengthRef.current,
         retractCableButton: leftRetractCableRef.current,
-      }, leftBaseResistance),
+      }, INITIAL_BASE_RESISTANCE),
       createMotor('right', {
         gaugeCanvas: rightGaugeRef.current,
         simSlider: rightSimRef.current,
@@ -402,7 +401,7 @@ function App() {
         engageDisplay: rightEngageDisplayRef.current,
         setCableButton: rightSetCableLengthRef.current,
         retractCableButton: rightRetractCableRef.current,
-      }, rightBaseResistance),
+      }, INITIAL_BASE_RESISTANCE),
     ];
 
     const updateWaveScale = () => {
@@ -754,11 +753,6 @@ function App() {
       motor.baseResistance = clamped;
       if (motor.baseLabel) {
         motor.baseLabel.textContent = `${Math.round(clamped)} lb`;
-      }
-      if (motor.id === 'left') {
-        setLeftBaseResistance(clamped);
-      } else {
-        setRightBaseResistance(clamped);
       }
       refreshMotorResistance(motor);
     }
@@ -2043,12 +2037,12 @@ function App() {
         if (motorBeyondEngagement(motor)) {
           return;
         }
-        const geometry = getGaugeGeometry(motor.gaugeCanvas);
-        if (!geometry) return;
-        const dx = event.clientX - geometry.centerX;
-        const dy = event.clientY - geometry.centerY;
+        const handle = getGaugeHandlePosition(motor);
+        if (!handle) return;
+        const dx = event.clientX - handle.x;
+        const dy = event.clientY - handle.y;
         const distance = Math.hypot(dx, dy);
-        if (distance > geometry.radius + 12) {
+        if (distance > handle.handleRadius + 10) {
           return;
         }
         motor.gaugeDragging = true;
@@ -2254,7 +2248,7 @@ function App() {
         }
       });
     };
-  }, [exerciseCatalog, exerciseVideos, leftBaseResistance, rightBaseResistance]);
+  }, [exerciseCatalog, exerciseVideos]);
 
   return (
     <main className="app-shell">
