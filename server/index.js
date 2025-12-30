@@ -270,7 +270,7 @@ app.post('/api/cmd', async (req, res) => {
   const seq = nextSeq();
   const payload = {
     Seq: seq,
-    Type: validation.normalizedType,
+    CmdType: validation.normalizedType,
     AxisMask: validation.axisMask,
     Param1: validation.param1,
     Param2: validation.param2,

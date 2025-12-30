@@ -3,7 +3,7 @@ import { sendCommand } from './api/sendCommand';
 import { useTelemetry } from './hooks/useTelemetry';
 import './App.css';
 
-const MAX_RESISTANCE = 300;
+const MAX_RESISTANCE = 5;
 const TWO_PI = Math.PI * 2;
 const MAX_TRAVEL_INCHES = 24;
 const ENGAGEMENT_RAMP_INCHES = 1;
@@ -18,7 +18,7 @@ const RETRACTION_SPEED_IPS =
   (RETRACTION_SPEED_MPH * INCHES_PER_MILE) / SECONDS_PER_HOUR;
 const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
-const INITIAL_BASE_RESISTANCE = 120;
+const INITIAL_BASE_RESISTANCE = 1;
 const WEIGHT_ENGAGE_OFFSET = 1;
 const COMMAND_TYPES = {
   ENABLE: 'Enable',
@@ -62,7 +62,7 @@ function App() {
   const [videoSrc, setVideoSrc] = useState('/assets/dragon_incline_bench.mp4');
   const { telemetry, status: telemetryStatus } = useTelemetry();
   const [axisMask, setAxisMask] = useState(3);
-  const [commandResistance, setCommandResistance] = useState(120);
+  const [commandResistance, setCommandResistance] = useState(1);
   const [commandStatus, setCommandStatus] = useState('idle');
   const [commandMessage, setCommandMessage] = useState('');
 
@@ -2453,7 +2453,7 @@ function App() {
                 <input
                   type="range"
                   min="0"
-                  max="300"
+                  max="5"
                   step="1"
                   value={commandResistance}
                   onChange={handleResistanceChange}
