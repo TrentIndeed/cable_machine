@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <GVL Name="GVL_UI" Id="{4cf79110-5c51-475b-9987-e0e70b7c4d32}">
+    <Declaration><![CDATA[{attribute 'qualified_only' := 'FALSE'}
+VAR_GLOBAL
+    // UI / App interface (you already have these DUTs)
+    Cmd       : ST_UI_Command;
+    Telemetry : ST_UI_Telemetry;
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>

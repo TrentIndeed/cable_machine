@@ -9,3 +9,15 @@ android/
 # .env.*
 # server/.env
 server/node_modules/
+
+# TwinCAT generated
+**/_Boot/
+**/_CompileInfo/
+**/_Libraries/
+**/_References/
+**/_PlcSign/
+**/_Rebuild/
+**/*.tmc
+**/*.tpy
+**/*.tpyx
+**/*.tpz

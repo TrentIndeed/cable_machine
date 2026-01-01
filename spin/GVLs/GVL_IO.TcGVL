@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <GVL Name="GVL_IO" Id="{f0310ce1-9980-4d99-846b-f36ecf3e589c}">
+    <Declaration><![CDATA[VAR_GLOBAL
+	// HARDWARE MAPPINGS (Link these in the IO tree to the Delta Drive PDOs)
+	// Outputs (Master -> Drive)
+	Left_ControlWord   AT %Q* : UINT;  // Map to 0x6040
+	Left_TargetTorque  AT %Q* : INT;   // Map to 0x6071
+	Left_OpMode        AT %Q* : SINT;  // Map to 0x6060
+	
+	Right_ControlWord  AT %Q* : UINT;  // Map to 0x6040
+	Right_TargetTorque AT %Q* : INT;   // Map to 0x6071
+	Right_OpMode       AT %Q* : SINT;  // Map to 0x6060
+	
+	// Inputs (Drive -> Master)
+	Left_StatusWord    AT %I* : UINT;  // Map to 0x6041
+	Left_ActualTq      AT %I* : INT;   // Map to 0x6077
+	Left_OpModeDisplay AT %I* : SINT;  // Map to 0x6061
+	
+	Right_StatusWord   AT %I* : UINT;  // Map to 0x6041
+	Right_ActualTq     AT %I* : INT;   // Map to 0x6077
+	Right_OpModeDisplay AT %I* : SINT; // Map to 0x6061
+END_VAR
+]]></Declaration>
+  </GVL>
+</TcPlcObject>
