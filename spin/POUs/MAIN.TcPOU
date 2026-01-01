@@ -3,88 +3,65 @@
   <POU Name="MAIN" Id="{260f120f-39ab-4c67-b134-4b51b0e2a29b}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
+    axis_left  : AXIS_REF;
+    axis_right : AXIS_REF;
+    fbResetL : MC_Reset;
+    fbResetR : MC_Reset;
 
-axis_left  : AXIS_REF;
-axis_right : AXIS_REF;
-fbResetL : MC_Reset;
-fbResetR : MC_Reset;
+    lastSeq        : DINT := -1;
+    bEnableL       : BOOL := FALSE;
+    bEnableR       : BOOL := FALSE;
+    fForceL        : REAL := 0.0;
+    fForceR        : REAL := 0.0;
 
-lastSeq        : DINT := -1;
-bEnableL       : BOOL := FALSE;
-bEnableR       : BOOL := FALSE;
-fForceL        : REAL := 0.0;
-fForceR        : REAL := 0.0;
+    // Brake logic trackers
+    bBrakeEngagedL : BOOL := TRUE;
+    bBrakeEngagedR : BOOL := TRUE;
 
-// Brake logic
-bBrakeEngagedL : BOOL := TRUE;
-bBrakeEngagedR : BOOL := TRUE;
+    bDoResetL      : BOOL := FALSE;
+    bDoResetR      : BOOL := FALSE;
 
-bDoResetL      : BOOL := FALSE;
-bDoResetR      : BOOL := FALSE;
+    nStateL : INT := 0;
+    nStateR : INT := 0;
 
-nStateL : INT := 0;
-nStateR : INT := 0;
-
-fLeftVelo  : LREAL;
-fRightVelo : LREAL;
-
-
+    fLeftVelo  : LREAL;
+    fRightVelo : LREAL;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[// --- 1. COMMAND HANDLING ---
 IF GVL_UI.Cmd.Seq <> lastSeq THEN
-lastSeq := GVL_UI.Cmd.Seq;
-bDoResetL := FALSE;
-bDoResetR := FALSE;
+    lastSeq := GVL_UI.Cmd.Seq;
+    bDoResetL := FALSE;
+    bDoResetR := FALSE;
 
-CASE GVL_UI.Cmd.CmdType OF
-    1: // ENABLE
-        IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN 
-            bEnableL := TRUE; 
-            bBrakeEngagedL := TRUE; 
-        END_IF
-        IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN 
-            bEnableR := TRUE; 
-            bBrakeEngagedR := TRUE; 
-        END_IF
-        
-    2, 3: // DISABLE or STOP
-        IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN 
-            bEnableL := FALSE; 
-            fForceL := 0.0; 
-            bBrakeEngagedL := TRUE; 
-        END_IF
-        IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN 
-            bEnableR := FALSE; 
-            fForceR := 0.0; 
-            bBrakeEngagedR := TRUE; 
-        END_IF
-        
-    4, 5: // SET FORCE (Auto-Release Brake)
-        IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN 
-            fForceL := GVL_UI.Cmd.Param1; 
-            IF fForceL > 0.1 THEN bBrakeEngagedL := FALSE; ELSE bBrakeEngagedL := TRUE; END_IF;
-        END_IF
-        IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN 
-            fForceR := GVL_UI.Cmd.Param1; 
-            IF fForceR > 0.1 THEN bBrakeEngagedR := FALSE; ELSE bBrakeEngagedR := TRUE; END_IF;
-        END_IF
-        
-    6: // RESET
-        IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bDoResetL := TRUE; END_IF
-        IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bDoResetR := TRUE; END_IF
-
-    7: // EXPLICIT BRAKE (Hold)
-        IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bBrakeEngagedL := TRUE; fForceL := 0.0; END_IF
-        IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bBrakeEngagedR := TRUE; fForceR := 0.0; END_IF
-END_CASE
-GVL_UI.Cmd.AckSeq := lastSeq;
-
-
+    CASE GVL_UI.Cmd.CmdType OF
+        1: // ENABLE (Default to Clamp)
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bEnableL := TRUE; bBrakeEngagedL := TRUE; END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bEnableR := TRUE; bBrakeEngagedR := TRUE; END_IF
+            
+        2, 3: // DISABLE or STOP (Always Clamp)
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bEnableL := FALSE; fForceL := 0.0; bBrakeEngagedL := TRUE; END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bEnableR := FALSE; fForceR := 0.0; bBrakeEngagedR := TRUE; END_IF
+            
+        4, 5: // SET FORCE (Auto-Release)
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN 
+                fForceL := GVL_UI.Cmd.Param1; 
+                bBrakeEngagedL := (fForceL < 0.01); // Release brake even for very small force
+            END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN 
+                fForceR := GVL_UI.Cmd.Param1; 
+                bBrakeEngagedR := (fForceR < 0.01);
+            END_IF
+            
+        6: // RESET
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bDoResetL := TRUE; END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bDoResetR := TRUE; END_IF
+    END_CASE
+    GVL_UI.Cmd.AckSeq := lastSeq;
 END_IF
 
-// --- 2. NC MAINTENANCE & VELOCITY ---
+// --- 2. MAINTENANCE ---
 axis_left.ReadStatus();
 axis_right.ReadStatus();
 fbResetL(Axis := axis_left, Execute := bDoResetL);
@@ -92,61 +69,81 @@ fbResetR(Axis := axis_right, Execute := bDoResetR);
 fLeftVelo  := axis_left.NcToPlc.ActVelo;
 fRightVelo := axis_right.NcToPlc.ActVelo;
 
-// --- 3. STATE MACHINE (Handles Faults and Braking) ---
+// --- 3. STATE MACHINE (Optimized for Mechanical Brake Interaction) ---
+// TODO: Once 24V brake wiring is routed through Drive DO (DO1/DO2), 
+// re-enable the logic that drops ControlWord to 16#0000 during bBrakeEngaged.
+// Currently commented out to allow manual movement while 24V is hardwired.
+
 Left_OpMode  := 10;
 Right_OpMode := 10;
 
-// LEFT Axis State Machine
-IF (Left_StatusWord AND 16#0008) = 16#0008 THEN
-// DRIVE IS IN FAULT (Status 10152 indicates bit 3 is high)
-Left_ControlWord := 16#0080; // Reset Fault Bit
-nStateL := 0;
+// LEFT Axis State Logic
+IF (Left_StatusWord AND 16#0008) = 16#0008 THEN // Fault detected
+    Left_ControlWord := 16#0080;
+    nStateL := 0;
 ELSIF NOT bEnableL THEN
-Left_ControlWord := 16#0000;
-nStateL := 0;
+    Left_ControlWord := 16#0000;
+    nStateL := 0;
+// ELSIF bBrakeEngagedL THEN
+    // Left_ControlWord := 16#0000; // Future Brake Clamp logic
+    // nStateL := 0;
 ELSE
-CASE nStateL OF
-0: // Init Shutdown / Fault Reset
-Left_ControlWord := 16#0006;
-IF (Left_StatusWord AND 16#0021) = 16#0021 THEN nStateL := 1; END_IF
-1: // Ready / Brake Holding
-Left_ControlWord := 16#0007;
-IF (Left_StatusWord AND 16#0023) = 16#0023 AND NOT bBrakeEngagedL THEN nStateL := 2; END_IF
-2: // Operation Enabled (Power On)
-Left_ControlWord := 16#000F;
-IF bBrakeEngagedL THEN nStateL := 1; END_IF
-END_CASE
+    CASE nStateL OF
+        0: // Powering Up: Step 1
+            Left_ControlWord := 16#0006;
+            IF (Left_StatusWord AND 16#0021) = 16#0021 THEN nStateL := 1; END_IF
+        1: // Powering Up: Step 2
+            Left_ControlWord := 16#0007;
+            IF (Left_StatusWord AND 16#0023) = 16#0023 THEN nStateL := 2; END_IF
+        2: // Powering Up: Step 3 (Operation Enabled / Release Brake)
+            Left_ControlWord := 16#000F;
+            IF (Left_StatusWord AND 16#0027) = 16#0027 THEN nStateL := 3; END_IF
+        3: // In Motion / Applying Torque
+            Left_ControlWord := 16#000F;
+            // IF bBrakeEngagedL THEN nStateL := 0; END_IF // Future Brake Clamp transition
+    END_CASE
 END_IF
 
-// RIGHT Axis State Machine
+// RIGHT Axis State Logic
 IF (Right_StatusWord AND 16#0008) = 16#0008 THEN
-Right_ControlWord := 16#0080;
-nStateR := 0;
+    Right_ControlWord := 16#0080;
+    nStateR := 0;
 ELSIF NOT bEnableR THEN
-Right_ControlWord := 16#0000;
-nStateR := 0;
+    Right_ControlWord := 16#0000;
+    nStateR := 0;
+// ELSIF bBrakeEngagedR THEN
+    // Right_ControlWord := 16#0000;
+    // nStateR := 0;
 ELSE
-CASE nStateR OF
-0: Right_ControlWord := 16#0006;
-IF (Right_StatusWord AND 16#0021) = 16#0021 THEN nStateR := 1; END_IF
-1: Right_ControlWord := 16#0007;
-IF (Right_StatusWord AND 16#0023) = 16#0023 AND NOT bBrakeEngagedR THEN nStateR := 2; END_IF
-2: Right_ControlWord := 16#000F;
-IF bBrakeEngagedR THEN nStateR := 1; END_IF
-END_CASE
+    CASE nStateR OF
+        0: 
+            Right_ControlWord := 16#0006;
+            IF (Right_StatusWord AND 16#0021) = 16#0021 THEN nStateR := 1; END_IF
+        1: 
+            Right_ControlWord := 16#0007;
+            IF (Right_StatusWord AND 16#0023) = 16#0023 THEN nStateR := 2; END_IF
+        2: 
+            Right_ControlWord := 16#000F;
+            IF (Right_StatusWord AND 16#0027) = 16#0027 THEN nStateR := 3; END_IF
+        3: 
+            Right_ControlWord := 16#000F;
+            // IF bBrakeEngagedR THEN nStateR := 0; END_IF
+    END_CASE
 END_IF
 
-// --- 4. TORQUE INJECTION ---
-IF nStateL = 2 THEN
-Left_TargetTorque := TO_INT(fForceL * 40.0);
-ELSE
-Left_TargetTorque := 0;
+// --- 4. TORQUE ---
+// Multiplier set to 40.0 for 1.5kW motor on 4" drum
+// Note: If bBrakeEngaged is TRUE, we force torque to 0 even if state machine is enabled.
+IF nStateL = 3 AND NOT bBrakeEngagedL THEN 
+    Left_TargetTorque := TO_INT(fForceL * 40.0); 
+ELSE 
+    Left_TargetTorque := 0; 
 END_IF
 
-IF nStateR = 2 THEN
-Right_TargetTorque := TO_INT(fForceR * 40.0);
-ELSE
-Right_TargetTorque := 0;
+IF nStateR = 3 AND NOT bBrakeEngagedR THEN 
+    Right_TargetTorque := TO_INT(fForceR * 40.0); 
+ELSE 
+    Right_TargetTorque := 0; 
 END_IF
 
 // --- 5. TELEMETRY ---
@@ -158,11 +155,11 @@ GVL_UI.Telemetry.RightVel   := TO_REAL(fRightVelo);
 GVL_UI.Telemetry.LeftForce  := TO_REAL(Left_ActualTq);
 GVL_UI.Telemetry.RightForce := TO_REAL(Right_ActualTq);
 
-// Feedback: Format [OpModeDisp][State][StatusLowByte]
+// Status Diagnostic
 GVL_UI.Telemetry.CmdStatus  := TO_INT( (TO_INT(Left_OpModeDisplay) * 1000) + (nStateL * 100) + (Left_StatusWord AND 16#00FF));]]></ST>
     </Implementation>
     <LineIds Name="MAIN">
-      <LineId Id="4514" Count="126" />
+      <LineId Id="4793" Count="126" />
       <LineId Id="3287" Count="0" />
     </LineIds>
   </POU>
