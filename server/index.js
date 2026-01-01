@@ -9,6 +9,14 @@ const { WebSocket, WebSocketServer } = require('ws');
 const envPath = process.env.ADS_ENV_PATH || path.join(__dirname, '.env');
 require('dotenv').config({ path: envPath });
 
+process.on('uncaughtException', (error) => {
+  console.error('[Server] Uncaught exception:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('[Server] Unhandled rejection:', error);
+});
+
 const {
   AMS_NET_ID,
   ADS_HOST = '127.0.0.1',
@@ -22,6 +30,7 @@ const COMMAND_TYPE_MAP = {
   Stop: 3,
   SetResistance: 4,
   SetForce: 5,
+  Reset: 6,
 };
 
 const ADS_CONFIG = {
@@ -37,7 +46,18 @@ app.use(cors());
 app.use(express.json({ limit: '64kb' }));
 
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server, path: '/ws' });
+const wss = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+  console.log('[WS] Upgrade request:', req.url);
+  if (req.url !== '/ws') {
+    socket.destroy();
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit('connection', ws, req);
+  });
+});
 
 let adsClient = null;
 let adsConnecting = false;
@@ -85,7 +105,10 @@ function markDisconnected(error) {
   if (adsClient) {
     adsDisconnecting = true;
     try {
-      adsClient.disconnect();
+      const disconnectResult = adsClient.disconnect();
+      if (disconnectResult && typeof disconnectResult.catch === 'function') {
+        disconnectResult.catch(() => {});
+      }
     } catch (err) {
       // Best-effort disconnect.
     } finally {
@@ -155,7 +178,7 @@ async function readSymbolValue(symbolName) {
       if (!telemetrySymbolMissingLogged) {
         telemetrySymbolMissingLogged = true;
         console.warn(
-          '[ADS] Symbol lookup failed for GVL.Telemetry. Ensure the PLC is in Run and symbols are generated.'
+          '[ADS] Symbol lookup failed for GVL_UI.Telemetry. Ensure the PLC is in Run and symbols are generated.'
         );
       }
       return null;
@@ -215,13 +238,13 @@ function validateCommand(body) {
 }
 
 async function readAckState() {
-  const ackSeqDirect = await readSymbolValue('GVL.Cmd.AckSeq');
-  const statusDirect = await readSymbolValue('GVL.Cmd.Status');
+  const ackSeqDirect = await readSymbolValue('GVL_UI.Cmd.AckSeq');
+  const statusDirect = await readSymbolValue('GVL_UI.Cmd.Status');
   if (Number.isFinite(ackSeqDirect)) {
     return { ackSeq: ackSeqDirect, status: statusDirect };
   }
 
-  const cmdStruct = await readSymbolValue('GVL.Cmd');
+  const cmdStruct = await readSymbolValue('GVL_UI.Cmd');
   if (cmdStruct && typeof cmdStruct === 'object') {
     const ackSeq = cmdStruct.AckSeq;
     const status = cmdStruct.Status;
@@ -230,7 +253,7 @@ async function readAckState() {
     }
   }
 
-  const telemetry = await readSymbolValue('GVL.Telemetry');
+  const telemetry = await readSymbolValue('GVL_UI.Telemetry');
   if (telemetry && typeof telemetry === 'object') {
     const ackSeq = telemetry.AckSeq;
     const status = telemetry.CmdStatus || telemetry.Status;
@@ -277,7 +300,7 @@ app.post('/api/cmd', async (req, res) => {
   };
 
   try {
-    await writeSymbolValue('GVL.Cmd', payload);
+    await writeSymbolValue('GVL_UI.Cmd', payload);
     const ack = await waitForAck(seq);
     res.json({ ok: true, seq, ack });
   } catch (error) {
@@ -285,7 +308,8 @@ app.post('/api/cmd', async (req, res) => {
   }
 });
 
-wss.on('connection', (socket) => {
+wss.on('connection', (socket, req) => {
+  console.log('[WS] Client connected:', req?.url || '');
   socket.send(JSON.stringify({ Connected: adsConnected }));
 });
 
@@ -296,14 +320,20 @@ setInterval(async () => {
   if (!adsConnected) {
     await connectAds();
   }
-  const telemetry = (await readSymbolValue('GVL.Telemetry')) || { Connected: false };
+  const telemetry = (await readSymbolValue('GVL_UI.Telemetry')) || { Connected: false };
   const payload = JSON.stringify(telemetry);
   wss.clients.forEach((clientSocket) => {
     if (clientSocket.readyState === WebSocket.OPEN) {
       clientSocket.send(payload);
     }
   });
-}, 50);
+}, 1000);
+
+setInterval(() => {
+  if (!adsConnected && !adsConnecting) {
+    connectAds().catch(() => {});
+  }
+}, 2000);
 
 const serverPortNumber = Number(SERVER_PORT) || 3001;
 

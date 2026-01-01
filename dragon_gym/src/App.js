@@ -24,6 +24,7 @@ const COMMAND_TYPES = {
   ENABLE: 'Enable',
   DISABLE: 'Disable',
   STOP: 'Stop',
+  RESET: 'Reset',
   SET_RESISTANCE: 'SetResistance',
 };
 const AXIS_OPTIONS = [
@@ -170,6 +171,7 @@ function App() {
   const rightVel = pickTelemetryNumber(telemetry, ['RightVel', 'RightVelocity']);
   const leftForce = pickTelemetryNumber(telemetry, ['LeftForce', 'LeftTorque', 'LeftLoad']);
   const rightForce = pickTelemetryNumber(telemetry, ['RightForce', 'RightTorque', 'RightLoad']);
+  const cmdStatus = pickTelemetryNumber(telemetry, ['CmdStatus', 'Status']);
 
   const handleAxisChange = (event) => {
     setAxisMask(Number(event.target.value));
@@ -2409,6 +2411,13 @@ function App() {
                 <span>{formatTelemetryValue(rightForce)}</span>
               </div>
             </div>
+            <div className="telemetry-block">
+              <h3>Command</h3>
+              <div className="telemetry-row">
+                <span>Status</span>
+                <span>{formatTelemetryValue(cmdStatus)}</span>
+              </div>
+            </div>
           </div>
           <div className="command-controls">
             <div className="command-buttons">
@@ -2435,6 +2444,14 @@ function App() {
                 disabled={!telemetryConnected || commandStatus === 'sending'}
               >
                 Stop
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => handleCommand(COMMAND_TYPES.RESET)}
+                disabled={!telemetryConnected || commandStatus === 'sending'}
+              >
+                Reset
               </button>
             </div>
             <div className="command-inputs">
