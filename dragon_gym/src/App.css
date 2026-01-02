@@ -104,6 +104,13 @@ body {
   justify-self: end;
 }
 
+.header-actions .telemetry-connection {
+  min-width: 140px;
+  text-align: center;
+  padding: 10px 18px;
+  font-size: 0.85rem;
+}
+
 .header-actions .status-toggle,
 .header-actions .power-toggle {
   width: 100%;
@@ -184,6 +191,32 @@ body {
   cursor: pointer;
   transition: background var(--transition), transform var(--transition);
   box-shadow: 0 0 24px rgba(83, 255, 106, 0.25);
+}
+
+.reset-toggle {
+  min-width: 140px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(82, 150, 255, 0.55);
+  background: rgba(18, 40, 78, 0.9);
+  color: rgba(199, 226, 255, 0.95);
+  font-family: inherit;
+  font-size: 0.95rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 0 24px rgba(31, 139, 255, 0.25);
+}
+
+.reset-toggle:active {
+  transform: translateY(1px);
+}
+
+.reset-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
 }
 
 .power-toggle[data-state="on"] {
@@ -707,6 +740,26 @@ button.is-pulsing {
   transition: outline-offset var(--transition), outline-color var(--transition), transform 220ms ease;
 }
 
+.app-shell.is-synced .motor-card[data-motor="left"] {
+  grid-column: 1 / -1;
+  transform: scale(1.03);
+}
+
+.app-shell.is-synced .motor-card[data-motor="right"] {
+  opacity: 0;
+  transform: translateX(-50%) scale(0.95);
+  pointer-events: none;
+  max-height: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border-width: 0;
+}
+
+.motor-card.is-synced-hidden {
+  transition: opacity 220ms ease, transform 220ms ease, max-height 220ms ease, padding 220ms ease, margin 220ms ease, border-width 220ms ease;
+}
+
 .motor-card::before {
   content: "v";
   position: absolute;
@@ -1079,10 +1132,10 @@ button.is-pulsing {
 .status-stack {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  background: rgba(4, 9, 18, 0.7);
-  border: 1px solid rgba(31, 139, 255, 0.16);
-  border-radius: 14px;
-  padding: 14px 16px;
+  background: rgba(20, 20, 20, 0.86);
+  border: 1px solid rgba(62, 90, 118, 0.4);
+  border-radius: 16px;
+  padding: 16px 18px;
   gap: 16px;
   row-gap: 18px;
 }
@@ -1134,12 +1187,21 @@ button.is-pulsing {
 }
 
 .simulator-panel {
-  background: rgba(20, 20, 20, 0.86);
-  border-radius: 16px;
-  border: 1px solid rgba(31, 139, 255, 0.2);
-  padding: 22px;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  padding: 0;
   display: grid;
   gap: 16px;
+}
+
+.set-controls-panel {
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  padding: 0;
+  display: grid;
+  gap: 18px;
 }
 
 .simulator-panel h3 {

@@ -20,6 +20,8 @@ const SIM_SLIDER_STEP = 0.1;
 const DEFAULT_RETRACTION_BOTTOM = 1;
 const INITIAL_BASE_RESISTANCE = 1;
 const WEIGHT_ENGAGE_OFFSET = 1;
+const AUTO_TORQUE_MIN_DELTA = 0.1;
+const AUTO_TORQUE_MIN_MS = 250;
 const COMMAND_TYPES = {
   ENABLE: 'Enable',
   DISABLE: 'Disable',
@@ -33,26 +35,6 @@ const AXIS_OPTIONS = [
   { value: 3, label: 'Both' },
 ];
 
-function pickTelemetryNumber(source, keys) {
-  if (!source) {
-    return null;
-  }
-  for (const key of keys) {
-    const value = source[key];
-    if (Number.isFinite(value)) {
-      return value;
-    }
-  }
-  return null;
-}
-
-function formatTelemetryValue(value) {
-  if (!Number.isFinite(value)) {
-    return '--';
-  }
-  return value.toFixed(2);
-}
-
 function App() {
   const [forceCurveMode, setForceCurveMode] = useState('linear');
   const [forceCurveIntensity, setForceCurveIntensityState] = useState(20);
@@ -63,6 +45,8 @@ function App() {
   const [videoSrc, setVideoSrc] = useState('/assets/dragon_incline_bench.mp4');
   const { telemetry, status: telemetryStatus } = useTelemetry();
   const [axisMask, setAxisMask] = useState(3);
+  const [motorsSyncedState, setMotorsSyncedState] = useState(false);
+  const [syncHidden, setSyncHidden] = useState(false);
   const [commandResistance, setCommandResistance] = useState(1);
   const [commandStatus, setCommandStatus] = useState('idle');
   const [commandMessage, setCommandMessage] = useState('');
@@ -98,7 +82,18 @@ function App() {
   const forcePanelRef = useRef(null);
   const forceLockHintRef = useRef(null);
   const powerToggleRef = useRef(null);
-  const motorToggleRef = useRef(null);
+  const adsResetRef = useRef(null);
+  const syncMotorsRef = useRef(null);
+  const axisSelectRef = useRef(null);
+  const leftResistanceValueRef = useRef(0);
+  const rightResistanceValueRef = useRef(0);
+  const motorsSyncedRef = useRef(false);
+  const telemetryConnectedRef = useRef(false);
+  const lastSentResistanceRef = useRef({
+    left: { value: null, time: 0 },
+    right: { value: null, time: 0 },
+    both: { value: null, time: 0 },
+  });
   const logListRef = useRef(null);
   const exerciseSelectRef = useRef(null);
   const exerciseTitleRef = useRef(null);
@@ -161,25 +156,60 @@ function App() {
       ? telemetry.Connected
       : telemetryStatus === 'connected';
   const telemetryFault = Boolean(telemetry?.Fault);
+  const telemetryCmdStatus = Number.isFinite(telemetry?.CmdStatus)
+    ? telemetry.CmdStatus
+    : '--';
   const resistanceLabel = Number.isFinite(commandResistance)
     ? Math.round(commandResistance)
     : 0;
 
-  const leftPos = pickTelemetryNumber(telemetry, ['LeftPos', 'LeftPosition']);
-  const rightPos = pickTelemetryNumber(telemetry, ['RightPos', 'RightPosition']);
-  const leftVel = pickTelemetryNumber(telemetry, ['LeftVel', 'LeftVelocity']);
-  const rightVel = pickTelemetryNumber(telemetry, ['RightVel', 'RightVelocity']);
-  const leftForce = pickTelemetryNumber(telemetry, ['LeftForce', 'LeftTorque', 'LeftLoad']);
-  const rightForce = pickTelemetryNumber(telemetry, ['RightForce', 'RightTorque', 'RightLoad']);
-  const cmdStatus = pickTelemetryNumber(telemetry, ['CmdStatus', 'Status']);
 
   const handleAxisChange = (event) => {
-    setAxisMask(Number(event.target.value));
+    const nextMask = Number(event.target.value);
+    setAxisMask(nextMask);
+    setCommandResistance(Math.round(getAppliedResistance(nextMask)));
   };
 
   const handleResistanceChange = (event) => {
     setCommandResistance(Number(event.target.value));
   };
+
+  const getAppliedResistance = (mask) => {
+    const left = leftResistanceValueRef.current;
+    const right = rightResistanceValueRef.current;
+    if (mask === 2) {
+      return right;
+    }
+    if (mask === 3) {
+      return (left + right) / 2;
+    }
+    return left;
+  };
+
+  const handleApplyResistance = () => {
+    const applied = getAppliedResistance(axisMask);
+    setCommandResistance(Math.round(applied));
+    handleCommand(COMMAND_TYPES.SET_RESISTANCE, {
+      param1: Number.isFinite(applied) ? applied : 0,
+    });
+  };
+
+  useEffect(() => {
+    telemetryConnectedRef.current = telemetryConnected;
+  }, [telemetryConnected]);
+
+  useEffect(() => {
+    if (!motorsSyncedState) {
+      setSyncHidden(false);
+      return undefined;
+    }
+    const hideTimer = setTimeout(() => {
+      setSyncHidden(true);
+    }, 260);
+    return () => {
+      clearTimeout(hideTimer);
+    };
+  }, [motorsSyncedState]);
 
   const handleCommand = async (type, overrides = {}) => {
     setCommandStatus('sending');
@@ -243,7 +273,9 @@ function App() {
       forcePanel: forcePanelRef.current,
       forceLockHint: forceLockHintRef.current,
       powerToggle: powerToggleRef.current,
-      motorToggle: motorToggleRef.current,
+      adsReset: adsResetRef.current,
+      syncMotors: syncMotorsRef.current,
+      axisSelect: axisSelectRef.current,
       logList: logListRef.current,
       exerciseSelect: exerciseSelectRef.current,
       exerciseTitle: exerciseTitleRef.current,
@@ -546,6 +578,25 @@ function App() {
       }
     }
 
+    function syncRightSimSlider(value, options = {}) {
+      const rightMotor = motors.find((entry) => entry.id === 'right');
+      if (!rightMotor || !rightMotor.simSlider) return;
+      const { updateTrail = false } = options;
+      rightMotor.simSlider.value = Number(value).toFixed(1);
+      if (!updateTrail) return;
+      const normalized = Math.max(0, Math.min(1, value / MAX_TRAVEL_INCHES));
+      const travel = normalized * MAX_TRAVEL_INCHES;
+      rightMotor.normalized = normalized;
+      rightMotor.trail.push(travel);
+      if (rightMotor.trail.length > TRAIL_LENGTH) {
+        rightMotor.trail.shift();
+      }
+      rightMotor.lastForceTravel = value;
+      if (rightMotor.cableLabel) {
+        rightMotor.cableLabel.textContent = travel.toFixed(1);
+      }
+    }
+
     function setMotorResistanceSuspended(motor, suspended) {
       if (!motor) return;
       motor.resistanceSuspended = Boolean(suspended);
@@ -611,6 +662,28 @@ function App() {
         message = `${message}${engageNote}`;
       }
       setStatusMessage(message);
+    }
+
+    function sendAutoResistance(key, axisMaskValue, resistanceValue) {
+      if (!telemetryConnectedRef.current) return;
+      if (!Number.isFinite(resistanceValue)) return;
+      const record = lastSentResistanceRef.current[key];
+      const now = Date.now();
+      if (record.value !== null) {
+        if (Math.abs(resistanceValue - record.value) < AUTO_TORQUE_MIN_DELTA) {
+          return;
+        }
+        if (now - record.time < AUTO_TORQUE_MIN_MS) {
+          return;
+        }
+      }
+      record.value = resistanceValue;
+      record.time = now;
+      sendCommand({
+        type: COMMAND_TYPES.SET_RESISTANCE,
+        axisMask: axisMaskValue,
+        param1: resistanceValue,
+      }).catch(() => {});
     }
 
     function setMotorEngagementDistance(motor, distance, options = {}) {
@@ -742,6 +815,11 @@ function App() {
       const engageDistance = motor.engagementDistance;
       const mode = elements.forceSelect ? elements.forceSelect.value : 'linear';
       motor.currentResistance = resolveMotorResistance(motor, engageDistance, mode);
+      if (motor.id === 'left') {
+        leftResistanceValueRef.current = motor.currentResistance;
+      } else if (motor.id === 'right') {
+        rightResistanceValueRef.current = motor.currentResistance;
+      }
       drawGauge(motor);
     }
 
@@ -749,12 +827,19 @@ function App() {
       motors.forEach((motor) => refreshMotorResistance(motor));
     }
 
-    function setMotorBaseResistance(motor, value) {
+    function setMotorBaseResistance(motor, value, options = {}) {
       if (!motor) return;
+      const { skipSync = false } = options;
       const clamped = Math.max(0, Math.min(MAX_RESISTANCE, value));
       motor.baseResistance = clamped;
       if (motor.baseLabel) {
         motor.baseLabel.textContent = `${Math.round(clamped)} lb`;
+      }
+      if (motorsSyncedRef.current && motor.id === 'left' && !skipSync) {
+        const rightMotor = motors.find((entry) => entry.id === 'right');
+        if (rightMotor) {
+          setMotorBaseResistance(rightMotor, clamped, { skipSync: true });
+        }
       }
       refreshMotorResistance(motor);
     }
@@ -1127,9 +1212,9 @@ function App() {
         elements.startToggle,
         elements.setToggle,
         elements.reset,
+        elements.syncMotors,
         elements.forceSelect,
         elements.forceCurveIntensity,
-        elements.motorToggle,
       ];
 
       motors.forEach((motor) => {
@@ -1193,12 +1278,23 @@ function App() {
       refreshAllMotorResistances();
     }
 
-    function toggleMotors() {
-      if (!powerOn) return;
-      motorsRunning = !motorsRunning;
-      updateMotorToggle();
-      refreshAllMotorResistances();
-    }
+    const handleSyncMotors = () => {
+      const nextSynced = !motorsSyncedRef.current;
+      motorsSyncedRef.current = nextSynced;
+      setMotorsSyncedState(nextSynced);
+      setSyncHidden(false);
+      if (nextSynced) {
+        const leftMotor = motors.find((entry) => entry.id === 'left');
+        const rightMotor = motors.find((entry) => entry.id === 'right');
+        if (leftMotor && rightMotor) {
+          setMotorBaseResistance(rightMotor, leftMotor.baseResistance, {
+            skipSync: true,
+          });
+        }
+        setAxisMask(3);
+        setCommandResistance(Math.round(getAppliedResistance(3)));
+      }
+    };
 
     const handleSetToggle = () => {
       if (!workoutActive || !powerOn) return;
@@ -1242,18 +1338,29 @@ function App() {
       elements.reset.addEventListener('click', handleReset);
     }
 
+    const handleAdsReset = () => {
+      handleCommand(COMMAND_TYPES.RESET, { axisMask: 3 });
+    };
+
     const handlePowerToggle = () => {
       powerOn = !powerOn;
       motorsRunning = powerOn ? true : false;
       applyPowerState();
+      handleCommand(powerOn ? COMMAND_TYPES.ENABLE : COMMAND_TYPES.DISABLE, {
+        axisMask: 3,
+      });
     };
+
+    if (elements.adsReset) {
+      elements.adsReset.addEventListener('click', handleAdsReset);
+    }
 
     if (elements.powerToggle) {
       elements.powerToggle.addEventListener('click', handlePowerToggle);
     }
 
-    if (elements.motorToggle) {
-      elements.motorToggle.addEventListener('click', toggleMotors);
+    if (elements.syncMotors) {
+      elements.syncMotors.addEventListener('click', handleSyncMotors);
     }
 
     function pickVideoForSelection(selection) {
@@ -1340,11 +1447,11 @@ function App() {
     function getMotorPalette(motorId) {
       if (motorId === 'right') {
         return {
-          primary: 'rgba(255, 88, 140, 0.95)',
-          secondary: 'rgba(220, 55, 110, 0.95)',
-          glow: 'rgba(255, 88, 140, 0.85)',
-          waveFade: 'rgba(255, 88, 140, 0.6)',
-          waveDot: 'rgba(255, 88, 140, 0.35)',
+          primary: 'rgba(60, 216, 143, 0.95)',
+          secondary: 'rgba(25, 152, 90, 0.95)',
+          glow: 'rgba(60, 216, 143, 0.85)',
+          waveFade: 'rgba(60, 216, 143, 0.6)',
+          waveDot: 'rgba(60, 216, 143, 0.35)',
         };
       }
       return {
@@ -1702,10 +1809,39 @@ function App() {
       const availableWidth = circleX - circleRadius - plotLeft;
       const axisColor = 'rgba(220, 220, 220, 0.45)';
       const gridColor = 'rgba(220, 220, 220, 0.2)';
+      const synced = motorsSyncedRef.current;
+      const motorsToPlot = synced
+        ? (() => {
+            const leftMotor = motors.find((entry) => entry.id === 'left');
+            const rightMotor = motors.find((entry) => entry.id === 'right');
+            if (!leftMotor || !rightMotor) {
+              return motors;
+            }
+            const len = Math.min(leftMotor.trail.length, rightMotor.trail.length);
+            const combinedTrail = [];
+            for (let i = 0; i < len; i += 1) {
+              combinedTrail.push((leftMotor.trail[i] + rightMotor.trail[i]) / 2);
+            }
+            return [
+              {
+                id: 'combined',
+                normalized: (leftMotor.normalized + rightMotor.normalized) / 2,
+                trail: combinedTrail,
+              },
+            ];
+          })()
+        : (() => {
+            const leftMotor = motors.find((entry) => entry.id === 'left');
+            const rightMotor = motors.find((entry) => entry.id === 'right');
+            if (!leftMotor || !rightMotor) {
+              return motors;
+            }
+            return [rightMotor, leftMotor];
+          })();
       let scaleMin = waveScaleMinRef.current || 0;
       let scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
       const currentMaxTravel = Math.max(
-        ...motors.map((motor) => motor.normalized * MAX_TRAVEL_INCHES)
+        ...motorsToPlot.map((motor) => motor.normalized * MAX_TRAVEL_INCHES)
       );
       const scaleSpan = Math.max(1, scaleMax - scaleMin);
       if (currentMaxTravel > scaleMax) {
@@ -1766,13 +1902,14 @@ function App() {
       }
       ctx.restore();
 
-      motors.forEach((motor) => {
+      motorsToPlot.forEach((motor) => {
         const headY =
           topPadding +
           (1 - scaleValue(motor.normalized * MAX_TRAVEL_INCHES)) *
             usableHeight;
-        const palette = getMotorPalette(motor.id);
-        const fillAlpha = motor.id === 'right' ? 0.38 : 0.22;
+        const palette = getMotorPalette(motor.id === 'combined' ? 'left' : motor.id);
+        const fillAlpha =
+          motor.id === 'right' ? 0.38 : motor.id === 'combined' ? 0.3 : 0.22;
         ctx.lineWidth = 12;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
@@ -1897,7 +2034,20 @@ function App() {
         return;
       }
 
+      if (motorsSyncedRef.current) {
+        const leftMotor = motors.find((entry) => entry.id === 'left');
+        if (leftMotor && leftMotor.simSlider) {
+          syncRightSimSlider(Number(leftMotor.simSlider.value));
+        }
+      }
+
       const mode = elements.forceSelect ? elements.forceSelect.value : 'linear';
+
+      if (!motorsRunning) {
+        lastSentResistanceRef.current.left.value = null;
+        lastSentResistanceRef.current.right.value = null;
+        lastSentResistanceRef.current.both.value = null;
+      }
 
       motors.forEach((motor) => {
         if (motor.retractionActive) {
@@ -1948,7 +2098,9 @@ function App() {
           engageThresholdDistance / MAX_TRAVEL_INCHES
         );
 
-        if (motorsRunning && setActive && !motor.engaged && motor.normalized >= engageThreshold) {
+        const torqueEngaged = motorsRunning && motor.normalized >= engageThreshold;
+
+        if (motorsRunning && setActive && !motor.engaged && torqueEngaged) {
           motor.engaged = true;
           const label = formatMotorLabel(motor.id);
           setStatusMessage(
@@ -1970,6 +2122,20 @@ function App() {
         }
 
         motor.currentResistance = resistance;
+        if (motorsRunning && torqueEngaged) {
+          if (motorsSyncedRef.current) {
+            if (motor.id === 'left') {
+              const rightMotor = motors.find((entry) => entry.id === 'right');
+              const combinedResistance = rightMotor
+                ? (motor.currentResistance + rightMotor.currentResistance) / 2
+                : motor.currentResistance;
+              sendAutoResistance('both', 3, combinedResistance);
+            }
+          } else {
+            const axis = motor.id === 'left' ? 1 : 2;
+            sendAutoResistance(motor.id, axis, motor.currentResistance);
+          }
+        }
 
         if (motor.cableLabel) {
           motor.cableLabel.textContent = travel.toFixed(1);
@@ -2071,6 +2237,13 @@ function App() {
       };
 
       const handleSimInput = () => {
+        if (motorsSyncedRef.current && motor.id === 'right') {
+          const leftMotor = motors.find((entry) => entry.id === 'left');
+          if (leftMotor && leftMotor.simSlider) {
+            motor.simSlider.value = leftMotor.simSlider.value;
+          }
+          return;
+        }
         const sliderDistance = Number(motor.simSlider.value);
         const normalized = Math.max(
           0,
@@ -2096,6 +2269,9 @@ function App() {
           motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
         }
         motor.lastForceTravel = sliderDistance;
+        if (motorsSyncedRef.current && motor.id === 'left') {
+          syncRightSimSlider(sliderDistance, { updateTrail: true });
+        }
         drawWaveCombined();
         refreshMotorResistance(motor);
         updateForceProfileLockState();
@@ -2226,8 +2402,12 @@ function App() {
         elements.powerToggle.removeEventListener('click', handlePowerToggle);
       }
 
-      if (elements.motorToggle) {
-        elements.motorToggle.removeEventListener('click', toggleMotors);
+      if (elements.adsReset) {
+        elements.adsReset.removeEventListener('click', handleAdsReset);
+      }
+
+      if (elements.syncMotors) {
+        elements.syncMotors.removeEventListener('click', handleSyncMotors);
       }
 
       if (elements.exerciseSelect) {
@@ -2253,7 +2433,7 @@ function App() {
   }, [exerciseCatalog, exerciseVideos]);
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${motorsSyncedState ? 'is-synced' : ''}`}>
       <header className="app-header" aria-label="System header">
         <div className="header-brand" aria-label="Dragon Gym logo">
           <img
@@ -2267,23 +2447,22 @@ function App() {
         </div>
         <div className="header-actions" aria-label="Power controls">
           <button
-            className="status-toggle"
-            id="motorToggle"
-            ref={motorToggleRef}
+            className="reset-toggle"
+            id="adsReset"
+            ref={adsResetRef}
             type="button"
-            aria-pressed="false"
-            data-state="offline"
+            disabled={!telemetryConnected}
           >
-            <span className="status-line">Motors Offline</span>
-            <span className="action-line">Tap to start</span>
+            Reset
           </button>
           <button
             className="power-toggle"
             id="powerToggle"
             ref={powerToggleRef}
             type="button"
+            disabled={!telemetryConnected}
           >
-            Power On
+            Shutdown
           </button>
         </div>
       </header>
@@ -2307,194 +2486,9 @@ function App() {
                 Start Workout
               </button>
             </div>
-            <div className="set-control-group" aria-label="Set controls">
-              <button
-                className="accent"
-                id="setToggle"
-                ref={setToggleRef}
-                type="button"
-                disabled
-                aria-pressed="false"
-              >
-                Start Set
-              </button>
-              <button
-                className="ghost"
-                id="resetWorkout"
-                ref={resetRef}
-                type="button"
-                disabled
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-          <div className="status-stack">
-            <div>
-              <span className="label">Set</span>
-              <span className="value" id="setStatus" ref={setStatusRef}>
-                0
-              </span>
-            </div>
-            <div>
-              <span className="label">Reps</span>
-              <span className="value" id="repStatus" ref={repStatusRef}>
-                0 / 12
-              </span>
-            </div>
-            <div>
-              <span className="label">Left reps</span>
-              <span className="value" id="leftStatusReps" ref={leftStatusRepsRef}>
-                0
-              </span>
-            </div>
-            <div>
-              <span className="label">Right reps</span>
-              <span className="value" id="rightStatusReps" ref={rightStatusRepsRef}>
-                0
-              </span>
-            </div>
-            <div>
-              <span className="label">Force curve</span>
-              <span className="value" id="forceCurveLabel" ref={forceLabelRef}>
-                Linear
-              </span>
-            </div>
           </div>
           <p className="status-message" id="workoutMessage" ref={messageRef}>
             Tap Start Workout to arm the set controls.
-          </p>
-        </article>
-        <article className="telemetry-card" aria-label="Live controls">
-          <header className="telemetry-header">
-            <div>
-              <h2>Live Control</h2>
-              <p className="telemetry-subtitle">TwinCAT ADS</p>
-            </div>
-            <div className="telemetry-status">
-              <span
-                className={`telemetry-connection ${telemetryConnected ? 'is-online' : 'is-offline'}`}
-              >
-                {telemetryConnected ? 'Connected' : 'Disconnected'}
-              </span>
-              {telemetryFault ? <span className="telemetry-fault">Fault</span> : null}
-            </div>
-          </header>
-          <div className="telemetry-grid">
-            <div className="telemetry-block">
-              <h3>Left Motor</h3>
-              <div className="telemetry-row">
-                <span>Pos</span>
-                <span>{formatTelemetryValue(leftPos)}</span>
-              </div>
-              <div className="telemetry-row">
-                <span>Vel</span>
-                <span>{formatTelemetryValue(leftVel)}</span>
-              </div>
-              <div className="telemetry-row">
-                <span>Force</span>
-                <span>{formatTelemetryValue(leftForce)}</span>
-              </div>
-            </div>
-            <div className="telemetry-block">
-              <h3>Right Motor</h3>
-              <div className="telemetry-row">
-                <span>Pos</span>
-                <span>{formatTelemetryValue(rightPos)}</span>
-              </div>
-              <div className="telemetry-row">
-                <span>Vel</span>
-                <span>{formatTelemetryValue(rightVel)}</span>
-              </div>
-              <div className="telemetry-row">
-                <span>Force</span>
-                <span>{formatTelemetryValue(rightForce)}</span>
-              </div>
-            </div>
-            <div className="telemetry-block">
-              <h3>Command</h3>
-              <div className="telemetry-row">
-                <span>Status</span>
-                <span>{formatTelemetryValue(cmdStatus)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="command-controls">
-            <div className="command-buttons">
-              <button
-                type="button"
-                className="accent"
-                onClick={() => handleCommand(COMMAND_TYPES.ENABLE)}
-                disabled={!telemetryConnected || commandStatus === 'sending'}
-              >
-                Enable
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => handleCommand(COMMAND_TYPES.DISABLE)}
-                disabled={!telemetryConnected || commandStatus === 'sending'}
-              >
-                Disable
-              </button>
-              <button
-                type="button"
-                className="danger"
-                onClick={() => handleCommand(COMMAND_TYPES.STOP)}
-                disabled={!telemetryConnected || commandStatus === 'sending'}
-              >
-                Stop
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                onClick={() => handleCommand(COMMAND_TYPES.RESET)}
-                disabled={!telemetryConnected || commandStatus === 'sending'}
-              >
-                Reset
-              </button>
-            </div>
-            <div className="command-inputs">
-              <label>
-                <span>Axis</span>
-                <select value={axisMask} onChange={handleAxisChange}>
-                  {AXIS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Resistance</span>
-                <input
-                  type="range"
-                  min="0"
-                  max="5"
-                  step="1"
-                  value={commandResistance}
-                  onChange={handleResistanceChange}
-                />
-              </label>
-              <div className="command-apply">
-                <span>{resistanceLabel} lb</span>
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={() =>
-                    handleCommand(COMMAND_TYPES.SET_RESISTANCE, {
-                      param1: Number.isFinite(commandResistance) ? commandResistance : 0,
-                    })
-                  }
-                  disabled={!telemetryConnected || commandStatus === 'sending'}
-                >
-                  Apply
-                </button>
-              </div>
-            </div>
-          </div>
-          <p className="command-status" data-state={commandStatus}>
-            {commandMessage || 'Ready to send commands.'}
           </p>
         </article>
         <article className="motor-card" data-motor="left">
@@ -2553,16 +2547,14 @@ function App() {
                 0 lb
               </dd>
             </div>
-            <div>
-              <dt>Left Reps</dt>
-              <dd id="leftRepCount" ref={leftRepCountRef}>
-                0
-              </dd>
-            </div>
           </dl>
         </article>
 
-        <article className="motor-card" data-motor="right">
+        <article
+          className={`motor-card ${motorsSyncedState ? 'is-synced-hidden' : ''}`}
+          data-motor="right"
+          hidden={syncHidden}
+        >
           <div className="motor-engagement" aria-label="Right motor cable engagement">
             <div className="engagement-readout" aria-live="polite">
               <span className="label">Engagement distance</span>
@@ -2618,12 +2610,6 @@ function App() {
                 0 lb
               </dd>
             </div>
-            <div>
-              <dt>Right Reps</dt>
-              <dd id="rightRepCount" ref={rightRepCountRef}>
-                0
-              </dd>
-            </div>
           </dl>
         </article>
       </section>
@@ -2646,35 +2632,90 @@ function App() {
               ></canvas>
             </article>
           </div>
-          <section className="simulator-panel" aria-label="Motor travel simulator">
-            <h3>Motor Travel Simulation</h3>
-            <div className="sim-slider-group">
-              <label className="sim-slider">
-                <span>Left cable length</span>
-                <input
-                  type="range"
-                  id="leftSim"
-                  ref={leftSimRef}
-                  min="1"
-                  max="24"
-                  step="0.1"
-                  defaultValue="1"
-                />
-              </label>
-              <label className="sim-slider">
-                <span>Right cable length</span>
-                <input
-                  type="range"
-                  id="rightSim"
-                  ref={rightSimRef}
-                  min="1"
-                  max="24"
-                  step="0.1"
-                  defaultValue="1"
-                />
-              </label>
+        </section>
+        <section className="set-controls-panel" aria-label="Set controls">
+          <div className="status-controls">
+            <div className="set-control-group" aria-label="Set controls">
+              <button
+                className="accent"
+                id="setToggle"
+                ref={setToggleRef}
+                type="button"
+                disabled
+                aria-pressed="false"
+              >
+                Start Set
+              </button>
+              <button
+                className="ghost"
+                id="resetWorkout"
+                ref={resetRef}
+                type="button"
+                disabled
+              >
+                Reset
+              </button>
+              <button
+                className="ghost"
+                id="syncMotors"
+                ref={syncMotorsRef}
+                type="button"
+                aria-pressed={motorsSyncedState}
+              >
+                {motorsSyncedState ? 'Unsync Motors' : 'Sync Motors'}
+              </button>
             </div>
-          </section>
+          </div>
+          <div className="status-stack">
+            <div>
+              <span className="label">Set</span>
+              <span className="value" id="setStatus" ref={setStatusRef}>
+                0
+              </span>
+            </div>
+            <div>
+              <span className="label">Reps</span>
+              <span className="value" id="repStatus" ref={repStatusRef}>
+                0 / 12
+              </span>
+            </div>
+            <div>
+              <span className="label">Force curve</span>
+              <span className="value" id="forceCurveLabel" ref={forceLabelRef}>
+                Linear
+              </span>
+            </div>
+          </div>
+        </section>
+        <section className="simulator-panel" aria-label="Motor travel simulator">
+          <h3>Motor Travel Simulation</h3>
+          <div className="sim-slider-group">
+            <label className="sim-slider">
+              <span>{motorsSyncedState ? 'Cable length' : 'Left cable length'}</span>
+              <input
+                type="range"
+                id="leftSim"
+                ref={leftSimRef}
+                min="1"
+                max="24"
+                step="0.1"
+                defaultValue="1"
+              />
+            </label>
+            <label className="sim-slider" hidden={motorsSyncedState}>
+              <span>Right cable length</span>
+              <input
+                type="range"
+                id="rightSim"
+                ref={rightSimRef}
+                min="1"
+                max="24"
+                step="0.1"
+                defaultValue="1"
+                disabled={motorsSyncedState}
+              />
+            </label>
+          </div>
         </section>
         <section
           className="force-panel"
@@ -2816,6 +2857,30 @@ function App() {
             </div>
           </div>
         </section>
+      </section>
+      <section className="debug-panel" aria-label="Command debug">
+        <article className="telemetry-card" aria-label="Command debug">
+          <header className="telemetry-header">
+            <div>
+              <h2>Command Debug</h2>
+              <p className="telemetry-subtitle">TwinCAT ADS</p>
+            </div>
+            <div className="telemetry-status">
+              <span
+                className={`telemetry-connection ${telemetryConnected ? 'is-online' : 'is-offline'}`}
+              >
+                {telemetryConnected ? 'Connected' : 'Disconnected'}
+              </span>
+              {telemetryFault ? <span className="telemetry-fault">Fault</span> : null}
+            </div>
+          </header>
+          <p className="command-status" data-state="telemetry">
+            CmdStatus: {telemetryCmdStatus}
+          </p>
+          <p className="command-status" data-state={commandStatus}>
+            {commandMessage || 'Ready to send commands.'}
+          </p>
+        </article>
       </section>
     </main>
   );
