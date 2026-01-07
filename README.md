@@ -1,29 +1,59 @@
 # README
 
-## What this is
+## World's strongest smart gym for power-lifters
 
-A compact, rack‑mountable, **motorized cable trainer** with an internal spool and a two‑stage HTD‑8M belt reduction, driven by a **2000 W AC servo motor with brake and absolute encoder**. The unit mounts to a 2×2 upright (or strap‑mount), presents a **front fairlead + swivel**, and supports a **2:1 reeve option** for higher force. A **Nest‑style rotary touchscreen** provides local control; Bluetooth enables app control and logging.
+### Project introduction: Smart Gym Satellite and Hub System
 
-Target performance (with 100 mm drum OD, 22→60 then 22→48):
+#### What is it?
+This project is a high-performance, modular smart gym system composed of two motorized cable-satellite enclosures and a centralized electronics hub. Each satellite unit houses a powerful AC servo motor and load-bearing mechanics, converting motor torque into precise, smooth cable resistance. The hub contains all high-voltage power conversion, safety systems, motion control, and feedback synchronization across both satellites.
 
-* **Overall ratio:** \~**5.95 : 1**
-* **Cable speed:** \~**3.94 mph** at 2000 RPM; \~**5.91 mph** at 3000 RPM (no‑load)
-* **Force mode:** 1:1 or 2:1 reeve (2× force / ½ speed)
+#### Hook: The iron meets intelligence
+Imagine a gym that does not just resist your movement, but responds to it. A gym that syncs with your body, adapts to your strength, and allows hyper-precise control over force, speed, and tempo. This project makes that vision real, delivering a cutting-edge resistance training experience through robotics-grade hardware and real-time force feedback.
 
-## How it works (high level)
+#### Why it matters
+Most existing smart gyms use outdated DC motors, lack true force sensing, and feel like dragging against resistance bands. By contrast, this design provides:
+- Industrial-grade torque (up to ~450 lb cable force)
+- Real-time closed-loop force feedback using inline S-beam load cells
+- Synchronous control over dual channels with EtherCAT and CST mode
+- Customizable resistance curves, virtual gravity modes, ballistic and strength profiles
+- Expandable UI with BLE or hardwired rotary dials and touchscreens
 
-1. AC mains (120 V) feeds a **3 kVA step‑up transformer** (→ 240 V).
-2. 240 V supplies the **AC servo drive**, which controls the **2 kW servo** with regenerative braking into a **500 W / 100 Ω resistor**.
-3. Motor torque goes into **Stage‑1 (22T→60T)** and **Stage‑2 (22T→48T)** via **HTD‑8M, 30 mm belts**, then into a **100 mm OD drum** that spools the 3/16″ wire rope.
-4. A **front fairlead** guides the cable; a **swivel block** supports direction changes; an optional **2:1 reeve** doubles available force.
-5. Control/UX: **M5Stack M5Dial** (ESP32‑S3) + Bluetooth; 22 mm **power button** and **E‑stop** on the front panel.
+For athletes, rehab centers, and high-performance home gyms, it redefines what cable training can feel like.
 
-## Safety essentials
+#### How it works
+- Satellites: Each unit contains a Delta B3-series servo (1.5-2.0 kW), direct-driving a 10:1 planetary gearbox and a crowned aluminum drum. Cable exits through a fairlead and connects to a user load. Inline load cells measure force, while integrated dials or BLE interfaces allow user control.
+- Hub: Powers both satellites via a 48 VDC battery and 7 kW inverter to 240 VAC transformer to Delta servo drives. Also contains:
+  - 24 VDC PSU for sensors, brakes, UI
+  - EtherCAT master (Beckhoff stack on PC)
+  - Dual-channel STO safety relays
+  - Shared braking resistor with thermal cutoff
+  - EMI filtering, fans, and optional touchscreen
+- Software: Runs synchronized CST motion with sub-microsecond alignment. Outer force loop runs on PC, updating torque setpoints in real time based on load cell feedback.
 
-* Use a **maintained E‑stop** in series with the drive’s STO or AC feed.
-* Fit **shaft guards** and belt covers.
-* Bond all metalwork to **PE ground**. Use **strain relief** on the mains.
-* Validate load paths (cable, sheaves, anchor, drum) with a **2× safety factor** minimum.
+#### How it fits in the market
+What this has over RepOne:
+- Realtime graph for range of motion
+- Large touch screen and interactive display
+- Stronger resistance in dual stack
+- Better sync with force curves
+- Voice control
+- Better safety in failure
+- Faster at lower weights
+- Cable satellites can be moved separately from the rack
+
+Dual-unit sync: EtherCAT Distributed Clocks for sub-microsecond alignment; mirror CST setpoints. Optional cross-couple on load-cell difference to keep handles even.
+
+This is not a toy. It is designed to exceed the performance of Tonal, Vitruvian, or Beyond Power's Voltra at a DIY cost point with industrial-grade performance:
+- Compared to Tonal: more raw torque, lower mechanical impedance, true load cell feedback.
+- Compared to Vitruvian: no plastic pulley hacks, direct-driven torque through robust steel.
+- Compared to Gym Monster or open-source builds: real control fidelity (EtherCAT + CST), not just hobby-grade PID.
+
+#### Why people will want it
+- Athletes and lifters: dial in exact eccentric overloads, ballistic reps, or virtual gravity resistance.
+- Rehab clinics: use low-speed, force-controlled modes with feedback logging and safety.
+- Biohacking and elite home gyms: combine software-defined resistance with haptics, tracking, and session replay.
+
+This project blends mechanical power with software precision and brings robotics-level motion control into the realm of personal fitness.
 
 ## Running the UI + server
 

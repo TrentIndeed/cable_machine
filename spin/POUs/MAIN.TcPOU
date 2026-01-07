@@ -24,8 +24,16 @@ VAR
     nStateL : INT := 0;
     nStateR : INT := 0;
 
+    fLeftPos  : LREAL;
+    fRightPos : LREAL;
     fLeftVelo  : LREAL;
     fRightVelo : LREAL;
+    fLeftCableIn  : LREAL;
+    fRightCableIn : LREAL;
+
+    cDegPerRev : LREAL := 360.0;
+    cDrumDiameterIn : LREAL := 4.0;
+    cDrumCircumferenceIn : LREAL := 12.5663706143592; // PI * 4.0 in
 END_VAR
 ]]></Declaration>
     <Implementation>
@@ -66,8 +74,14 @@ axis_left.ReadStatus();
 axis_right.ReadStatus();
 fbResetL(Axis := axis_left, Execute := bDoResetL);
 fbResetR(Axis := axis_right, Execute := bDoResetR);
+fLeftPos  := axis_left.NcToPlc.ActPos;
+fRightPos := axis_right.NcToPlc.ActPos;
 fLeftVelo  := axis_left.NcToPlc.ActVelo;
 fRightVelo := axis_right.NcToPlc.ActVelo;
+
+// Convert rotary position (deg) to cable length (in) for 4" drum.
+fLeftCableIn  := (fLeftPos / cDegPerRev) * cDrumCircumferenceIn;
+fRightCableIn := (fRightPos / cDegPerRev) * cDrumCircumferenceIn;
 
 // --- 3. STATE MACHINE (Optimized for Mechanical Brake Interaction) ---
 // TODO: Once 24V brake wiring is routed through Drive DO (DO1/DO2), 
@@ -148,9 +162,9 @@ END_IF
 
 // --- 5. TELEMETRY ---
 GVL_UI.Telemetry.Connected := TRUE;
-GVL_UI.Telemetry.LeftPos    := TO_REAL(axis_left.NcToPlc.ActPos);
+GVL_UI.Telemetry.LeftPos    := TO_REAL(fLeftCableIn);
 GVL_UI.Telemetry.LeftVel    := TO_REAL(fLeftVelo);
-GVL_UI.Telemetry.RightPos   := TO_REAL(axis_right.NcToPlc.ActPos);
+GVL_UI.Telemetry.RightPos   := TO_REAL(fRightCableIn);
 GVL_UI.Telemetry.RightVel   := TO_REAL(fRightVelo);
 GVL_UI.Telemetry.LeftForce  := TO_REAL(Left_ActualTq);
 GVL_UI.Telemetry.RightForce := TO_REAL(Right_ActualTq);
