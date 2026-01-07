@@ -22,6 +22,10 @@
   letter-spacing: 0 !important;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -40,7 +44,7 @@ body {
   background-color: var(--bg-primary);
   background-image: var(--app-background, none);
   background-position: center;
-  background-size: cover;
+  background-size: 100% auto;
   background-repeat: no-repeat;
   background-attachment: fixed;
   font-family: var(--ui-font);
@@ -65,10 +69,10 @@ body {
   max-width: 100%;
   min-height: 1920px;
   margin: 0 auto;
-  padding: clamp(28px, 6vw, 50px) clamp(20px, 4vw, 32px) 140px;
+  padding: clamp(16px, 4vw, 32px) clamp(20px, 4vw, 32px) 140px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 4px;
   position: relative;
 }
 
@@ -348,6 +352,7 @@ body {
   gap: clamp(20px, 3vw, 32px);
   align-items: stretch;
   width: 100%;
+  margin-top: 0;
 }
 
 
@@ -560,6 +565,14 @@ body {
   flex: 1 1 160px;
 }
 
+.status-controls .set-control-group[hidden] {
+  display: none !important;
+}
+
+.status-controls > button[hidden] {
+  display: none !important;
+}
+
 .engagement-card {
   grid-column: 1 / -1;
   background: linear-gradient(160deg, rgba(28, 28, 28, 0.94), rgba(12, 12, 12, 0.9));
@@ -732,25 +745,22 @@ button.is-pulsing {
 }
 
 .motor-card {
-  background: linear-gradient(160deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.9));
-  border-radius: var(--card-radius);
-  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 0;
+  border: none;
   padding: 24px;
   display: grid;
   gap: 22px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   justify-items: center;
   width: 100%;
   min-height: 100%;
   align-content: start;
-  outline: 2px solid transparent;
-  outline-offset: 0;
-  transition: outline-offset var(--transition), outline-color var(--transition), transform 220ms ease;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
 
 .app-shell.is-synced .motor-card[data-motor="left"] {
-  grid-column: 1 / -1;
   transform: scale(1.03);
 }
 
@@ -783,9 +793,29 @@ button.is-pulsing {
 }
 
 .motor-card:hover {
-  outline-color: rgba(200, 200, 200, 0.45);
-  outline-offset: 6px;
   transform: scale(1.02);
+}
+
+.combined-card {
+  background: linear-gradient(160deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.9));
+  border-radius: var(--card-radius);
+  border: 1px solid var(--border);
+  padding: 24px;
+  display: grid;
+  gap: 28px;
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.motor-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
+}
+
+.app-shell.is-synced .motor-grid {
+  grid-template-columns: 1fr;
 }
 
 .gauge-wrapper {
@@ -836,7 +866,7 @@ button.is-pulsing {
 
 .current-resistance-value {
   font-size: clamp(5.6rem, 12.6vw, 10.5rem);
-  font-weight: 300;
+  font-weight: 600;
   line-height: 0.9;
 }
 
@@ -861,7 +891,7 @@ button.is-pulsing {
 }
 
 .motor-meta dt {
-  font-size: 0.75rem;
+  font-size: 1.5rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--text-muted);
@@ -869,7 +899,8 @@ button.is-pulsing {
 
 .motor-meta dd {
   margin: 6px 0 0;
-  font-size: 1.05rem;
+  font-size: 2.1rem;
+  font-weight: 600;
 }
 
 .slider-field {
@@ -1069,7 +1100,7 @@ button.is-pulsing {
 .danger {
   border-radius: 12px;
   padding: 12px 16px;
-  font-size: 0.95rem;
+  font-size: 1.43rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border: none;
@@ -1085,9 +1116,9 @@ button.is-pulsing {
 }
 
 .primary.is-stop {
-  background: linear-gradient(135deg, rgba(12, 34, 86, 0.95), rgba(5, 18, 52, 0.92));
-  color: rgba(170, 209, 255, 0.95);
-  box-shadow: 0 12px 28px rgba(5, 20, 60, 0.55);
+  background: linear-gradient(135deg, rgba(255, 79, 109, 0.92), rgba(170, 20, 48, 0.9));
+  color: #fff1f4;
+  box-shadow: 0 12px 28px rgba(155, 22, 48, 0.55);
 }
 
 .primary:disabled {
@@ -1155,14 +1186,14 @@ button.is-pulsing {
 }
 
 .status-stack .label {
-  font-size: 0.72rem;
+  font-size: 1.08rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-muted);
 }
 
 .status-stack .value {
-  font-size: 1.1rem;
+  font-size: 1.65rem;
   font-weight: 600;
 }
 
@@ -1244,7 +1275,7 @@ button.is-pulsing {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 50;
+  z-index: 200;
   display: grid;
   grid-template-columns: repeat(6, max-content);
   gap: 0;
@@ -1256,6 +1287,7 @@ button.is-pulsing {
   background: #000000;
   border-top: 1px solid rgba(140, 140, 140, 0.45);
   backdrop-filter: blur(12px);
+  pointer-events: auto;
 }
 
 .nav-item {

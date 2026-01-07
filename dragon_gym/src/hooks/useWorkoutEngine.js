@@ -62,6 +62,7 @@ function useWorkoutEngine(params) {
     workoutStateRef,
     startToggleRef,
     setToggleRef,
+    setControlGroupRef,
     resetRef,
     setStatusRef,
     repStatusRef,
@@ -118,6 +119,7 @@ function useWorkoutEngine(params) {
       workoutState: workoutStateRef.current,
       startToggle: startToggleRef.current,
       setToggle: setToggleRef.current,
+      setControlGroup: setControlGroupRef.current,
       reset: resetRef.current,
       setStatus: setStatusRef.current,
       repStatus: repStatusRef.current,
@@ -761,6 +763,9 @@ function useWorkoutEngine(params) {
       elements.startToggle.textContent = isActive ? 'Stop Workout' : 'Start Workout';
       elements.startToggle.classList.toggle('is-stop', isActive);
       elements.startToggle.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      if (elements.setControlGroup) {
+        elements.setControlGroup.hidden = !workoutActive;
+      }
     }
 
     function toggleWorkout() {

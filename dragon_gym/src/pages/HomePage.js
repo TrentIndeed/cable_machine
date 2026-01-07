@@ -5,12 +5,6 @@ function HomePage({
   motorsSyncedState,
   syncHidden,
   telemetryConnected,
-  telemetryFault,
-  telemetryCmdStatus,
-  commandStatus,
-  commandMessage,
-  forceCurveOpen,
-  setForceCurveOpen,
   selectorOpen,
   setSelectorOpen,
   exerciseCatalog,
@@ -21,23 +15,12 @@ function HomePage({
     workoutStateRef,
     startToggleRef,
     setToggleRef,
+    setControlGroupRef,
     resetRef,
     setStatusRef,
     repStatusRef,
     waveRepRef,
     messageRef,
-    forceSelectRef,
-    forceDescriptionRef,
-    forceLabelRef,
-    forceCurveConcentricRef,
-    forceCurveEccentricRef,
-    eccentricToggleRef,
-    eccentricPanelRef,
-    eccentricSelectRef,
-    eccentricDescriptionRef,
-    forceCurveIntensityRefElement,
-    forcePanelRef,
-    forceLockHintRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,
@@ -54,7 +37,7 @@ function HomePage({
     rightSetCableLengthRef,
     rightRetractCableRef,
     waveCombinedRef,
-    logListRef,
+    forceLabelRef,
     exerciseSelectRef,
     exerciseTitleRef,
   } = refs;
@@ -105,146 +88,135 @@ function HomePage({
             </span>
           </header>
           <div className="status-controls" aria-label="Workout controls">
-            <div className="workout-toggle">
-              <button
-                className="primary"
-                id="toggleWorkout"
-                ref={startToggleRef}
-                type="button"
-                aria-pressed="false"
-              >
-                Start Workout
-              </button>
-            </div>
+            <div className="workout-toggle"></div>
           </div>
           <p className="status-message" id="workoutMessage" ref={messageRef}>
-            Tap Start Workout to arm the set controls.
           </p>
         </article>
-        <article className="motor-card" data-motor="left">
-          <div className="motor-engagement" aria-label="Left motor cable engagement">
-            <div className="engagement-readout" aria-live="polite">
-              <span className="label">Engagement distance</span>
-              <span className="value" id="leftEngageDisplay" ref={leftEngageDisplayRef}>
-                1.0 in
-              </span>
-            </div>
-            <div className="engagement-actions">
-              <button
-                type="button"
-                className="ghost"
-                id="leftSetCableLength"
-                ref={leftSetCableLengthRef}
-              >
-                Set Cable Length
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                id="leftRetractCable"
-                ref={leftRetractCableRef}
-              >
-                Retract Cable
-              </button>
-            </div>
-          </div>
-          <div className="gauge-wrapper">
-            <canvas
-              className="resistance-gauge"
-              id="leftGauge"
-              ref={leftGaugeRef}
-              width="540"
-              height="540"
-              aria-hidden="true"
-            ></canvas>
-            <div className="gauge-center">
-              <span className="current-resistance">
-                <span
-                  className="current-resistance-value"
-                  id="leftCurrentResistance"
-                  ref={leftCurrentResistanceRef}
-                >
-                  0
-                </span>
-                <span className="current-resistance-unit">LB</span>
-              </span>
-            </div>
-          </div>
-          <dl className="motor-meta">
-            <div>
-              <dt>Base resistance</dt>
-              <dd id="leftBaseResistance" ref={leftBaseResistanceRef}>
-                0 lb
-              </dd>
-            </div>
-          </dl>
-        </article>
+        <article className="combined-card" aria-label="Resistance gauges and wave">
+          <div className="motor-grid">
+            <article className="motor-card" data-motor="left">
+              <div className="motor-engagement" aria-label="Left motor cable engagement">
+                <div className="engagement-readout" aria-live="polite">
+                  <span className="label">Engagement distance</span>
+                  <span className="value" id="leftEngageDisplay" ref={leftEngageDisplayRef}>
+                    1.0 in
+                  </span>
+                </div>
+                <div className="engagement-actions">
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="leftSetCableLength"
+                    ref={leftSetCableLengthRef}
+                  >
+                    Set Cable Length
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="leftRetractCable"
+                    ref={leftRetractCableRef}
+                  >
+                    Retract Cable
+                  </button>
+                </div>
+              </div>
+              <div className="gauge-wrapper">
+                <canvas
+                  className="resistance-gauge"
+                  id="leftGauge"
+                  ref={leftGaugeRef}
+                  width="540"
+                  height="540"
+                  aria-hidden="true"
+                ></canvas>
+                <div className="gauge-center">
+                  <span className="current-resistance">
+                    <span
+                      className="current-resistance-value"
+                      id="leftCurrentResistance"
+                      ref={leftCurrentResistanceRef}
+                    >
+                      0
+                    </span>
+                    <span className="current-resistance-unit">LB</span>
+                  </span>
+                </div>
+              </div>
+              <dl className="motor-meta">
+                <div>
+                  <dt>Base resistance</dt>
+                  <dd id="leftBaseResistance" ref={leftBaseResistanceRef}>
+                    0 lb
+                  </dd>
+                </div>
+              </dl>
+            </article>
 
-        <article
-          className={`motor-card ${motorsSyncedState ? 'is-synced-hidden' : ''}`}
-          data-motor="right"
-          hidden={syncHidden}
-        >
-          <div className="motor-engagement" aria-label="Right motor cable engagement">
-            <div className="engagement-readout" aria-live="polite">
-              <span className="label">Engagement distance</span>
-              <span className="value" id="rightEngageDisplay" ref={rightEngageDisplayRef}>
-                1.0 in
-              </span>
-            </div>
-            <div className="engagement-actions">
-              <button
-                type="button"
-                className="ghost"
-                id="rightSetCableLength"
-                ref={rightSetCableLengthRef}
-              >
-                Set Cable Length
-              </button>
-              <button
-                type="button"
-                className="ghost"
-                id="rightRetractCable"
-                ref={rightRetractCableRef}
-              >
-                Retract Cable
-              </button>
-            </div>
+            <article
+              className={`motor-card ${motorsSyncedState ? 'is-synced-hidden' : ''}`}
+              data-motor="right"
+              hidden={syncHidden}
+            >
+              <div className="motor-engagement" aria-label="Right motor cable engagement">
+                <div className="engagement-readout" aria-live="polite">
+                  <span className="label">Engagement distance</span>
+                  <span className="value" id="rightEngageDisplay" ref={rightEngageDisplayRef}>
+                    1.0 in
+                  </span>
+                </div>
+                <div className="engagement-actions">
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="rightSetCableLength"
+                    ref={rightSetCableLengthRef}
+                  >
+                    Set Cable Length
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="rightRetractCable"
+                    ref={rightRetractCableRef}
+                  >
+                    Retract Cable
+                  </button>
+                </div>
+              </div>
+              <div className="gauge-wrapper">
+                <canvas
+                  className="resistance-gauge"
+                  id="rightGauge"
+                  ref={rightGaugeRef}
+                  width="540"
+                  height="540"
+                  aria-hidden="true"
+                ></canvas>
+                <div className="gauge-center">
+                  <span className="current-resistance">
+                    <span
+                      className="current-resistance-value"
+                      id="rightCurrentResistance"
+                      ref={rightCurrentResistanceRef}
+                    >
+                      0
+                    </span>
+                    <span className="current-resistance-unit">LB</span>
+                  </span>
+                </div>
+              </div>
+              <dl className="motor-meta">
+                <div>
+                  <dt>Base resistance</dt>
+                  <dd id="rightBaseResistance" ref={rightBaseResistanceRef}>
+                    0 lb
+                  </dd>
+                </div>
+              </dl>
+            </article>
           </div>
-          <div className="gauge-wrapper">
-            <canvas
-              className="resistance-gauge"
-              id="rightGauge"
-              ref={rightGaugeRef}
-              width="540"
-              height="540"
-              aria-hidden="true"
-            ></canvas>
-            <div className="gauge-center">
-              <span className="current-resistance">
-                <span
-                  className="current-resistance-value"
-                  id="rightCurrentResistance"
-                  ref={rightCurrentResistanceRef}
-                >
-                  0
-                </span>
-                <span className="current-resistance-unit">LB</span>
-              </span>
-            </div>
-          </div>
-          <dl className="motor-meta">
-            <div>
-              <dt>Base resistance</dt>
-              <dd id="rightBaseResistance" ref={rightBaseResistanceRef}>
-                0 lb
-              </dd>
-            </div>
-          </dl>
-        </article>
-      </section>
-      <section className="workspace">
-        <section className="visual-panel" aria-label="Cable travel visualizations">
           <div className="wave-grid">
             <article className="wave-card" data-motor="combined">
               <header>
@@ -262,10 +234,26 @@ function HomePage({
               ></canvas>
             </article>
           </div>
-        </section>
+        </article>
+      </section>
+      <section className="workspace">
         <section className="set-controls-panel" aria-label="Set controls">
           <div className="status-controls">
-            <div className="set-control-group" aria-label="Set controls">
+            <button
+              className="primary"
+              id="toggleWorkout"
+              ref={startToggleRef}
+              type="button"
+              aria-pressed="false"
+            >
+              Start Workout
+            </button>
+            <div
+              className="set-control-group"
+              aria-label="Set controls"
+              ref={setControlGroupRef}
+              hidden
+            >
               <button
                 className="accent"
                 id="setToggle"
@@ -317,110 +305,6 @@ function HomePage({
             </div>
           </div>
         </section>
-        <section
-          className="force-panel"
-          aria-label="Force curve profiles"
-          id="forceCurvePanel"
-          ref={forcePanelRef}
-          hidden
-        >
-          <button
-            className="card-toggle"
-            type="button"
-            aria-expanded={forceCurveOpen}
-            aria-controls="forceCurveBody"
-            onClick={() => setForceCurveOpen((prev) => !prev)}
-          >
-            <span>Force Curve Profiles</span>
-          </button>
-          <div id="forceCurveBody" className="card-body" hidden={!forceCurveOpen}>
-            <p
-              className="hint lock-hint"
-              id="forceCurveLockHint"
-              ref={forceLockHintRef}
-              hidden
-              aria-live="polite"
-            >
-              Retract both cables to or below their engagement distance to adjust these settings.
-            </p>
-            <div className="force-curve-group">
-              <div className="force-curve-header">
-                <div className="force-curve-inputs">
-                  <label>
-                    <span>Force curve mode</span>
-                    <select id="forceCurve" ref={forceSelectRef} defaultValue="linear">
-                      <option value="linear">Linear</option>
-                      <option value="chain">Chain mode</option>
-                      <option value="band">Band mode</option>
-                      <option value="reverse-chain">Reverse chain</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Force curve intensity (%)</span>
-                    <input
-                      type="number"
-                      id="forceCurveIntensity"
-                      ref={forceCurveIntensityRefElement}
-                      min="0"
-                      max="100"
-                      step="1"
-                      defaultValue="20"
-                    />
-                  </label>
-                </div>
-                <button
-                  className="ghost eccentric-toggle"
-                  id="eccentricToggle"
-                  ref={eccentricToggleRef}
-                  type="button"
-                  aria-expanded="false"
-                >
-                  Enable eccentric profile
-                </button>
-              </div>
-              <canvas
-                className="force-curve-graph"
-                id="forceCurveConcentric"
-                ref={forceCurveConcentricRef}
-                width="640"
-                height="220"
-                aria-hidden="true"
-              ></canvas>
-              <p className="hint" id="forceCurveDescription" ref={forceDescriptionRef}>
-                Force curve: Equal load through the pull and return.
-              </p>
-              <canvas
-                className="force-curve-graph"
-                id="forceCurveEccentric"
-                ref={forceCurveEccentricRef}
-                width="640"
-                height="220"
-                aria-hidden="true"
-              ></canvas>
-              <div className="eccentric-panel" ref={eccentricPanelRef} hidden>
-                <label>
-                  <span>Eccentric profile</span>
-                  <select id="eccentricCurve" ref={eccentricSelectRef} defaultValue="eccentric">
-                    <option value="eccentric">Eccentric mode</option>
-                    <option value="chain">Chain mode</option>
-                    <option value="band">Band mode</option>
-                    <option value="reverse-chain">Reverse chain</option>
-                  </select>
-                </label>
-                <p className="hint" id="eccentricCurveDescription" ref={eccentricDescriptionRef}>
-                  Eccentric: +20% load on the lowering phase.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="log-panel" aria-label="Workout log">
-          <h3>Workout Log</h3>
-          <p className="log-description" id="logDescription">
-            Every set is recorded to see strength gains over time.
-          </p>
-          <ul className="log-list" id="workoutLogList" ref={logListRef}></ul>
-        </section>
         <section className="selector-panel" aria-label="Workout selector">
           <button
             className="card-toggle"
@@ -457,30 +341,6 @@ function HomePage({
             </div>
           </div>
         </section>
-      </section>
-      <section className="debug-panel" aria-label="Command debug">
-        <article className="telemetry-card" aria-label="Command debug">
-          <header className="telemetry-header">
-            <div>
-              <h2>Command Debug</h2>
-              <p className="telemetry-subtitle">TwinCAT ADS</p>
-            </div>
-            <div className="telemetry-status">
-              <span
-                className={`telemetry-connection ${telemetryConnected ? 'is-online' : 'is-offline'}`}
-              >
-                {telemetryConnected ? 'Connected' : 'Disconnected'}
-              </span>
-              {telemetryFault ? <span className="telemetry-fault">Fault</span> : null}
-            </div>
-          </header>
-          <p className="command-status" data-state="telemetry">
-            CmdStatus: {telemetryCmdStatus}
-          </p>
-          <p className="command-status" data-state={commandStatus}>
-            {commandMessage || 'Ready to send commands.'}
-          </p>
-        </article>
       </section>
     </main>
   );

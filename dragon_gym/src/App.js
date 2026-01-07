@@ -8,6 +8,7 @@ import BottomNav from './components/BottomNav';
 import { useTelemetry } from './hooks/useTelemetry';
 import useWorkoutEngine from './hooks/useWorkoutEngine';
 import HomePage from './pages/HomePage';
+import ProgramsPage from './pages/ProgramsPage';
 import SettingsPage from './pages/SettingsPage';
 import './App.css';
 
@@ -40,6 +41,7 @@ function App() {
   const workoutStateRef = useRef(null);
   const startToggleRef = useRef(null);
   const setToggleRef = useRef(null);
+  const setControlGroupRef = useRef(null);
   const resetRef = useRef(null);
   const setStatusRef = useRef(null);
   const repStatusRef = useRef(null);
@@ -163,6 +165,7 @@ function App() {
     workoutStateRef,
     startToggleRef,
     setToggleRef,
+    setControlGroupRef,
     resetRef,
     setStatusRef,
     repStatusRef,
@@ -204,6 +207,7 @@ function App() {
     workoutStateRef,
     startToggleRef,
     setToggleRef,
+    setControlGroupRef,
     resetRef,
     setStatusRef,
     repStatusRef,
@@ -376,23 +380,26 @@ function App() {
         motorsSyncedState={motorsSyncedState}
         syncHidden={syncHidden}
         telemetryConnected={telemetryConnected}
-        telemetryFault={telemetryFault}
-        telemetryCmdStatus={telemetryCmdStatus}
-        commandStatus={commandStatus}
-        commandMessage={commandMessage}
-        forceCurveOpen={forceCurveOpen}
-        setForceCurveOpen={setForceCurveOpen}
         selectorOpen={selectorOpen}
         setSelectorOpen={setSelectorOpen}
         exerciseCatalog={exerciseCatalog}
         videoSrc={videoSrc}
         refs={homeRefs}
       />
+      <ProgramsPage isActive={activePage === 'programs'} refs={homeRefs} />
       <SettingsPage
         isActive={activePage === 'settings'}
         uiFont={uiFont}
         onFontChange={(event) => setUiFont(event.target.value)}
         onBack={() => setActivePage('home')}
+        forceCurveOpen={forceCurveOpen}
+        setForceCurveOpen={setForceCurveOpen}
+        telemetryConnected={telemetryConnected}
+        telemetryFault={telemetryFault}
+        telemetryCmdStatus={telemetryCmdStatus}
+        commandStatus={commandStatus}
+        commandMessage={commandMessage}
+        refs={homeRefs}
       />
       <BottomNav activePage={activePage} onNavigate={setActivePage} />
     </>

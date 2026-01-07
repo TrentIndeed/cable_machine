@@ -12,17 +12,25 @@ const NAV_ITEMS = [
 function BottomNav({ activePage, onNavigate }) {
   return (
     <nav className="bottom-nav" aria-label="Primary navigation">
-      {NAV_ITEMS.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          className={`nav-item ${activePage === item.key ? 'is-active' : ''}`}
-          onClick={() => onNavigate(item.key)}
-          aria-label={item.label}
-        >
-          <img className="nav-icon" src={item.icon} alt="" aria-hidden="true" />
-        </button>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        const isHome = item.key === 'home';
+        const showBack = isHome && activePage !== 'home';
+        const icon = showBack ? '/assets/icons/backButton.png' : item.icon;
+        const label = showBack ? 'Back' : item.label;
+        const target = showBack ? 'home' : item.key;
+
+        return (
+          <button
+            key={item.key}
+            type="button"
+            className={`nav-item ${activePage === item.key ? 'is-active' : ''}`}
+            onClick={() => onNavigate(target)}
+            aria-label={label}
+          >
+            <img className="nav-icon" src={icon} alt="" aria-hidden="true" />
+          </button>
+        );
+      })}
     </nav>
   );
 }
