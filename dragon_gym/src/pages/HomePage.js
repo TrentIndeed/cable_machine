@@ -65,39 +65,6 @@ function HomePage({
       className={`app-shell ${motorsSyncedState ? 'is-synced' : ''}`}
       hidden={!isActive}
     >
-      <header className="app-header" aria-label="System header">
-        <div className="header-brand" aria-label="Dragon Gym logo">
-          <img
-            src="/assets/dragonai-logo.png"
-            alt="DragonAI neon dragon"
-            className="logo-image"
-          />
-        </div>
-        <div className="header-center" aria-label="Dragon Gym overview">
-          <h1 className="header-title">Dragon Gym</h1>
-        </div>
-        <div className="header-actions" aria-label="Power controls">
-          <button
-            className="reset-toggle"
-            id="adsReset"
-            ref={adsResetRef}
-            type="button"
-            disabled={!telemetryConnected}
-          >
-            Reset
-          </button>
-          <button
-            className="power-toggle"
-            id="powerToggle"
-            ref={powerToggleRef}
-            type="button"
-            disabled={!telemetryConnected}
-          >
-            Shutdown
-          </button>
-        </div>
-      </header>
-
       <section className="resistance-overview" aria-label="Resistance overview">
         <article className="status-card" aria-label="Workout status" aria-live="polite">
           <header className="status-header">
@@ -111,35 +78,23 @@ function HomePage({
           <p className="status-message" id="workoutMessage" ref={messageRef}>
           </p>
         </article>
-        <article className="combined-card" aria-label="Resistance gauges and wave">
+        <article className="combined-card is-concave-top" aria-label="Resistance gauges and wave">
+          <div className="engagement-corners" aria-hidden="true">
+            <div className="engagement-corner left">
+              <span className="label">Base</span>
+              <span className="value" id="leftBaseResistance" ref={leftBaseResistanceRef}>
+                0 lb
+              </span>
+            </div>
+            <div className="engagement-corner right">
+              <span className="label">Base</span>
+              <span className="value" id="rightBaseResistance" ref={rightBaseResistanceRef}>
+                0 lb
+              </span>
+            </div>
+          </div>
           <div className="motor-grid">
             <article className="motor-card" data-motor="left">
-              <div className="motor-engagement" aria-label="Left motor cable engagement">
-                <div className="engagement-readout" aria-live="polite">
-                  <span className="label">Engagement distance</span>
-                  <span className="value" id="leftEngageDisplay" ref={leftEngageDisplayRef}>
-                    1.0 in
-                  </span>
-                </div>
-                <div className="engagement-actions">
-                  <button
-                    type="button"
-                    className="ghost"
-                    id="leftSetCableLength"
-                    ref={leftSetCableLengthRef}
-                  >
-                    Set Cable Length
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost"
-                    id="leftRetractCable"
-                    ref={leftRetractCableRef}
-                  >
-                    Retract Cable
-                  </button>
-                </div>
-              </div>
               <div className="gauge-wrapper">
                 <canvas
                   className="resistance-gauge"
@@ -162,14 +117,12 @@ function HomePage({
                   </span>
                 </div>
               </div>
-              <dl className="motor-meta">
-                <div>
-                  <dt>Base resistance</dt>
-                  <dd id="leftBaseResistance" ref={leftBaseResistanceRef}>
-                    0 lb
-                  </dd>
-                </div>
-              </dl>
+              <div className="engagement-readout" aria-live="polite">
+                <span className="label">Left engagement</span>
+                <span className="value" id="leftEngageDisplay" ref={leftEngageDisplayRef}>
+                  1.0 in
+                </span>
+              </div>
             </article>
 
             <article
@@ -177,32 +130,6 @@ function HomePage({
               data-motor="right"
               hidden={syncHidden}
             >
-              <div className="motor-engagement" aria-label="Right motor cable engagement">
-                <div className="engagement-readout" aria-live="polite">
-                  <span className="label">Engagement distance</span>
-                  <span className="value" id="rightEngageDisplay" ref={rightEngageDisplayRef}>
-                    1.0 in
-                  </span>
-                </div>
-                <div className="engagement-actions">
-                  <button
-                    type="button"
-                    className="ghost"
-                    id="rightSetCableLength"
-                    ref={rightSetCableLengthRef}
-                  >
-                    Set Cable Length
-                  </button>
-                  <button
-                    type="button"
-                    className="ghost"
-                    id="rightRetractCable"
-                    ref={rightRetractCableRef}
-                  >
-                    Retract Cable
-                  </button>
-                </div>
-              </div>
               <div className="gauge-wrapper">
                 <canvas
                   className="resistance-gauge"
@@ -225,14 +152,12 @@ function HomePage({
                   </span>
                 </div>
               </div>
-              <dl className="motor-meta">
-                <div>
-                  <dt>Base resistance</dt>
-                  <dd id="rightBaseResistance" ref={rightBaseResistanceRef}>
-                    0 lb
-                  </dd>
-                </div>
-              </dl>
+              <div className="engagement-readout" aria-live="polite">
+                <span className="label">Right engagement</span>
+                <span className="value" id="rightEngageDisplay" ref={rightEngageDisplayRef}>
+                  1.0 in
+                </span>
+              </div>
             </article>
           </div>
           <div className="wave-grid">
@@ -247,7 +172,7 @@ function HomePage({
                 id="combinedWave"
                 ref={waveCombinedRef}
                 width="960"
-                height="260"
+                height="520"
                 aria-hidden="true"
               ></canvas>
             </article>
@@ -256,6 +181,70 @@ function HomePage({
       </section>
       <section className="workspace">
         <section className="set-controls-panel" aria-label="Set controls">
+          <div className="status-stack">
+            <div className="status-metrics">
+              <div>
+                <span className="label">Set</span>
+                <span className="value" id="setStatus" ref={setStatusRef}>
+                  0
+                </span>
+              </div>
+              <div>
+                <span className="label">Reps</span>
+                <span className="value" id="repStatus" ref={repStatusRef}>
+                  0 / 12
+                </span>
+              </div>
+              <div>
+                <span className="label">Force curve</span>
+                <span className="value" id="forceCurveLabel" ref={forceLabelRef}>
+                  Linear
+                </span>
+              </div>
+            </div>
+            <div className="engagement-grid">
+              <div className="motor-engagement" aria-label="Left motor cable engagement">
+                <div className="engagement-actions">
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="leftSetCableLength"
+                    ref={leftSetCableLengthRef}
+                  >
+                    Set Cable Length
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="leftRetractCable"
+                    ref={leftRetractCableRef}
+                  >
+                    Retract Cable
+                  </button>
+                </div>
+              </div>
+              <div className="motor-engagement" aria-label="Right motor cable engagement">
+                <div className="engagement-actions">
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="rightSetCableLength"
+                    ref={rightSetCableLengthRef}
+                  >
+                    Set Cable Length
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost"
+                    id="rightRetractCable"
+                    ref={rightRetractCableRef}
+                  >
+                    Retract Cable
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           <div className="status-controls">
             <button
               className="primary"
@@ -300,26 +289,6 @@ function HomePage({
               >
                 {motorsSyncedState ? 'Unsync Motors' : 'Sync Motors'}
               </button>
-            </div>
-          </div>
-          <div className="status-stack">
-            <div>
-              <span className="label">Set</span>
-              <span className="value" id="setStatus" ref={setStatusRef}>
-                0
-              </span>
-            </div>
-            <div>
-              <span className="label">Reps</span>
-              <span className="value" id="repStatus" ref={repStatusRef}>
-                0 / 12
-              </span>
-            </div>
-            <div>
-              <span className="label">Force curve</span>
-              <span className="value" id="forceCurveLabel" ref={forceLabelRef}>
-                Linear
-              </span>
             </div>
           </div>
         </section>
@@ -495,6 +464,26 @@ function HomePage({
           </div>
         </section>
       </section>
+      <div className="bottom-actions" aria-label="Power controls">
+        <button
+          className="reset-toggle"
+          id="adsReset"
+          ref={adsResetRef}
+          type="button"
+          disabled={!telemetryConnected}
+        >
+          Reset
+        </button>
+        <button
+          className="power-toggle"
+          id="powerToggle"
+          ref={powerToggleRef}
+          type="button"
+          disabled={!telemetryConnected}
+        >
+          Shutdown
+        </button>
+      </div>
     </main>
   );
 }

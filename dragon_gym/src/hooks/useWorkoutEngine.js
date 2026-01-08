@@ -814,7 +814,7 @@ function useWorkoutEngine(params) {
           elements.workoutState.classList.add('active');
           elements.workoutState.textContent = 'Workout Started';
         }
-        setStatusMessage('Press Start Set to begin counting reps.');
+        setStatusMessage('');
         updateStatuses();
         requestAnimationFrame(() => {
           syncForceCurveCanvasSizes();
@@ -1408,9 +1408,10 @@ function useWorkoutEngine(params) {
 
       const centerX = width / 2;
       const centerY = height / 2;
-      const radius = Math.min(width, height) / 2 - 10;
+      const baseRadius = Math.min(width, height) / 2 - 2;
       const startAngle = -Math.PI / 2;
-      const strokeWidth = Math.max(14, radius * 0.12);
+      const strokeWidth = Math.max(14, baseRadius * 0.12);
+      const radius = Math.max(0, baseRadius - strokeWidth / 2);
 
       ctx.lineCap = 'round';
       ctx.lineWidth = strokeWidth;
@@ -1470,27 +1471,26 @@ function useWorkoutEngine(params) {
         ctx.stroke();
       }
 
-      if (!resistanceLocked) {
-        const handleProgress = Math.max(
-          0,
-          Math.min(1, motor.baseResistance / MAX_RESISTANCE)
-        );
-        const handleAngle = startAngle + TWO_PI * handleProgress;
-        const handleX = centerX + Math.cos(handleAngle) * radius;
-        const handleY = centerY + Math.sin(handleAngle) * radius;
-        const handleRadius = Math.max(10, radius * 0.08);
-        ctx.save();
-        ctx.shadowBlur = 18;
-        ctx.shadowColor = palette.glow;
-        ctx.fillStyle = palette.primary;
-        ctx.beginPath();
-        ctx.arc(handleX, handleY, handleRadius, 0, TWO_PI);
-        ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = palette.secondary;
-        ctx.stroke();
-        ctx.restore();
-      }
+      const handleProgress = Math.max(
+        0,
+        Math.min(1, motor.baseResistance / MAX_RESISTANCE)
+      );
+      const handleAngle = startAngle + TWO_PI * handleProgress;
+      const handleX = centerX + Math.cos(handleAngle) * radius;
+      const handleY = centerY + Math.sin(handleAngle) * radius;
+      const handleRadius = Math.max(10, radius * 0.08);
+      ctx.save();
+      ctx.globalAlpha = resistanceLocked ? 0.35 : 1;
+      ctx.shadowBlur = resistanceLocked ? 0 : 18;
+      ctx.shadowColor = palette.glow;
+      ctx.fillStyle = palette.primary;
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, handleRadius, 0, TWO_PI);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = palette.secondary;
+      ctx.stroke();
+      ctx.restore();
 
       if (motor.currentLabel) {
         motor.currentLabel.textContent = `${Math.round(motor.currentResistance)}`;
@@ -1513,7 +1513,7 @@ function useWorkoutEngine(params) {
       const usableHeight = height - topPadding - bottomPadding;
       const circleRadius = 16;
       const circleX = width - 46;
-      const labelPadding = 36;
+      const labelPadding = 60;
       const plotLeft = labelPadding;
       const availableWidth = circleX - circleRadius - plotLeft;
       const axisColor = 'rgba(220, 220, 220, 0.45)';
@@ -1567,8 +1567,8 @@ function useWorkoutEngine(params) {
       }
       const scaleValue = (inches) =>
         Math.min(1, Math.max(0, (inches - scaleMin) / scaleSpan));
-      const yLabels = Array.from({ length: 5 }, (_, idx) =>
-        Number((scaleMin + scaleSpan * (idx / 4)).toFixed(1))
+      const yLabels = Array.from({ length: 6 }, (_, idx) =>
+        Number((scaleMin + scaleSpan * (idx / 5)).toFixed(1))
       );
       const yLineCount = yLabels.length - 1;
 
@@ -1586,7 +1586,7 @@ function useWorkoutEngine(params) {
       ctx.stroke();
 
       ctx.fillStyle = 'rgba(220, 220, 220, 0.85)';
-      ctx.font = '12px "Roboto", sans-serif';
+      ctx.font = '18px "SF Pro Display", "SF Pro Text", -apple-system, "Segoe UI", sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
 
@@ -1598,7 +1598,7 @@ function useWorkoutEngine(params) {
         ctx.lineTo(circleX - circleRadius, y);
         ctx.stroke();
         const labelValue = yLabels[i] ?? 0;
-        ctx.fillText(`${labelValue.toFixed(1)} in`, 6, y);
+        ctx.fillText(`${labelValue.toFixed(1)} in`, 8, y);
       }
 
       ctx.strokeStyle = gridColor;

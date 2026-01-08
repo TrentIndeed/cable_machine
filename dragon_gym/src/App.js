@@ -382,6 +382,13 @@ function App() {
 
   return (
     <>
+      <svg className="sr-only" width="0" height="0" aria-hidden="true">
+        <defs>
+          <clipPath id="concaveTopClip" clipPathUnits="objectBoundingBox">
+            <path d="M0,0 C0.1,0 0.2,0.12 0.28,0.12 C0.35,0.12 0.38,0 0.5,0 C0.62,0 0.65,0.12 0.72,0.12 C0.8,0.12 0.9,0 1,0 L1,1 L0,1 Z" />
+          </clipPath>
+        </defs>
+      </svg>
       <HomePage
         isActive={activePage === 'home'}
         motorsSyncedState={motorsSyncedState}
