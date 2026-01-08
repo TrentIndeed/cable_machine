@@ -42,6 +42,7 @@ function App() {
   const startToggleRef = useRef(null);
   const setToggleRef = useRef(null);
   const setControlGroupRef = useRef(null);
+  const simPanelRef = useRef(null);
   const resetRef = useRef(null);
   const setStatusRef = useRef(null);
   const repStatusRef = useRef(null);
@@ -166,6 +167,7 @@ function App() {
     startToggleRef,
     setToggleRef,
     setControlGroupRef,
+    simPanelRef,
     resetRef,
     setStatusRef,
     repStatusRef,
@@ -187,17 +189,21 @@ function App() {
     adsResetRef,
     syncMotorsRef,
     leftGaugeRef,
+    leftSimRef,
     leftCurrentResistanceRef,
     leftBaseResistanceRef,
     leftEngageDisplayRef,
     leftSetCableLengthRef,
     leftRetractCableRef,
+    leftCableDistanceRef,
     rightGaugeRef,
+    rightSimRef,
     rightCurrentResistanceRef,
     rightBaseResistanceRef,
     rightEngageDisplayRef,
     rightSetCableLengthRef,
     rightRetractCableRef,
+    rightCableDistanceRef,
     waveCombinedRef,
     logListRef,
     exerciseSelectRef,
@@ -208,6 +214,7 @@ function App() {
     startToggleRef,
     setToggleRef,
     setControlGroupRef,
+    simPanelRef,
     resetRef,
     setStatusRef,
     repStatusRef,
@@ -380,6 +387,8 @@ function App() {
         motorsSyncedState={motorsSyncedState}
         syncHidden={syncHidden}
         telemetryConnected={telemetryConnected}
+        forceCurveOpen={forceCurveOpen}
+        setForceCurveOpen={setForceCurveOpen}
         selectorOpen={selectorOpen}
         setSelectorOpen={setSelectorOpen}
         exerciseCatalog={exerciseCatalog}
@@ -392,14 +401,11 @@ function App() {
         uiFont={uiFont}
         onFontChange={(event) => setUiFont(event.target.value)}
         onBack={() => setActivePage('home')}
-        forceCurveOpen={forceCurveOpen}
-        setForceCurveOpen={setForceCurveOpen}
         telemetryConnected={telemetryConnected}
         telemetryFault={telemetryFault}
         telemetryCmdStatus={telemetryCmdStatus}
         commandStatus={commandStatus}
         commandMessage={commandMessage}
-        refs={homeRefs}
       />
       <BottomNav activePage={activePage} onNavigate={setActivePage} />
     </>

@@ -5,6 +5,8 @@ function HomePage({
   motorsSyncedState,
   syncHidden,
   telemetryConnected,
+  forceCurveOpen,
+  setForceCurveOpen,
   selectorOpen,
   setSelectorOpen,
   exerciseCatalog,
@@ -16,28 +18,44 @@ function HomePage({
     startToggleRef,
     setToggleRef,
     setControlGroupRef,
+    simPanelRef,
     resetRef,
     setStatusRef,
     repStatusRef,
     waveRepRef,
     messageRef,
+    forceSelectRef,
+    forceDescriptionRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,
     leftGaugeRef,
+    leftSimRef,
     leftCurrentResistanceRef,
     leftBaseResistanceRef,
+    leftCableDistanceRef,
     leftEngageDisplayRef,
     leftSetCableLengthRef,
     leftRetractCableRef,
     rightGaugeRef,
+    rightSimRef,
     rightCurrentResistanceRef,
     rightBaseResistanceRef,
+    rightCableDistanceRef,
     rightEngageDisplayRef,
     rightSetCableLengthRef,
     rightRetractCableRef,
     waveCombinedRef,
     forceLabelRef,
+    forceCurveConcentricRef,
+    forceCurveEccentricRef,
+    eccentricToggleRef,
+    eccentricPanelRef,
+    eccentricSelectRef,
+    eccentricDescriptionRef,
+    forceCurveIntensityRefElement,
+    forcePanelRef,
+    forceLockHintRef,
     exerciseSelectRef,
     exerciseTitleRef,
   } = refs;
@@ -302,6 +320,141 @@ function HomePage({
               <span className="value" id="forceCurveLabel" ref={forceLabelRef}>
                 Linear
               </span>
+            </div>
+          </div>
+        </section>
+        <section
+          className="simulator-panel"
+          aria-label="Cable length simulator"
+          ref={simPanelRef}
+        >
+          <h3>Cable Length Simulator</h3>
+          <div className="sim-slider-group">
+            <label className="sim-slider" htmlFor="leftSim">
+              <span>Left cable length (in)</span>
+              <input
+                id="leftSim"
+                ref={leftSimRef}
+                type="range"
+                min="0"
+                max="24"
+                step="0.1"
+                defaultValue="0"
+              />
+              <span id="leftCableDistance" ref={leftCableDistanceRef}>
+                0.0 in
+              </span>
+            </label>
+            <label className="sim-slider" htmlFor="rightSim">
+              <span>Right cable length (in)</span>
+              <input
+                id="rightSim"
+                ref={rightSimRef}
+                type="range"
+                min="0"
+                max="24"
+                step="0.1"
+                defaultValue="0"
+              />
+              <span id="rightCableDistance" ref={rightCableDistanceRef}>
+                0.0 in
+              </span>
+            </label>
+          </div>
+        </section>
+        <section
+          className="force-panel"
+          aria-label="Force curve profiles"
+          id="forceCurvePanel"
+          ref={forcePanelRef}
+        >
+          <button
+            className="card-toggle"
+            type="button"
+            aria-expanded={forceCurveOpen}
+            aria-controls="forceCurveBody"
+            onClick={() => setForceCurveOpen((prev) => !prev)}
+          >
+            <span>Force Curve Profiles</span>
+          </button>
+          <div id="forceCurveBody" className="card-body" hidden={!forceCurveOpen}>
+            <p
+              className="hint lock-hint"
+              id="forceCurveLockHint"
+              ref={forceLockHintRef}
+              hidden
+              aria-live="polite"
+            >
+              Retract both cables to or below their engagement distance to adjust these settings.
+            </p>
+            <div className="force-curve-group">
+              <div className="force-curve-header">
+                <div className="force-curve-inputs">
+                  <label>
+                    <span>Force curve mode</span>
+                    <select id="forceCurve" ref={forceSelectRef} defaultValue="linear">
+                      <option value="linear">Linear</option>
+                      <option value="chain">Chain mode</option>
+                      <option value="band">Band mode</option>
+                      <option value="reverse-chain">Reverse chain</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Force curve intensity (%)</span>
+                    <input
+                      type="number"
+                      id="forceCurveIntensity"
+                      ref={forceCurveIntensityRefElement}
+                      min="0"
+                      max="100"
+                      step="1"
+                      defaultValue="20"
+                    />
+                  </label>
+                </div>
+                <button
+                  className="ghost eccentric-toggle"
+                  id="eccentricToggle"
+                  ref={eccentricToggleRef}
+                  type="button"
+                  aria-expanded="false"
+                >
+                  Enable eccentric profile
+                </button>
+              </div>
+              <canvas
+                className="force-curve-graph"
+                id="forceCurveConcentric"
+                ref={forceCurveConcentricRef}
+                width="640"
+                height="220"
+                aria-hidden="true"
+              ></canvas>
+              <p className="hint" id="forceCurveDescription" ref={forceDescriptionRef}>
+                Force curve: Equal load through the pull and return.
+              </p>
+              <canvas
+                className="force-curve-graph"
+                id="forceCurveEccentric"
+                ref={forceCurveEccentricRef}
+                width="640"
+                height="220"
+                aria-hidden="true"
+              ></canvas>
+              <div className="eccentric-panel" ref={eccentricPanelRef} hidden>
+                <label>
+                  <span>Eccentric profile</span>
+                  <select id="eccentricCurve" ref={eccentricSelectRef} defaultValue="eccentric">
+                    <option value="eccentric">Eccentric mode</option>
+                    <option value="chain">Chain mode</option>
+                    <option value="band">Band mode</option>
+                    <option value="reverse-chain">Reverse chain</option>
+                  </select>
+                </label>
+                <p className="hint" id="eccentricCurveDescription" ref={eccentricDescriptionRef}>
+                  Eccentric: +20% load on the lowering phase.
+                </p>
+              </div>
             </div>
           </div>
         </section>

@@ -63,6 +63,7 @@ function useWorkoutEngine(params) {
     startToggleRef,
     setToggleRef,
     setControlGroupRef,
+    simPanelRef,
     resetRef,
     setStatusRef,
     repStatusRef,
@@ -120,6 +121,7 @@ function useWorkoutEngine(params) {
       startToggle: startToggleRef.current,
       setToggle: setToggleRef.current,
       setControlGroup: setControlGroupRef.current,
+      simPanel: simPanelRef.current,
       reset: resetRef.current,
       setStatus: setStatusRef.current,
       repStatus: repStatusRef.current,
@@ -765,6 +767,9 @@ function useWorkoutEngine(params) {
       elements.startToggle.setAttribute('aria-pressed', isActive ? 'true' : 'false');
       if (elements.setControlGroup) {
         elements.setControlGroup.hidden = !workoutActive;
+      }
+      if (elements.simPanel) {
+        elements.simPanel.hidden = !workoutActive;
       }
     }
 

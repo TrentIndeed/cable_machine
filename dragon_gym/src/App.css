@@ -1,19 +1,37 @@
 :root {
   color-scheme: dark;
-  --bg-primary: #04070f;
-  --bg-secondary: #0c1424;
-  --bg-elevated: rgba(18, 28, 46, 0.85);
-  --accent: #48aaff;
-  --accent-secondary: #7fffd4;
-  --text-primary: #f5f9ff;
-  --text-muted: #7d8fb6;
+  --bg-primary: #050913;
+  --bg-secondary: #0d1627;
+  --bg-elevated: rgba(18, 26, 40, 0.9);
+  --accent: #4aa3ff;
+  --accent-secondary: #4be3c2;
+  --text-primary: #f1f5ff;
+  --text-muted: #8b9bbd;
   --danger: #ff4f6d;
   --success: #3cd88f;
-  --border: rgba(82, 105, 153, 0.32);
-  --glow: rgba(31, 139, 255, 0.35);
-  --card-radius: 18px;
+  --border: rgba(90, 112, 156, 0.28);
+  --glow: rgba(74, 163, 255, 0.35);
+  --card-radius: 48px;
   --transition: 200ms ease;
   --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "San Francisco", system-ui, sans-serif;
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 40px;
+  --space-6: 48px;
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-md: 1rem;
+  --font-lg: 1.25rem;
+  --font-xl: 1.5rem;
+  --font-2xl: 2rem;
+  --font-3xl: 2.5rem;
+  --font-4xl: 3rem;
+  --font-5xl: 4rem;
+  --line-tight: 1.1;
+  --line-normal: 1.4;
+  --line-relaxed: 1.6;
 }
 
 * {
@@ -53,13 +71,21 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: clamp(12px, 3vw, 28px);
+  padding: clamp(16px, 4vw, 32px);
   position: relative;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  line-height: var(--line-normal);
 }
 
 .hud-corner {
   display: flex;
-  gap: 10px;
+  gap: var(--space-1);
   z-index: 10;
   align-items: center;
 }
@@ -69,10 +95,10 @@ body {
   max-width: 100%;
   min-height: 1920px;
   margin: 0 auto;
-  padding: clamp(16px, 4vw, 32px) clamp(20px, 4vw, 32px) 140px;
+  padding: clamp(16px, 4vw, 32px) clamp(16px, 4vw, 32px) 144px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-2);
   position: relative;
 }
 
@@ -80,7 +106,7 @@ body {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 18px;
+  gap: var(--space-2);
   padding: 0;
   background: transparent;
   border: none;
@@ -90,38 +116,39 @@ body {
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--space-2);
   justify-self: start;
 }
 
 .header-center {
   display: grid;
   justify-items: center;
-  gap: 10px;
+  gap: var(--space-1);
   justify-self: center;
 }
 
 .header-title {
   margin: 0;
   font-family: inherit;
-  font-size: 4.4rem;
+  font-size: var(--font-5xl);
   letter-spacing: 0.08em;
   text-align: center;
+  line-height: var(--line-tight);
 }
 
 .header-actions {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 12px;
+  gap: var(--space-2);
   justify-self: end;
 }
 
 .header-actions .telemetry-connection {
   min-width: 140px;
   text-align: center;
-  padding: 10px 18px;
-  font-size: 0.85rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-sm);
 }
 
 .header-actions .status-toggle,
@@ -139,17 +166,17 @@ body {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 24px;
+  gap: var(--space-3);
   background: linear-gradient(135deg, rgba(32, 32, 32, 0.92), rgba(14, 14, 14, 0.92));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
-  padding: 22px 26px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  padding: var(--space-3);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
 .logo-block {
   display: flex;
-  gap: 20px;
+  gap: var(--space-3);
   align-items: center;
 }
 
@@ -165,19 +192,20 @@ body {
 .branding-copy {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .branding-copy h1 {
   font-family: inherit;
-  font-size: 2.2rem;
+  font-size: var(--font-3xl);
   letter-spacing: 0.08em;
   margin: 0;
+  line-height: var(--line-tight);
 }
 
 .branding-copy .eyebrow {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: rgba(166, 255, 184, 0.75);
@@ -186,19 +214,19 @@ body {
 .system-meta {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 .power-toggle {
   min-width: 140px;
-  padding: 10px 18px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   border: 1px solid rgba(83, 255, 106, 0.45);
   background: rgba(20, 45, 24, 0.82);
   color: rgba(180, 255, 196, 0.95);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
@@ -208,13 +236,13 @@ body {
 
 .reset-toggle {
   min-width: 140px;
-  padding: 10px 18px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   border: 1px solid rgba(82, 150, 255, 0.55);
   background: rgba(18, 40, 78, 0.9);
   color: rgba(199, 226, 255, 0.95);
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
@@ -248,15 +276,15 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--space-1);
   min-width: 168px;
-  padding: 10px 18px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   border: 1px solid rgba(62, 90, 118, 0.45);
   background: rgba(8, 16, 28, 0.8);
   color: var(--text-muted);
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -267,23 +295,23 @@ body {
   border-color: rgba(83, 255, 106, 0.45);
   background: rgba(20, 45, 24, 0.68);
   color: rgba(166, 255, 184, 0.9);
-  box-shadow: 0 0 18px rgba(83, 255, 106, 0.25);
+  box-shadow: 0 0 16px rgba(83, 255, 106, 0.25);
 }
 
 .status-toggle[data-state="offline"] {
   border-color: rgba(255, 105, 130, 0.45);
   background: rgba(45, 12, 18, 0.72);
   color: rgba(255, 168, 182, 0.88);
-  box-shadow: 0 0 18px rgba(255, 79, 109, 0.22);
+  box-shadow: 0 0 16px rgba(255, 79, 109, 0.22);
 }
 
 .status-toggle .status-line {
-  font-size: 0.92rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.18em;
 }
 
 .status-toggle .action-line {
-  font-size: 0.62rem;
+  font-size: var(--font-xs);
   letter-spacing: 0.22em;
   opacity: 0.7;
 }
@@ -295,7 +323,7 @@ body {
   border-radius: 999px;
   border: 1px solid rgba(70, 110, 140, 0.35);
   background: rgba(12, 24, 40, 0.7);
-  font-size: 0.85rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -312,14 +340,14 @@ body {
 .battery-indicator {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
   color: var(--text-muted);
 }
 
 .battery-body {
   width: 48px;
-  height: 20px;
+  height: 24px;
   border: 2px solid rgba(127, 255, 212, 0.5);
   border-radius: 4px;
   position: relative;
@@ -333,7 +361,7 @@ body {
   right: -6px;
   transform: translateY(-50%);
   width: 4px;
-  height: 10px;
+  height: 8px;
   border-radius: 2px;
   background: rgba(127, 255, 212, 0.4);
 }
@@ -349,7 +377,7 @@ body {
 .resistance-overview {
   display: grid;
   grid-template-columns: repeat(2, minmax(320px, 1fr));
-  gap: clamp(20px, 3vw, 32px);
+  gap: clamp(48px, 3vw, 64px);
   align-items: stretch;
   width: 100%;
   margin-top: 0;
@@ -369,9 +397,9 @@ body {
   background: transparent;
   border-radius: 0;
   border: none;
-  padding: 8px 24px;
+  padding: var(--space-2) var(--space-3);
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
   box-shadow: none;
 }
 
@@ -380,10 +408,10 @@ body {
   background: linear-gradient(160deg, rgba(24, 24, 24, 0.95), rgba(10, 10, 10, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
-  padding: 24px;
+  padding: var(--space-3);
   display: grid;
-  gap: 18px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+  gap: var(--space-2);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.32);
 }
 
 .telemetry-header {
@@ -391,7 +419,7 @@ body {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-2);
 }
 
 .telemetry-header h2 {
@@ -404,7 +432,7 @@ body {
 .telemetry-subtitle {
   margin: 6px 0 0;
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -412,14 +440,14 @@ body {
 .telemetry-status {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-2);
 }
 
 .telemetry-connection {
-  padding: 6px 12px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   border: 1px solid rgba(125, 143, 182, 0.4);
-  font-size: 0.78rem;
+  font-size: var(--font-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -438,11 +466,11 @@ body {
 }
 
 .telemetry-fault {
-  padding: 6px 12px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   border: 1px solid rgba(255, 79, 109, 0.5);
   color: #ff7a92;
-  font-size: 0.78rem;
+  font-size: var(--font-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background: rgba(100, 24, 38, 0.5);
@@ -451,21 +479,21 @@ body {
 .telemetry-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  gap: var(--space-2);
 }
 
 .telemetry-block {
   background: rgba(4, 9, 18, 0.65);
-  border-radius: 14px;
+  border-radius: var(--card-radius);
   border: 1px solid rgba(82, 105, 153, 0.2);
-  padding: 16px 18px;
+  padding: var(--space-2);
   display: grid;
-  gap: 10px;
+  gap: var(--space-1);
 }
 
 .telemetry-block h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -474,7 +502,7 @@ body {
 .telemetry-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
 }
 
 .telemetry-row span:last-child {
@@ -483,26 +511,26 @@ body {
 
 .command-controls {
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
 }
 
 .command-buttons {
   display: flex;
-  gap: 12px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
 .command-inputs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
+  gap: var(--space-2);
   align-items: end;
 }
 
 .command-inputs label {
   display: grid;
-  gap: 8px;
-  font-size: 0.85rem;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-muted);
@@ -516,24 +544,24 @@ body {
 .command-inputs select {
   background: rgba(4, 9, 18, 0.85);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--text-primary);
-  padding: 10px 12px;
-  font-size: 0.95rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-sm);
   font-family: inherit;
 }
 
 .command-apply {
   display: grid;
-  gap: 10px;
+  gap: var(--space-1);
   justify-items: start;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   color: var(--text-muted);
 }
 
 .command-status {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   color: var(--text-muted);
 }
 
@@ -548,7 +576,7 @@ body {
 
 .status-controls {
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
 }
 
 .status-controls .workout-toggle button {
@@ -558,7 +586,8 @@ body {
 .status-controls .set-control-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .status-controls .set-control-group button {
@@ -573,15 +602,20 @@ body {
   display: none !important;
 }
 
+.status-controls > button.primary {
+  margin: var(--space-3) 0;
+}
+
+
 .engagement-card {
   grid-column: 1 / -1;
   background: linear-gradient(160deg, rgba(28, 28, 28, 0.94), rgba(12, 12, 12, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
-  padding: 20px 24px;
+  padding: var(--space-3);
   display: grid;
-  gap: 12px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  gap: var(--space-2);
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.28);
 }
 
 .engagement-card h3 {
@@ -595,7 +629,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px;
+  gap: var(--space-2);
 }
 
 .engagement-actions button {
@@ -615,15 +649,15 @@ body {
 
 .slider-field {
   display: grid;
-  gap: 20px;
+  gap: var(--space-3);
   background: linear-gradient(160deg, rgba(10, 16, 28, 0.94), rgba(6, 11, 20, 0.9));
   border-radius: 999px;
   border: 1px solid rgba(62, 90, 118, 0.55);
   box-shadow: 0 24px 56px rgba(0, 0, 0, 0.4);
-  padding: 34px 48px;
+  padding: var(--space-4) var(--space-6);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 1.15rem;
+  font-size: var(--font-lg);
   text-align: center;
   justify-items: center;
   align-items: center;
@@ -633,20 +667,20 @@ body {
 
 .slider-field span {
   font-family: inherit;
-  font-size: 1.15rem;
+  font-size: var(--font-lg);
 }
 
 .slider-field input[type="range"] {
   width: 100%;
-  height: 18px;
+  height: 16px;
   accent-color: var(--accent);
 }
 
 .motor-engagement {
-  margin: 0 auto 12px;
+  margin: 0 auto var(--space-2);
   width: 100%;
   display: grid;
-  gap: 18px;
+  gap: var(--space-2);
   text-align: center;
   justify-items: center;
   justify-self: center;
@@ -658,7 +692,7 @@ body {
   border: none;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--space-1);
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
@@ -671,7 +705,7 @@ body {
 
 .motor-engagement .engagement-readout .label {
   font-family: inherit;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -679,7 +713,7 @@ body {
 
 .motor-engagement .engagement-readout .value {
   font-family: inherit;
-  font-size: 1.45rem;
+  font-size: var(--font-xl);
   letter-spacing: 0.1em;
   color: var(--accent);
 }
@@ -693,7 +727,7 @@ body {
 }
 
 .motor-engagement .hint {
-  font-size: 0.88rem;
+  font-size: var(--font-sm);
 }
 
 .motor-engagement .engagement-actions {
@@ -729,7 +763,7 @@ button.is-pulsing {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--space-2);
   position: relative;
 }
 
@@ -748,9 +782,9 @@ button.is-pulsing {
   background: transparent;
   border-radius: 0;
   border: none;
-  padding: 24px;
+  padding: var(--space-3);
   display: grid;
-  gap: 22px;
+  gap: var(--space-3);
   position: relative;
   overflow: visible;
   justify-items: center;
@@ -800,16 +834,16 @@ button.is-pulsing {
   background: linear-gradient(160deg, rgba(30, 30, 30, 0.95), rgba(12, 12, 12, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
-  padding: 24px;
+  padding: var(--space-3);
   display: grid;
-  gap: 28px;
+  gap: var(--space-5);
   grid-column: 1 / -1;
   width: 100%;
 }
 
 .motor-grid {
   display: grid;
-  gap: 24px;
+  gap: var(--space-4);
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   align-items: start;
 }
@@ -845,7 +879,7 @@ button.is-pulsing {
   background: transparent;
   border: none;
   box-shadow: none;
-  padding: 10px;
+  padding: var(--space-1);
   text-align: center;
 }
 
@@ -861,17 +895,17 @@ button.is-pulsing {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .current-resistance-value {
   font-size: clamp(5.6rem, 12.6vw, 10.5rem);
   font-weight: 600;
-  line-height: 0.9;
+  line-height: var(--line-tight);
 }
 
 .current-resistance-unit {
-  font-size: 2.7rem;
+  font-size: var(--font-2xl);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text-muted);
@@ -880,7 +914,7 @@ button.is-pulsing {
 .motor-meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-2);
   margin: 0;
   justify-self: stretch;
 }
@@ -891,22 +925,22 @@ button.is-pulsing {
 }
 
 .motor-meta dt {
-  font-size: 1.5rem;
+  font-size: var(--font-xl);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--text-muted);
 }
 
 .motor-meta dd {
-  margin: 6px 0 0;
-  font-size: 2.1rem;
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-2xl);
   font-weight: 600;
 }
 
 .slider-field {
   display: grid;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
   letter-spacing: 0.02em;
 }
 
@@ -917,7 +951,7 @@ button.is-pulsing {
 
 .workspace {
   display: grid;
-  gap: 28px;
+  gap: var(--space-5);
   grid-template-columns: 1fr;
   width: 100%;
 }
@@ -925,19 +959,19 @@ button.is-pulsing {
 .panel-intro {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   line-height: 1.5;
 }
 
 .field-group {
   display: grid;
-  gap: 12px;
+  gap: var(--space-2);
 }
 
 
 .force-curve-group {
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
   max-width: 100%;
   justify-items: stretch;
   margin: 0 auto;
@@ -961,8 +995,8 @@ button.is-pulsing {
 
 .force-curve-group label {
   display: grid;
-  gap: 6px;
-  font-size: 0.9rem;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-family: inherit;
@@ -981,10 +1015,10 @@ button.is-pulsing {
   width: 100%;
   background: rgba(4, 9, 18, 0.88);
   border: 1px solid rgba(63, 112, 168, 0.55);
-  border-radius: 12px;
+  border-radius: 32px;
   color: var(--text-primary);
-  padding: 12px 14px;
-  font-size: 0.95rem;
+  padding: var(--space-2);
+  font-size: var(--font-sm);
   font-family: inherit;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1003,16 +1037,16 @@ button.is-pulsing {
   display: block;
   width: 100%;
   height: 240px;
-  border-radius: 14px;
+  border-radius: 32px;
   border: 1px solid var(--border);
   background: rgba(4, 9, 18, 0.88);
-  box-shadow: 0 10px 30px rgba(7, 24, 48, 0.35);
+  box-shadow: 0 16px 32px rgba(7, 24, 48, 0.35);
 }
 
 .eccentric-toggle {
   justify-self: center;
-  padding: 8px 16px;
-  font-size: 0.8rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1035,9 +1069,9 @@ button.is-pulsing {
 
 .eccentric-panel {
   display: grid;
-  gap: 12px;
-  padding: 16px;
-  border-radius: 14px;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--card-radius);
   border: 1px solid var(--border);
   background: rgba(6, 12, 22, 0.85);
   box-shadow: inset 0 0 0 1px rgba(31, 139, 255, 0.08);
@@ -1051,13 +1085,13 @@ button.is-pulsing {
 
 .field-group.row {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-2);
 }
 
 .field-group label {
   display: grid;
-  gap: 6px;
-  font-size: 0.9rem;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
 }
 
 .field-group input[type="number"],
@@ -1065,10 +1099,10 @@ button.is-pulsing {
   width: 100%;
   background: rgba(4, 9, 18, 0.85);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 8px;
   color: var(--text-primary);
-  padding: 10px 12px;
-  font-size: 0.95rem;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-sm);
   transition: border-color var(--transition), box-shadow var(--transition);
 }
 
@@ -1090,7 +1124,7 @@ button.is-pulsing {
 
 .hint {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--font-xs);
   color: var(--text-muted);
 }
 
@@ -1098,9 +1132,9 @@ button.is-pulsing {
 .accent,
 .ghost,
 .danger {
-  border-radius: 12px;
-  padding: 12px 16px;
-  font-size: 1.43rem;
+  border-radius: 32px;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-lg);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border: none;
@@ -1112,13 +1146,13 @@ button.is-pulsing {
 .primary {
   background: linear-gradient(135deg, rgba(31, 139, 255, 0.9), rgba(31, 83, 255, 0.75));
   color: white;
-  box-shadow: 0 12px 24px rgba(31, 139, 255, 0.35);
+  box-shadow: 0 16px 32px rgba(31, 139, 255, 0.35);
 }
 
 .primary.is-stop {
   background: linear-gradient(135deg, rgba(255, 79, 109, 0.92), rgba(170, 20, 48, 0.9));
   color: #fff1f4;
-  box-shadow: 0 12px 28px rgba(155, 22, 48, 0.55);
+  box-shadow: 0 16px 32px rgba(155, 22, 48, 0.55);
 }
 
 .primary:disabled {
@@ -1135,7 +1169,7 @@ button.is-pulsing {
 .accent {
   background: linear-gradient(135deg, rgba(60, 216, 143, 0.9), rgba(25, 152, 90, 0.85));
   color: #04111c;
-  box-shadow: 0 12px 24px rgba(60, 216, 143, 0.35);
+  box-shadow: 0 16px 32px rgba(60, 216, 143, 0.35);
 }
 
 .ghost {
@@ -1174,33 +1208,33 @@ button.is-pulsing {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   background: rgba(20, 20, 20, 0.86);
   border: 1px solid rgba(62, 90, 118, 0.4);
-  border-radius: 16px;
-  padding: 16px 18px;
-  gap: 16px;
-  row-gap: 18px;
+  border-radius: var(--card-radius);
+  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  row-gap: var(--space-2);
 }
 
 .status-stack > div {
   display: grid;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .status-stack .label {
-  font-size: 1.08rem;
+  font-size: var(--font-md);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-muted);
 }
 
 .status-stack .value {
-  font-size: 1.65rem;
+  font-size: var(--font-xl);
   font-weight: 600;
 }
 
 .status-message {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: var(--font-sm);
+  line-height: var(--line-relaxed);
   color: var(--text-muted);
 }
 
@@ -1215,59 +1249,59 @@ button.is-pulsing {
 
 .settings-panel {
   background: rgba(20, 20, 20, 0.86);
-  border-radius: 18px;
+  border-radius: var(--card-radius);
   border: 1px solid rgba(62, 90, 118, 0.4);
-  padding: 28px;
+  padding: var(--space-3);
   display: grid;
-  gap: 20px;
+  gap: var(--space-3);
 }
 
 .settings-header h2 {
   margin: 0;
-  font-size: 2rem;
+  font-size: var(--font-2xl);
   letter-spacing: 0.04em;
 }
 
 .settings-header p {
-  margin: 6px 0 0;
+  margin: var(--space-1) 0 0;
   color: var(--text-muted);
 }
 
 .settings-group {
   display: grid;
-  gap: 10px;
+  gap: var(--space-2);
   max-width: 360px;
 }
 
 .settings-group label {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
   color: var(--text-muted);
 }
 
 .settings-group select {
   background: rgba(10, 16, 28, 0.94);
-  border-radius: 12px;
+  border-radius: 32px;
   border: 1px solid rgba(62, 90, 118, 0.55);
   color: var(--text-primary);
-  padding: 10px 12px;
+  padding: var(--space-1) var(--space-2);
 }
 
 .settings-back {
   position: fixed;
-  left: 22px;
-  bottom: 92px;
+  left: 24px;
+  bottom: 96px;
   z-index: 40;
   border-radius: 999px;
   border: 1px solid rgba(82, 150, 255, 0.55);
   background: rgba(18, 40, 78, 0.92);
   color: rgba(199, 226, 255, 0.95);
-  padding: 10px 16px;
+  padding: var(--space-2) var(--space-3);
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-size: 0.8rem;
+  font-size: var(--font-xs);
 }
 
 .bottom-nav {
@@ -1280,25 +1314,25 @@ button.is-pulsing {
   grid-template-columns: repeat(6, max-content);
   gap: 0;
   column-gap: 96px;
-  padding: 12px clamp(8px, 2.5vw, 16px);
+  padding: var(--space-2) clamp(16px, 2.5vw, 24px);
   align-items: center;
   justify-content: center;
   justify-items: center;
   background: #000000;
   border-top: 1px solid rgba(140, 140, 140, 0.45);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
   pointer-events: auto;
 }
 
 .nav-item {
   background: transparent;
-  border-radius: 12px;
+  border-radius: 32px;
   border: none;
   color: #8b8b8b;
   padding: 0;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.68rem;
+  font-size: var(--font-xs);
   cursor: pointer;
   transition: transform var(--transition);
   width: 72px;
@@ -1309,8 +1343,8 @@ button.is-pulsing {
 }
 
 .nav-icon {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
@@ -1331,15 +1365,15 @@ button.is-pulsing {
   background: linear-gradient(160deg, rgba(28, 28, 28, 0.92), rgba(12, 12, 12, 0.9));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
-  padding: 24px;
+  padding: var(--space-3);
   display: grid;
-  gap: 20px;
+  gap: var(--space-2);
   width: 100%;
 }
 
 .wave-grid {
   display: grid;
-  gap: 22px;
+  gap: var(--space-3);
   grid-template-columns: 1fr;
   width: 100%;
 }
@@ -1350,7 +1384,7 @@ button.is-pulsing {
   border: none;
   padding: 0;
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
 }
 
 .set-controls-panel {
@@ -1359,7 +1393,7 @@ button.is-pulsing {
   border: none;
   padding: 0;
   display: grid;
-  gap: 18px;
+  gap: var(--space-2);
 }
 
 .simulator-panel h3 {
@@ -1372,20 +1406,20 @@ button.is-pulsing {
 
 .sim-slider-group {
   display: grid;
-  gap: 14px;
+  gap: var(--space-2);
 }
 
 .sim-slider {
   display: grid;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
 }
 
 .sim-slider span {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--font-xs);
 }
 
 .sim-slider input[type="range"] {
@@ -1398,7 +1432,7 @@ button.is-pulsing {
   border: none;
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: var(--space-2);
   width: 100%;
 }
 
@@ -1406,11 +1440,11 @@ button.is-pulsing {
 .log-panel,
 .selector-panel {
   background: rgba(20, 20, 20, 0.86);
-  border-radius: 16px;
+  border-radius: var(--card-radius);
   border: 1px solid rgba(31, 139, 255, 0.18);
-  padding: 20px;
+  padding: var(--space-3);
   display: grid;
-  gap: 14px;
+  gap: var(--space-2);
   width: 100%;
 }
 
@@ -1419,12 +1453,12 @@ button.is-pulsing {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-2);
   background: none;
   border: none;
   color: var(--text-muted);
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--font-md);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -1433,7 +1467,7 @@ button.is-pulsing {
 
 .card-toggle::after {
   content: "v";
-  font-size: 1.2rem;
+  font-size: var(--font-lg);
   color: var(--text-muted);
   transition: transform var(--transition), color var(--transition);
 }
@@ -1466,12 +1500,12 @@ button.is-pulsing {
 
 .force-panel .lock-hint {
   margin: 0;
-  padding: 10px 18px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   border: 1px solid rgba(255, 79, 109, 0.32);
   background: rgba(255, 79, 109, 0.12);
   color: var(--danger);
-  font-size: 0.82rem;
+  font-size: var(--font-xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-family: inherit;
@@ -1500,7 +1534,7 @@ button.is-pulsing {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: var(--space-1);
   max-height: 240px;
   overflow-y: auto;
 }
@@ -1508,12 +1542,12 @@ button.is-pulsing {
 .log-list li {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-2);
   background: rgba(8, 14, 25, 0.7);
   border: 1px solid rgba(31, 139, 255, 0.18);
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 0.8rem;
+  border-radius: var(--card-radius);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-xs);
   letter-spacing: 0.04em;
 }
 
@@ -1521,16 +1555,16 @@ button.is-pulsing {
   color: var(--accent-secondary);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .log-list .log-set .log-partial {
-  font-size: 0.65rem;
+  font-size: var(--font-xs);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(255, 215, 141, 0.9);
   border: 1px solid rgba(255, 215, 141, 0.55);
-  padding: 2px 8px;
+  padding: 4px var(--space-1);
   border-radius: 999px;
   background: rgba(32, 24, 4, 0.45);
 }
@@ -1541,28 +1575,28 @@ button.is-pulsing {
 
 .selector-panel .selector-controls {
   display: grid;
-  gap: 8px;
-  font-size: 0.9rem;
+  gap: var(--space-1);
+  font-size: var(--font-sm);
 }
 
 .selector-panel .selector-controls label {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--text-muted);
-  font-size: 0.75rem;
+  font-size: var(--font-xs);
 }
 
 .selector-panel .selector-controls select {
   background: rgba(8, 14, 25, 0.8);
   border: 1px solid rgba(31, 139, 255, 0.25);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 8px;
+  padding: var(--space-1) var(--space-2);
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
 }
 
 .exercise-title {
-  margin: 12px 0 0;
+  margin: var(--space-2) 0 0;
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -1570,9 +1604,9 @@ button.is-pulsing {
 }
 
 .exercise-preview {
-  margin-top: 18px;
+  margin-top: var(--space-2);
   display: grid;
-  gap: 16px;
+  gap: var(--space-2);
   width: 100%;
 }
 
@@ -1581,9 +1615,9 @@ button.is-pulsing {
   place-items: center;
   background: rgba(8, 14, 25, 0.7);
   border: 1px dashed rgba(127, 255, 212, 0.4);
-  border-radius: 14px;
+  border-radius: 32px;
   min-height: 160px;
-  font-size: 0.9rem;
+  font-size: var(--font-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(127, 255, 212, 0.75);
@@ -1595,25 +1629,25 @@ button.is-pulsing {
   max-width: 100%;
   height: auto;
   display: block;
-  border-radius: 14px;
+  border-radius: 32px;
 }
 
 .wave-card header {
   display: flex;
   justify-content: flex-start;
   align-items: baseline;
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
   color: var(--text-muted);
 }
 
 .wave-rep-label {
-  font-size: 1.2rem;
+  font-size: var(--font-lg);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .wave-rep-count {
-  font-size: 4rem;
+  font-size: var(--font-5xl);
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -1640,7 +1674,7 @@ button.is-pulsing {
 .wave-canvas {
   width: 100%;
   height: 280px;
-  border-radius: 14px;
+  border-radius: 32px;
   background: transparent;
   box-shadow: none;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1678,7 +1712,7 @@ button.is-pulsing {
 
 @media (max-width: 768px) {
   .app-shell {
-    padding: 64px 20px 40px;
+    padding: 64px 16px 40px;
   }
 
   .app-header {
@@ -1712,7 +1746,7 @@ button.is-pulsing {
 
 .template-nav {
   min-width: 0;
-  padding: 10px 18px;
+  padding: var(--space-1) var(--space-2);
   border-radius: 999px;
   border: 1px solid rgba(62, 90, 118, 0.45);
   background: rgba(8, 16, 28, 0.72);
@@ -1726,20 +1760,20 @@ button.is-pulsing {
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
-  padding: 12px 18px;
-  border-radius: 16px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--card-radius);
   border: 1px solid rgba(62, 90, 118, 0.4);
   background: rgba(8, 16, 28, 0.7);
-  box-shadow: 0 0 22px rgba(31, 139, 255, 0.18);
+  box-shadow: 0 0 24px rgba(31, 139, 255, 0.18);
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  font-size: 0.68rem;
-  gap: 4px;
+  font-size: var(--font-xs);
+  gap: var(--space-1);
 }
 
 .template-status-pill .value {
   font-family: inherit;
-  font-size: 1.15rem;
+  font-size: var(--font-lg);
   letter-spacing: 0.3em;
   color: var(--accent-secondary);
 }
@@ -1750,7 +1784,7 @@ button.is-pulsing {
 
 .template-hero-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-2);
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -1758,52 +1792,52 @@ button.is-pulsing {
 .template-content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: clamp(20px, 3vw, 32px);
+  gap: clamp(24px, 3vw, 32px);
 }
 
 .template-card {
   background: linear-gradient(135deg, rgba(10, 17, 31, 0.92), rgba(4, 9, 19, 0.92));
   border-radius: var(--card-radius);
   border: 1px solid var(--border);
-  padding: clamp(20px, 2.5vw, 28px);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.35);
+  padding: clamp(24px, 3vw, 32px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: var(--space-2);
 }
 
 .template-card header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .template-card header h2 {
   margin: 0;
   font-family: inherit;
-  font-size: 1.5rem;
+  font-size: var(--font-xl);
   letter-spacing: 0.12em;
 }
 
 .template-card header p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: var(--font-sm);
 }
 
 .template-card-body {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--space-2);
   color: rgba(223, 230, 255, 0.92);
   line-height: 1.6;
 }
 
 .template-card ul {
   margin: 0;
-  padding-left: 20px;
+  padding-left: var(--space-3);
   display: grid;
-  gap: 6px;
+  gap: var(--space-1);
 }
 
 .template-card--accent {
@@ -1817,7 +1851,7 @@ button.is-pulsing {
 
 .template-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
@@ -1836,5 +1870,7 @@ button.is-pulsing {
     align-items: flex-start;
   }
 }
+
+
 
 
