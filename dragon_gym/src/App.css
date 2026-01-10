@@ -392,6 +392,7 @@ textarea {
   position: relative;
   z-index: 2;
   overflow: visible;
+  transform: translateY(-12px);
 }
 
 
@@ -845,25 +846,29 @@ button.is-pulsing {
 
 .engagement-corners {
   position: absolute;
-  top: var(--space-3);
-  left: var(--space-7);
-  right: var(--space-7);
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-6);
+  top: 0;
+  left: 0;
+  right: 0;
+  display: block;
   pointer-events: none;
 }
 
 .engagement-corner {
+  position: absolute;
+  top: calc(var(--space-2) + 4px);
   display: grid;
   gap: var(--space-1);
-  text-align: left;
+  text-align: center;
   max-width: 40%;
+  transform: translateX(-50%);
+}
+
+.engagement-corner.left {
+  left: 8%;
 }
 
 .engagement-corner.right {
-  text-align: right;
+  left: 92%;
 }
 
 .engagement-corner .label {

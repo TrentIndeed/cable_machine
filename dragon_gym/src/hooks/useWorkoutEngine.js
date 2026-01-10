@@ -794,7 +794,7 @@ function useWorkoutEngine(params) {
           elements.workoutState.classList.remove('active');
           elements.workoutState.textContent = 'Workout Not Started';
         }
-        setStatusMessage('Tap Start Workout to arm the set controls.');
+        setStatusMessage('');
         eccentricOverrideEnabled = false;
         eccentricEnabledRef.current = false;
         setEccentricEnabled(false);
