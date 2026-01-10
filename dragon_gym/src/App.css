@@ -945,6 +945,7 @@ button.is-pulsing {
 .combined-card.is-concave-top {
   background: transparent;
   overflow: hidden;
+  border: none;
 }
 
 .combined-card.is-concave-top > * {
