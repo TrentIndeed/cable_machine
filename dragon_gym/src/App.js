@@ -41,6 +41,7 @@ function App() {
   const workoutStateRef = useRef(null);
   const startToggleRef = useRef(null);
   const startToggleHomeSlotRef = useRef(null);
+  const pauseIconRef = useRef(null);
   const setToggleRef = useRef(null);
   const setControlGroupRef = useRef(null);
   const simPanelRef = useRef(null);
@@ -163,6 +164,7 @@ function App() {
     workoutStateRef,
     startToggleRef,
     startToggleHomeSlotRef,
+    pauseIconRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,
@@ -214,6 +216,7 @@ function App() {
     workoutStateRef,
     startToggleRef,
     startToggleHomeSlotRef,
+    pauseIconRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,

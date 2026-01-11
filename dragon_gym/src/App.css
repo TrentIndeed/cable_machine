@@ -682,12 +682,13 @@ textarea {
 }
 
 .status-controls .set-control-group {
-  display: flex;
-  flex-direction: row;
+  display: grid;
   gap: var(--space-2);
   margin-bottom: 0;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  justify-items: stretch;
   position: static;
   left: auto;
   right: auto;
@@ -700,6 +701,35 @@ textarea {
   width: auto;
   min-width: 200px;
   max-width: 320px;
+}
+
+.status-controls .set-control-group #resetWorkout {
+  justify-self: center;
+}
+
+.set-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 100%;
+  padding: 0 var(--space-6);
+}
+
+.set-control-row #setToggle {
+  margin-right: 0;
+}
+
+.set-control-row .set-control-icon {
+  margin-left: 0;
+}
+
+.set-control-icon img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
 }
 
 .status-controls .set-control-group .accent {
@@ -1459,6 +1489,8 @@ button.is-pulsing {
   padding: var(--space-2) var(--space-3);
   gap: var(--space-2);
   row-gap: var(--space-2);
+  width: min(100%, 1000px);
+  margin: 0 auto;
 }
 
 .status-metrics {

@@ -17,6 +17,7 @@ function HomePage({
     workoutStateRef,
     startToggleRef,
     startToggleHomeSlotRef,
+    pauseIconRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,
@@ -257,16 +258,21 @@ function HomePage({
               ref={setControlGroupRef}
               hidden
             >
-              <button
-                className="accent"
-                id="setToggle"
-                ref={setToggleRef}
-                type="button"
-                disabled
-                aria-pressed="false"
-              >
-                Start Set
-              </button>
+              <div className="set-control-row">
+                <button
+                  className="accent"
+                  id="setToggle"
+                  ref={setToggleRef}
+                  type="button"
+                  disabled
+                  aria-pressed="false"
+                >
+                  Start Set
+                </button>
+                <div className="set-control-icon" ref={pauseIconRef} aria-hidden="true" hidden>
+                  <img src="/assets/icons/pause.png" alt="" />
+                </div>
+              </div>
               <button
                 className="ghost"
                 id="resetWorkout"

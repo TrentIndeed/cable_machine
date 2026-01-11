@@ -62,6 +62,7 @@ function useWorkoutEngine(params) {
     workoutStateRef,
     startToggleRef,
     startToggleHomeSlotRef,
+    pauseIconRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,
@@ -124,6 +125,7 @@ function useWorkoutEngine(params) {
       workoutState: workoutStateRef.current,
       startToggle: startToggleRef.current,
       startToggleHomeSlot: startToggleHomeSlotRef.current,
+      pauseIcon: pauseIconRef.current,
       setToggle: setToggleRef.current,
       setControlGroup: setControlGroupRef.current,
       simPanel: simPanelRef.current,
@@ -767,7 +769,7 @@ function useWorkoutEngine(params) {
       elements.setToggle.disabled = shouldDisable;
 
       if (setActive) {
-        elements.setToggle.textContent = 'Stop Set';
+        elements.setToggle.textContent = 'End Set';
         elements.setToggle.classList.remove('accent');
         elements.setToggle.classList.add('danger');
         elements.setToggle.setAttribute('aria-pressed', 'true');
@@ -782,6 +784,9 @@ function useWorkoutEngine(params) {
 
       if (elements.reset) {
         elements.reset.hidden = !setActive;
+      }
+      if (elements.pauseIcon) {
+        elements.pauseIcon.hidden = !setActive;
       }
     }
 
