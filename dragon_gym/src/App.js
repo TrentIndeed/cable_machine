@@ -43,6 +43,7 @@ function App() {
   const startToggleHomeSlotRef = useRef(null);
   const pauseIconRef = useRef(null);
   const setToggleRef = useRef(null);
+  const setControlRowRef = useRef(null);
   const setControlGroupRef = useRef(null);
   const simPanelRef = useRef(null);
   const resetRef = useRef(null);
@@ -166,6 +167,7 @@ function App() {
     startToggleHomeSlotRef,
     pauseIconRef,
     setToggleRef,
+    setControlRowRef,
     setControlGroupRef,
     simPanelRef,
     resetRef,
@@ -218,6 +220,7 @@ function App() {
     startToggleHomeSlotRef,
     pauseIconRef,
     setToggleRef,
+    setControlRowRef,
     setControlGroupRef,
     simPanelRef,
     resetRef,

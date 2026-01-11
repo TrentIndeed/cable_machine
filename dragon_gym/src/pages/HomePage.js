@@ -19,6 +19,7 @@ function HomePage({
     startToggleHomeSlotRef,
     pauseIconRef,
     setToggleRef,
+    setControlRowRef,
     setControlGroupRef,
     simPanelRef,
     resetRef,
@@ -258,7 +259,7 @@ function HomePage({
               ref={setControlGroupRef}
               hidden
             >
-              <div className="set-control-row">
+              <div className="set-control-row" ref={setControlRowRef}>
                 <button
                   className="accent"
                   id="setToggle"
@@ -269,9 +270,16 @@ function HomePage({
                 >
                   Start Set
                 </button>
-                <div className="set-control-icon" ref={pauseIconRef} aria-hidden="true" hidden>
-                  <img src="/assets/icons/pause.png" alt="" />
-                </div>
+                <button
+                  className="set-control-icon pause-toggle"
+                  id="pauseToggle"
+                  ref={pauseIconRef}
+                  type="button"
+                  aria-pressed="false"
+                  hidden
+                >
+                  <img src="/assets/icons/pause.png" alt="Pause" />
+                </button>
               </div>
               <button
                 className="ghost"

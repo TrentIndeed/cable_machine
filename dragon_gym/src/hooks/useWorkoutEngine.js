@@ -64,6 +64,7 @@ function useWorkoutEngine(params) {
     startToggleHomeSlotRef,
     pauseIconRef,
     setToggleRef,
+    setControlRowRef,
     setControlGroupRef,
     simPanelRef,
     resetRef,
@@ -127,6 +128,7 @@ function useWorkoutEngine(params) {
       startToggleHomeSlot: startToggleHomeSlotRef.current,
       pauseIcon: pauseIconRef.current,
       setToggle: setToggleRef.current,
+      setControlRow: setControlRowRef.current,
       setControlGroup: setControlGroupRef.current,
       simPanel: simPanelRef.current,
       reset: resetRef.current,
@@ -162,6 +164,21 @@ function useWorkoutEngine(params) {
 
     if (!elements.startToggle || !elements.forceSelect) {
       return undefined;
+    }
+
+    let pauseActive = false;
+
+    function updatePauseIconAppearance() {
+      if (!elements.pauseIcon) return;
+      const icon = elements.pauseIcon.querySelector('img');
+      if (icon) {
+        icon.src = pauseActive ? '/assets/icons/play.png' : '/assets/icons/pause.png';
+        icon.alt = pauseActive ? 'Play' : 'Pause';
+      }
+      elements.pauseIcon.setAttribute('aria-pressed', pauseActive ? 'true' : 'false');
+      elements.pauseIcon.classList.remove('is-flash');
+      void elements.pauseIcon.offsetWidth;
+      elements.pauseIcon.classList.add('is-flash');
     }
 
     function setStatusMessage(message, options = {}) {
@@ -781,12 +798,19 @@ function useWorkoutEngine(params) {
         }
         elements.setToggle.setAttribute('aria-pressed', 'false');
       }
+      elements.setToggle.classList.remove('is-flash');
+      void elements.setToggle.offsetWidth;
+      elements.setToggle.classList.add('is-flash');
 
       if (elements.reset) {
         elements.reset.hidden = !setActive;
       }
       if (elements.pauseIcon) {
         elements.pauseIcon.hidden = !setActive;
+        if (!setActive) {
+          pauseActive = false;
+          updatePauseIconAppearance();
+        }
       }
     }
 
@@ -806,13 +830,9 @@ function useWorkoutEngine(params) {
           elements.startToggle.hidden = true;
         } else {
           elements.startToggle.hidden = false;
-          const target = elements.setControlGroup;
-          if (elements.startToggle.parentElement !== target) {
-          if (elements.setToggle && target.contains(elements.setToggle)) {
-            elements.setToggle.insertAdjacentElement('afterend', elements.startToggle);
-          } else {
+          const target = elements.setControlRow || elements.setControlGroup;
+          if (target && elements.startToggle.parentElement !== target) {
             target.appendChild(elements.startToggle);
-          }
           }
         }
       }
@@ -879,6 +899,12 @@ function useWorkoutEngine(params) {
 
     const handleWorkoutToggle = () => {
       toggleWorkout();
+    };
+
+    const handlePauseToggle = () => {
+      if (!setActive) return;
+      pauseActive = !pauseActive;
+      updatePauseIconAppearance();
     };
 
     elements.startToggle.addEventListener('click', handleWorkoutToggle);
@@ -1249,6 +1275,9 @@ function useWorkoutEngine(params) {
 
     if (elements.setToggle) {
       elements.setToggle.addEventListener('click', handleSetToggle);
+    }
+    if (elements.pauseIcon) {
+      elements.pauseIcon.addEventListener('click', handlePauseToggle);
     }
 
     const handleReset = () => {
@@ -2204,6 +2233,9 @@ function useWorkoutEngine(params) {
 
       if (elements.setToggle) {
         elements.setToggle.removeEventListener('click', handleSetToggle);
+      }
+      if (elements.pauseIcon) {
+        elements.pauseIcon.removeEventListener('click', handlePauseToggle);
       }
 
       if (elements.reset) {

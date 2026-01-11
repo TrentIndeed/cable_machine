@@ -675,6 +675,7 @@ textarea {
   max-width: 480px;
   font-size: calc(var(--font-lg) * 1.5);
   padding: calc(var(--space-2) * 1.5) calc(var(--space-3) * 1.5);
+  border-radius: 48px;
 }
 
 .status-controls .workout-toggle button {
@@ -682,8 +683,9 @@ textarea {
 }
 
 .status-controls .set-control-group {
+  --set-control-button-width: 350px;
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-5);
   margin-bottom: 0;
   align-items: center;
   justify-content: center;
@@ -699,8 +701,12 @@ textarea {
 
 .status-controls .set-control-group button {
   width: auto;
-  min-width: 200px;
-  max-width: 320px;
+  min-width: var(--set-control-button-width);
+  max-width: var(--set-control-button-width);
+  font-size: calc(var(--font-md) * 1.6);
+  padding: calc(var(--space-2) * 1.25) calc(var(--space-4) * 4);
+  border-radius: 48px;
+  white-space: nowrap;
 }
 
 .status-controls .set-control-group #resetWorkout {
@@ -708,21 +714,41 @@ textarea {
 }
 
 .set-control-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-6);
+  gap: var(--space-5);
   width: 100%;
   max-width: 100%;
-  padding: 0 var(--space-6);
+  padding: 0 var(--space-7);
+  justify-items: stretch;
 }
 
 .set-control-row #setToggle {
-  margin-right: 0;
+  grid-column: 1;
+  justify-self: start;
+}
+
+.set-control-row #toggleWorkout {
+  grid-column: 3;
+  justify-self: end;
+  font-size: calc(var(--font-md) * 1.6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .set-control-row .set-control-icon {
-  margin-left: 0;
+  grid-column: 3;
+  justify-self: center;
+}
+
+.set-control-icon {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
 
 .set-control-icon img {
@@ -890,6 +916,10 @@ button.is-pulsing {
   border-color: rgba(64, 160, 255, 0.75) !important;
 }
 
+button.is-flash {
+  animation: set-toggle-flash 280ms ease-out;
+}
+
 @keyframes pulse-blue {
   0% {
     box-shadow: 0 0 0 0 rgba(64, 160, 255, 0.5);
@@ -899,6 +929,21 @@ button.is-pulsing {
   }
   100% {
     box-shadow: 0 0 0 0 rgba(64, 160, 255, 0);
+  }
+}
+
+@keyframes set-toggle-flash {
+  0% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  60% {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+  }
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
   }
 }
 
