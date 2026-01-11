@@ -16,6 +16,7 @@ function HomePage({
   const {
     workoutStateRef,
     startToggleRef,
+    startToggleHomeSlotRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,
@@ -24,6 +25,9 @@ function HomePage({
     repStatusRef,
     waveRepRef,
     messageRef,
+    repCurveLabelRef,
+    leftWaveLegendRef,
+    rightWaveLegendRef,
     forceSelectRef,
     forceDescriptionRef,
     powerToggleRef,
@@ -66,6 +70,32 @@ function HomePage({
       hidden={!isActive}
     >
       <section className="resistance-overview" aria-label="Resistance overview">
+        <div className="rep-curve-label" aria-live="polite" ref={repCurveLabelRef}>
+          <span className="rep-curve-text">Rep</span>
+          <span className="rep-curve-count" ref={waveRepRef}>
+            0
+          </span>
+        </div>
+        <div className="bottom-actions top-actions" aria-label="Power controls">
+          <button
+            className="reset-toggle"
+            id="adsReset"
+            ref={adsResetRef}
+            type="button"
+            disabled={!telemetryConnected}
+          >
+            Reset
+          </button>
+          <button
+            className="power-toggle"
+            id="powerToggle"
+            ref={powerToggleRef}
+            type="button"
+            disabled={!telemetryConnected}
+          >
+            Shutdown
+          </button>
+        </div>
         <article className="status-card" aria-label="Workout status" aria-live="polite">
           <header className="status-header">
             <span className="status-pill sr-only" id="workoutState" ref={workoutStateRef}>
@@ -163,9 +193,37 @@ function HomePage({
           <div className="wave-grid">
             <article className="wave-card" data-motor="combined">
               <header>
-                <span className="wave-rep-label">
-                <span className="wave-rep-count" ref={waveRepRef}>0</span>
-                </span>
+                <div className="wave-legend" role="group" aria-label="Wave graph toggles">
+                  <button
+                    type="button"
+                    className="wave-legend-btn"
+                    ref={leftWaveLegendRef}
+                    aria-pressed="true"
+                  >
+                    <span className="wave-legend-label">Left</span>
+                    <span className="wave-legend-swatch left" aria-hidden="true"></span>
+                  </button>
+                  <button
+                    type="button"
+                    className="wave-legend-btn"
+                    ref={rightWaveLegendRef}
+                    aria-pressed="true"
+                  >
+                    <span className="wave-legend-label">Right</span>
+                    <span className="wave-legend-swatch right" aria-hidden="true"></span>
+                  </button>
+                  <button
+                    type="button"
+                    className="wave-legend-btn sync-toggle"
+                    id="syncMotors"
+                    ref={syncMotorsRef}
+                    aria-pressed={motorsSyncedState}
+                  >
+                    <span className="wave-legend-label">
+                      {motorsSyncedState ? 'Unsync' : 'Sync'} Motors
+                    </span>
+                  </button>
+                </div>
               </header>
               <canvas
                 className="wave-canvas"
@@ -181,6 +239,47 @@ function HomePage({
       </section>
       <section className="workspace">
         <section className="set-controls-panel" aria-label="Set controls">
+          <div className="status-controls">
+            <div className="start-toggle-slot" ref={startToggleHomeSlotRef}>
+              <button
+                className="primary"
+                id="toggleWorkout"
+                ref={startToggleRef}
+                type="button"
+                aria-pressed="false"
+              >
+                Start Workout
+              </button>
+            </div>
+            <div
+              className="set-control-group"
+              aria-label="Set controls"
+              ref={setControlGroupRef}
+              hidden
+            >
+              <button
+                className="accent"
+                id="setToggle"
+                ref={setToggleRef}
+                type="button"
+                disabled
+                aria-pressed="false"
+              >
+                Start Set
+              </button>
+              <button
+                className="ghost"
+                id="resetWorkout"
+                ref={resetRef}
+                type="button"
+                disabled
+                hidden
+              >
+                Reset
+              </button>
+              
+            </div>
+          </div>
           <div className="status-stack">
             <div className="status-metrics">
               <div>
@@ -243,52 +342,6 @@ function HomePage({
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-          <div className="status-controls">
-            <button
-              className="primary"
-              id="toggleWorkout"
-              ref={startToggleRef}
-              type="button"
-              aria-pressed="false"
-            >
-              Start Workout
-            </button>
-            <div
-              className="set-control-group"
-              aria-label="Set controls"
-              ref={setControlGroupRef}
-              hidden
-            >
-              <button
-                className="accent"
-                id="setToggle"
-                ref={setToggleRef}
-                type="button"
-                disabled
-                aria-pressed="false"
-              >
-                Start Set
-              </button>
-              <button
-                className="ghost"
-                id="resetWorkout"
-                ref={resetRef}
-                type="button"
-                disabled
-              >
-                Reset
-              </button>
-              <button
-                className="ghost"
-                id="syncMotors"
-                ref={syncMotorsRef}
-                type="button"
-                aria-pressed={motorsSyncedState}
-              >
-                {motorsSyncedState ? 'Unsync Motors' : 'Sync Motors'}
-              </button>
             </div>
           </div>
         </section>
@@ -427,63 +480,8 @@ function HomePage({
             </div>
           </div>
         </section>
-        <section className="selector-panel" aria-label="Workout selector">
-          <button
-            className="card-toggle"
-            type="button"
-            aria-expanded={selectorOpen}
-            aria-controls="selectorBody"
-            onClick={() => setSelectorOpen((prev) => !prev)}
-          >
-            <span>Workout Selector</span>
-          </button>
-          <div id="selectorBody" className="card-body" hidden={!selectorOpen}>
-            <div className="selector-controls">
-              <label htmlFor="exerciseSelect">Choose an exercise</label>
-              <select id="exerciseSelect" ref={exerciseSelectRef} defaultValue="incline-bench">
-                {Object.entries(exerciseCatalog).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="exercise-title" id="exerciseTitle" ref={exerciseTitleRef}>
-              Incline Bench
-            </p>
-            <div className="exercise-preview">
-            <video
-              className="media-placeholder video"
-              src={videoSrc}
-              muted
-              loop
-              playsInline
-              autoPlay
-            ></video>
-            </div>
-          </div>
-        </section>
+        
       </section>
-      <div className="bottom-actions" aria-label="Power controls">
-        <button
-          className="reset-toggle"
-          id="adsReset"
-          ref={adsResetRef}
-          type="button"
-          disabled={!telemetryConnected}
-        >
-          Reset
-        </button>
-        <button
-          className="power-toggle"
-          id="powerToggle"
-          ref={powerToggleRef}
-          type="button"
-          disabled={!telemetryConnected}
-        >
-          Shutdown
-        </button>
-      </div>
     </main>
   );
 }

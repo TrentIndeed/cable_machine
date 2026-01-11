@@ -61,6 +61,7 @@ function useWorkoutEngine(params) {
   const {
     workoutStateRef,
     startToggleRef,
+    startToggleHomeSlotRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,
@@ -69,9 +70,12 @@ function useWorkoutEngine(params) {
     repStatusRef,
     waveRepRef,
     waveRepBounceTimeoutRef,
+    repCurveLabelRef,
     leftStatusRepsRef,
     rightStatusRepsRef,
     messageRef,
+    leftWaveLegendRef,
+    rightWaveLegendRef,
     forceSelectRef,
     forceDescriptionRef,
     forceLabelRef,
@@ -109,16 +113,17 @@ function useWorkoutEngine(params) {
     rightRepCountRef,
     rightCableDistanceRef,
     rightResistanceValueRef,
-    rightEngageDisplayRef,
-    rightSetCableLengthRef,
-    rightRetractCableRef,
-    animationFrameRef,
+      rightEngageDisplayRef,
+      rightSetCableLengthRef,
+      rightRetractCableRef,
+      animationFrameRef,
   } = refs;
 
   useEffect(() => {
     const elements = {
       workoutState: workoutStateRef.current,
       startToggle: startToggleRef.current,
+      startToggleHomeSlot: startToggleHomeSlotRef.current,
       setToggle: setToggleRef.current,
       setControlGroup: setControlGroupRef.current,
       simPanel: simPanelRef.current,
@@ -126,8 +131,11 @@ function useWorkoutEngine(params) {
       setStatus: setStatusRef.current,
       repStatus: repStatusRef.current,
       waveRep: waveRepRef.current,
+      repCurveLabel: repCurveLabelRef.current,
       leftStatusReps: leftStatusRepsRef.current,
       rightStatusReps: rightStatusRepsRef.current,
+      leftWaveLegend: leftWaveLegendRef.current,
+      rightWaveLegend: rightWaveLegendRef.current,
       message: messageRef.current,
       forceSelect: forceSelectRef.current,
       forceDescription: forceDescriptionRef.current,
@@ -174,6 +182,19 @@ function useWorkoutEngine(params) {
     }
 
     let forceProfileLockHintVisible = false;
+    let showLeftWave = true;
+    let showRightWave = true;
+
+    function updateWaveLegendState() {
+      if (elements.leftWaveLegend) {
+        elements.leftWaveLegend.classList.toggle('is-off', !showLeftWave);
+        elements.leftWaveLegend.setAttribute('aria-pressed', String(showLeftWave));
+      }
+      if (elements.rightWaveLegend) {
+        elements.rightWaveLegend.classList.toggle('is-off', !showRightWave);
+        elements.rightWaveLegend.setAttribute('aria-pressed', String(showRightWave));
+      }
+    }
 
     function updateForceProfileLockState() {
       const locked = motors.some((motor) => motorBeyondEngagement(motor));
@@ -336,6 +357,7 @@ function useWorkoutEngine(params) {
     let lastEccentricMode = elements.eccentricSelect
       ? elements.eccentricSelect.value
       : 'eccentric';
+    let lastWaveRepLabel = null;
 
     function resizeCanvasToDisplaySize(canvas) {
       if (!canvas) return false;
@@ -757,14 +779,38 @@ function useWorkoutEngine(params) {
         }
         elements.setToggle.setAttribute('aria-pressed', 'false');
       }
+
+      if (elements.reset) {
+        elements.reset.hidden = !setActive;
+      }
     }
 
     function updateWorkoutToggleAppearance() {
       if (!elements.startToggle) return;
       const isActive = workoutActive && powerOn;
-      elements.startToggle.textContent = isActive ? 'Stop Workout' : 'Start Workout';
+      elements.startToggle.textContent = isActive ? 'End Workout' : 'Start Workout';
       elements.startToggle.classList.toggle('is-stop', isActive);
       elements.startToggle.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      if (elements.startToggleHomeSlot && elements.setControlGroup) {
+        if (!isActive) {
+          elements.startToggle.hidden = false;
+          if (elements.startToggle.parentElement !== elements.startToggleHomeSlot) {
+            elements.startToggleHomeSlot.appendChild(elements.startToggle);
+          }
+        } else if (setActive) {
+          elements.startToggle.hidden = true;
+        } else {
+          elements.startToggle.hidden = false;
+          const target = elements.setControlGroup;
+          if (elements.startToggle.parentElement !== target) {
+          if (elements.setToggle && target.contains(elements.setToggle)) {
+            elements.setToggle.insertAdjacentElement('afterend', elements.startToggle);
+          } else {
+            target.appendChild(elements.startToggle);
+          }
+          }
+        }
+      }
       if (elements.setControlGroup) {
         elements.setControlGroup.hidden = !workoutActive;
       }
@@ -776,7 +822,7 @@ function useWorkoutEngine(params) {
     function toggleWorkout() {
       workoutActive = !workoutActive;
       if (elements.forcePanel) {
-        elements.forcePanel.hidden = !workoutActive;
+        elements.forcePanel.hidden = false;
       }
       updateWorkoutToggleAppearance();
 
@@ -966,11 +1012,13 @@ function useWorkoutEngine(params) {
       setStatusMessage(`Set ${currentSet} active. Cable movement will arm the servos.`);
       updateStatuses();
       updateSetToggleAppearance();
+      updateWorkoutToggleAppearance();
     }
 
     function finishSet() {
       setActive = false;
       updateSetToggleAppearance();
+      updateWorkoutToggleAppearance();
       motors.forEach((motor) => {
         motor.engaged = false;
         const travel = motor.normalized * MAX_TRAVEL_INCHES;
@@ -1038,11 +1086,7 @@ function useWorkoutEngine(params) {
         if (elements.workoutState) {
           elements.workoutState.textContent = partial ? 'Set Logged' : 'Set Complete';
         }
-        setStatusMessage(
-          partial
-            ? `Set ${currentSet} logged with ${currentRep} reps.`
-            : `Set ${currentSet} complete. Press Start Set when you are ready for the next round.`
-        );
+        setStatusMessage('');
       } else {
         if (elements.workoutState) {
           elements.workoutState.textContent = workoutActive
@@ -1061,13 +1105,16 @@ function useWorkoutEngine(params) {
         resetMotorTracking(motor, travel);
         if (recorded) {
           motor.reps = 0;
-          motor.repsLabel.textContent = '0';
+          if (motor.repsLabel) {
+            motor.repsLabel.textContent = '0';
+          }
         }
       });
       if (recorded) {
         currentRep = 0;
       }
       updateStatuses();
+      updateWorkoutToggleAppearance();
     }
 
     function updateMotorToggle() {
@@ -1225,7 +1272,7 @@ function useWorkoutEngine(params) {
     };
 
     if (elements.reset) {
-      elements.reset.addEventListener('click', handleReset);
+      elements.reset.disabled = true;
     }
 
     const handleAdsReset = () => {
@@ -1285,17 +1332,34 @@ function useWorkoutEngine(params) {
       elements.setStatus.textContent = `${currentSet}`;
       elements.repStatus.textContent = `${currentRep} / ${totalReps}`;
       if (elements.waveRep) {
-        elements.waveRep.textContent = `${currentRep}`;
-        elements.waveRep.classList.remove('is-bouncing');
-        if (waveRepBounceTimeoutRef.current) {
-          clearTimeout(waveRepBounceTimeoutRef.current);
-        }
-        elements.waveRep.classList.add('is-bouncing');
-        waveRepBounceTimeoutRef.current = setTimeout(() => {
-          if (elements.waveRep) {
-            elements.waveRep.classList.remove('is-bouncing');
+        const isEccentric = motors.some((motor) => motor.phase === 'descending');
+        const labelText =
+          currentRep > 0
+            ? `${isEccentric ? '- ' : ''}${currentRep}`
+            : `${currentRep}`;
+        elements.waveRep.textContent = labelText;
+        if (labelText !== lastWaveRepLabel) {
+          lastWaveRepLabel = labelText;
+          elements.waveRep.classList.remove('is-bouncing');
+          if (elements.repCurveLabel) {
+            elements.repCurveLabel.classList.remove('is-bouncing');
           }
-        }, 450);
+          if (waveRepBounceTimeoutRef.current) {
+            clearTimeout(waveRepBounceTimeoutRef.current);
+          }
+          elements.waveRep.classList.add('is-bouncing');
+          if (elements.repCurveLabel) {
+            elements.repCurveLabel.classList.add('is-bouncing');
+          }
+          waveRepBounceTimeoutRef.current = setTimeout(() => {
+            if (elements.waveRep) {
+              elements.waveRep.classList.remove('is-bouncing');
+            }
+            if (elements.repCurveLabel) {
+              elements.repCurveLabel.classList.remove('is-bouncing');
+            }
+          }, 450);
+        }
       }
       if (elements.leftStatusReps) {
         elements.leftStatusReps.textContent = `${motors[0].reps}`;
@@ -1531,13 +1595,16 @@ function useWorkoutEngine(params) {
             for (let i = 0; i < len; i += 1) {
               combinedTrail.push((leftMotor.trail[i] + rightMotor.trail[i]) / 2);
             }
-            return [
-              {
-                id: 'combined',
-                normalized: (leftMotor.normalized + rightMotor.normalized) / 2,
-                trail: combinedTrail,
-              },
-            ];
+            const shouldShowCombined = showLeftWave || showRightWave;
+            return shouldShowCombined
+              ? [
+                  {
+                    id: 'combined',
+                    normalized: (leftMotor.normalized + rightMotor.normalized) / 2,
+                    trail: combinedTrail,
+                  },
+                ]
+              : [];
           })()
         : (() => {
             const leftMotor = motors.find((entry) => entry.id === 'left');
@@ -1545,7 +1612,11 @@ function useWorkoutEngine(params) {
             if (!leftMotor || !rightMotor) {
               return motors;
             }
-            return [rightMotor, leftMotor];
+            return [rightMotor, leftMotor].filter((motor) => {
+              if (motor.id === 'left') return showLeftWave;
+              if (motor.id === 'right') return showRightWave;
+              return true;
+            });
           })();
       let scaleMin = waveScaleMinRef.current || 0;
       let scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
@@ -2064,6 +2135,7 @@ function useWorkoutEngine(params) {
     }
 
     updateStatusesInitial();
+    updateWaveLegendState();
     updateWaveScale();
     applyPowerState();
     updateForceProfileLockState();
@@ -2083,6 +2155,25 @@ function useWorkoutEngine(params) {
     };
 
     window.addEventListener('resize', handleResize);
+
+    const handleLeftLegend = () => {
+      showLeftWave = !showLeftWave;
+      updateWaveLegendState();
+      drawWaveCombined();
+    };
+
+    const handleRightLegend = () => {
+      showRightWave = !showRightWave;
+      updateWaveLegendState();
+      drawWaveCombined();
+    };
+
+    if (elements.leftWaveLegend) {
+      elements.leftWaveLegend.addEventListener('click', handleLeftLegend);
+    }
+    if (elements.rightWaveLegend) {
+      elements.rightWaveLegend.addEventListener('click', handleRightLegend);
+    }
 
     return () => {
       if (animationFrameRef.current) {
@@ -2111,7 +2202,7 @@ function useWorkoutEngine(params) {
       }
 
       if (elements.reset) {
-        elements.reset.removeEventListener('click', handleReset);
+        elements.reset.disabled = true;
       }
 
       if (elements.powerToggle) {
@@ -2124,6 +2215,13 @@ function useWorkoutEngine(params) {
 
       if (elements.syncMotors) {
         elements.syncMotors.removeEventListener('click', handleSyncMotors);
+      }
+
+      if (elements.leftWaveLegend) {
+        elements.leftWaveLegend.removeEventListener('click', handleLeftLegend);
+      }
+      if (elements.rightWaveLegend) {
+        elements.rightWaveLegend.removeEventListener('click', handleRightLegend);
       }
 
       if (elements.exerciseSelect) {

@@ -40,6 +40,7 @@ function App() {
 
   const workoutStateRef = useRef(null);
   const startToggleRef = useRef(null);
+  const startToggleHomeSlotRef = useRef(null);
   const setToggleRef = useRef(null);
   const setControlGroupRef = useRef(null);
   const simPanelRef = useRef(null);
@@ -48,6 +49,9 @@ function App() {
   const repStatusRef = useRef(null);
   const waveRepRef = useRef(null);
   const waveRepBounceTimeoutRef = useRef(null);
+  const repCurveLabelRef = useRef(null);
+  const leftWaveLegendRef = useRef(null);
+  const rightWaveLegendRef = useRef(null);
   const leftStatusRepsRef = useRef(null);
   const rightStatusRepsRef = useRef(null);
   const messageRef = useRef(null);
@@ -141,13 +145,6 @@ function App() {
   }, [uiFont]);
 
   useEffect(() => {
-    document.body.style.setProperty(
-      '--app-background',
-      `url(${process.env.PUBLIC_URL}/assets/background/abstract-black-luxury-background-with-abstracts/23cee353-d438-42da-90c8-04aa523fb0f9.jpg)`
-    );
-  }, []);
-
-  useEffect(() => {
     telemetryRef.current = telemetry;
   }, [telemetry]);
 
@@ -165,6 +162,7 @@ function App() {
   const homeRefs = {
     workoutStateRef,
     startToggleRef,
+    startToggleHomeSlotRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,
@@ -173,6 +171,9 @@ function App() {
     repStatusRef,
     waveRepRef,
     messageRef,
+    repCurveLabelRef,
+    leftWaveLegendRef,
+    rightWaveLegendRef,
     forceSelectRef,
     forceDescriptionRef,
     forceLabelRef,
@@ -212,6 +213,7 @@ function App() {
   const engineRefs = {
     workoutStateRef,
     startToggleRef,
+    startToggleHomeSlotRef,
     setToggleRef,
     setControlGroupRef,
     simPanelRef,
@@ -220,8 +222,11 @@ function App() {
     repStatusRef,
     waveRepRef,
     waveRepBounceTimeoutRef,
+    repCurveLabelRef,
     leftStatusRepsRef,
     rightStatusRepsRef,
+    leftWaveLegendRef,
+    rightWaveLegendRef,
     messageRef,
     forceSelectRef,
     forceDescriptionRef,
@@ -385,7 +390,7 @@ function App() {
       <svg className="sr-only" width="0" height="0" aria-hidden="true">
         <defs>
           <clipPath id="concaveTopClip" clipPathUnits="objectBoundingBox">
-            <path d="M0,0.08 Q0,0 0.08,0 C0.22,0 0.35,0.06 0.5,0.06 S0.78,0 0.92,0 Q1,0 1,0.08 L1,1 L0,1 Z" />
+            <path d="M0,0.08 Q0,0 0.08,0 C0.22,0 0.35,0.03 0.5,0.03 S0.78,0 0.92,0 Q1,0 1,0.08 L1,1 L0,1 Z" />
           </clipPath>
         </defs>
       </svg>
@@ -402,7 +407,14 @@ function App() {
         videoSrc={videoSrc}
         refs={homeRefs}
       />
-      <ProgramsPage isActive={activePage === 'programs'} refs={homeRefs} />
+      <ProgramsPage
+        isActive={activePage === 'programs'}
+        refs={homeRefs}
+        exerciseCatalog={exerciseCatalog}
+        selectorOpen={selectorOpen}
+        setSelectorOpen={setSelectorOpen}
+        videoSrc={videoSrc}
+      />
       <SettingsPage
         isActive={activePage === 'settings'}
         uiFont={uiFont}
