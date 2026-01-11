@@ -1364,7 +1364,9 @@ function useWorkoutEngine(params) {
 
     function updateStatuses() {
       elements.setStatus.textContent = `${currentSet}`;
-      elements.repStatus.textContent = `${currentRep} / ${totalReps}`;
+      if (elements.repStatus) {
+        elements.repStatus.textContent = `${currentRep} / ${totalReps}`;
+      }
       if (elements.waveRep) {
         const isEccentric = motors.some((motor) => motor.phase === 'descending');
         const labelText =
@@ -1396,10 +1398,10 @@ function useWorkoutEngine(params) {
         }
       }
       if (elements.leftStatusReps) {
-        elements.leftStatusReps.textContent = `${motors[0].reps}`;
+        elements.leftStatusReps.textContent = `${motors[0].reps} / ${totalReps}`;
       }
       if (elements.rightStatusReps) {
-        elements.rightStatusReps.textContent = `${motors[1].reps}`;
+        elements.rightStatusReps.textContent = `${motors[1].reps} / ${totalReps}`;
       }
     }
 
@@ -1465,6 +1467,7 @@ function useWorkoutEngine(params) {
     }
 
     function updateForceCurveLabel() {
+      if (!elements.forceLabel) return;
       const concentricLabel = elements.forceSelect
         ? elements.forceSelect.options[elements.forceSelect.selectedIndex].text
         : 'Linear';

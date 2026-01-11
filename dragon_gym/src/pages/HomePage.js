@@ -24,7 +24,8 @@ function HomePage({
     simPanelRef,
     resetRef,
     setStatusRef,
-    repStatusRef,
+    leftStatusRepsRef,
+    rightStatusRepsRef,
     waveRepRef,
     messageRef,
     repCurveLabelRef,
@@ -297,21 +298,21 @@ function HomePage({
           <div className="status-stack">
             <div className="status-metrics">
               <div>
+                <span className="label">Reps Left</span>
+                <span className="value" id="repStatusLeft" ref={leftStatusRepsRef}>
+                  0 / 12
+                </span>
+              </div>
+              <div>
                 <span className="label">Set</span>
                 <span className="value" id="setStatus" ref={setStatusRef}>
                   0
                 </span>
               </div>
               <div>
-                <span className="label">Reps</span>
-                <span className="value" id="repStatus" ref={repStatusRef}>
+                <span className="label">Reps Right</span>
+                <span className="value" id="repStatusRight" ref={rightStatusRepsRef}>
                   0 / 12
-                </span>
-              </div>
-              <div>
-                <span className="label">Force curve</span>
-                <span className="value" id="forceCurveLabel" ref={forceLabelRef}>
-                  Linear
                 </span>
               </div>
             </div>

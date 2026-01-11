@@ -176,6 +176,8 @@ function App() {
     waveRepRef,
     messageRef,
     repCurveLabelRef,
+    leftStatusRepsRef,
+    rightStatusRepsRef,
     leftWaveLegendRef,
     rightWaveLegendRef,
     forceSelectRef,

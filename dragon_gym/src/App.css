@@ -1545,6 +1545,7 @@ button.is-flash {
   text-align: center;
   justify-items: center;
   width: 100%;
+  font-size: calc(var(--font-md) * 1.5);
 }
 
 .status-metrics > div {
@@ -1573,6 +1574,7 @@ button.is-flash {
 
 .engagement-grid .engagement-actions button {
   width: min(100%, 260px);
+  font-size: calc(var(--font-md) * 1.3);
 }
 
 .status-stack > div {
@@ -1581,14 +1583,14 @@ button.is-flash {
 }
 
 .status-stack .label {
-  font-size: var(--font-md);
+  font-size: calc(var(--font-md) * 1.5);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-muted);
 }
 
 .status-stack .value {
-  font-size: var(--font-xl);
+  font-size: calc(var(--font-xl) * 1.5);
   font-weight: 600;
 }
 
