@@ -823,6 +823,9 @@ function useWorkoutEngine(params) {
     function updateWorkoutToggleAppearance() {
       if (!elements.startToggle) return;
       const isActive = workoutActive && powerOn;
+      if (typeof document !== 'undefined') {
+        document.body.classList.toggle('workout-active', workoutActive);
+      }
       elements.startToggle.textContent = isActive ? 'End Workout' : 'Start Workout';
       elements.startToggle.classList.toggle('is-stop', isActive);
       elements.startToggle.setAttribute('aria-pressed', isActive ? 'true' : 'false');
