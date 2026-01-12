@@ -23,6 +23,7 @@
 ## Testing & validation
 - Run `node --check dragon_gym/app.js` after JavaScript changes to verify syntax.
 - For visual tweaks that do not affect JavaScript logic, mention when tests are intentionally skipped.
+- Run all available tests after every change.
 
 ## Git & PR hygiene
 - Group related changes per feature/fix and keep commit messages descriptive.

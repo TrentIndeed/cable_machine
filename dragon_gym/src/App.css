@@ -22,8 +22,7 @@
   --space-5: 40px;
   --space-6: 48px;
   --panel-gap: 64px;
-  --panel-gap-compact: calc(var(--panel-gap) / 2);
-  --nav-height: 160px;
+  --nav-height: 128px;
   --font-xs: 0.75rem;
   --font-sm: 0.875rem;
   --font-md: 1rem;
@@ -99,7 +98,7 @@ textarea {
   padding: 0 clamp(16px, 4vw, 32px) calc(var(--nav-height) + var(--space-2));
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-4);
   position: relative;
 }
 
@@ -1268,10 +1267,10 @@ button.is-flash {
 
 .workspace {
   display: grid;
-  gap: var(--panel-gap-compact);
+  gap: var(--panel-gap);
   grid-template-columns: 1fr;
   width: 100%;
-  margin-top: var(--panel-gap-compact);
+  margin-top: 0;
   position: relative;
   z-index: 1;
 }
@@ -1316,7 +1315,7 @@ button.is-flash {
 .force-curve-group label {
   display: grid;
   gap: var(--space-1);
-  font-size: var(--font-sm);
+  font-size: calc(var(--font-md) * 1.3);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-family: inherit;
@@ -1338,7 +1337,7 @@ button.is-flash {
   border-radius: 32px;
   color: var(--text-primary);
   padding: var(--space-2);
-  font-size: var(--font-sm);
+  font-size: calc(var(--font-md) * 1.3);
   font-family: inherit;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1374,6 +1373,12 @@ button.is-flash {
 .force-curve-header .eccentric-toggle {
   align-self: center;
   white-space: nowrap;
+}
+
+.force-curve-header .eccentric-toggle[aria-expanded="true"] {
+  background: linear-gradient(90deg, rgba(72, 170, 255, 0.95), rgba(60, 216, 143, 0.9));
+  color: #04111c;
+  border-color: rgba(60, 216, 143, 0.5);
 }
 
 @media (max-width: 768px) {
@@ -1531,9 +1536,9 @@ button.is-flash {
   background: var(--card-bg);
   border: 1px solid rgba(62, 90, 118, 0.4);
   border-radius: var(--card-radius);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-4) var(--space-3);
   gap: var(--space-2);
-  row-gap: var(--space-2);
+  row-gap: var(--space-5);
   width: min(100%, 1000px);
   margin: 0 auto;
 }
@@ -1678,12 +1683,12 @@ button.is-flash {
   gap: 0;
   column-gap: 96px;
   min-height: var(--nav-height);
-  padding: var(--space-3) clamp(16px, 2.5vw, 24px);
+  padding: var(--space-1) clamp(16px, 2.5vw, 24px);
   align-items: center;
   justify-content: center;
   justify-items: center;
   background: #000000;
-  border-top: 1px solid rgba(140, 140, 140, 0.45);
+  border-top: 1px solid rgba(60, 60, 60, 0.45);
   backdrop-filter: blur(16px);
   pointer-events: auto;
 }
@@ -1906,9 +1911,9 @@ button.is-flash {
   background: var(--card-bg);
   border-radius: var(--card-radius);
   border: 1px solid rgba(31, 139, 255, 0.18);
-  padding: var(--space-3);
+  padding: var(--space-4);
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-5);
   width: 100%;
 }
 
@@ -1920,25 +1925,44 @@ button.is-flash {
   gap: var(--space-2);
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-primary);
   font-family: inherit;
-  font-size: var(--font-md);
-  letter-spacing: 0.12em;
+  font-size: calc(var(--font-lg) * 1.5);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-weight: 600;
   cursor: pointer;
-  padding: 0;
+  padding: 0 var(--space-2);
+  text-align: left;
 }
 
 .card-toggle::after {
-  content: "v";
-  font-size: var(--font-lg);
-  color: var(--text-muted);
-  transition: transform var(--transition), color var(--transition);
+  content: none;
 }
 
 .card-toggle[aria-expanded="true"]::after {
+}
+
+.card-toggle-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  transition: transform var(--transition);
+}
+
+.card-toggle[aria-expanded="true"] .card-toggle-icon {
   transform: rotate(180deg);
-  color: var(--accent-secondary);
+}
+
+.card-toggle-icon.is-spinning {
+  animation: card-toggle-spin 320ms linear;
+}
+
+@keyframes card-toggle-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .card-body[hidden] {
@@ -1948,6 +1972,72 @@ button.is-flash {
 .force-panel {
   justify-items: center;
   text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.force-curve-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+  position: relative;
+  z-index: 5;
+}
+
+.force-pill {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 48px;
+  padding: calc(var(--space-2) * 1.1) calc(var(--space-3) * 1.3);
+  font-size: calc(var(--font-md) * 1.3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: inherit;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.force-pill.is-active.mode {
+  background: linear-gradient(90deg, rgba(72, 170, 255, 0.95), rgba(60, 216, 143, 0.9));
+  color: #04111c;
+  border-color: rgba(60, 216, 143, 0.5);
+}
+
+.force-pill.mode[data-mode="linear"],
+.force-pill.mode[data-mode="disabled"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border) !important;
+  box-shadow: none;
+}
+
+.force-pill.mode.is-active[data-mode="linear"],
+.force-pill.mode.is-active[data-mode="disabled"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border) !important;
+  box-shadow: none;
+}
+
+.force-pill.is-active.eccentric,
+.force-pill.is-active.eccentric-mode,
+.force-pill.eccentric[aria-pressed="true"],
+.force-pill.eccentric-mode[aria-pressed="true"] {
+  background: linear-gradient(90deg, rgba(178, 100, 255, 0.95), rgba(255, 88, 188, 0.9));
+  color: #1a0714;
+  border-color: rgba(255, 88, 188, 0.5);
+}
+
+.force-pill.eccentric-mode[data-mode="linear"],
+.force-pill.eccentric-mode[data-mode="disabled"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-muted) !important;
+  border-color: var(--border) !important;
+  box-shadow: none;
 }
 
 .force-panel.is-locked .force-curve-group {
@@ -1987,6 +2077,7 @@ button.is-flash {
 
 .force-panel h3 {
   justify-self: center;
+  font-size: calc(var(--font-md) * 1.5);
 }
 
 .force-panel .hint {

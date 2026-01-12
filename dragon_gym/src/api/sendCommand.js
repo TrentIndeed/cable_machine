@@ -6,6 +6,9 @@ function getApiBase() {
 }
 
 export async function sendCommand(command) {
+  if (process.env.REACT_APP_DISABLE_ADS === 'true') {
+    return Promise.resolve({ seq: 0, ack: { timedOut: false }, mock: true });
+  }
   const baseUrl = getApiBase();
   const response = await fetch(`${baseUrl}/api/cmd`, {
     method: 'POST',

@@ -83,6 +83,9 @@ function useWorkoutEngine(params) {
     forceLabelRef,
     forceCurveConcentricRef,
     forceCurveEccentricRef,
+    forceCurveModePillRef,
+    eccentricTogglePillRef,
+    eccentricModePillRef,
     eccentricToggleRef,
     eccentricPanelRef,
     eccentricSelectRef,
@@ -146,6 +149,9 @@ function useWorkoutEngine(params) {
       forceLabel: forceLabelRef.current,
       forceCurveConcentric: forceCurveConcentricRef.current,
       forceCurveEccentric: forceCurveEccentricRef.current,
+      forceCurveModePill: forceCurveModePillRef.current,
+      eccentricTogglePill: eccentricTogglePillRef.current,
+      eccentricModePill: eccentricModePillRef.current,
       eccentricToggle: eccentricToggleRef.current,
       eccentricPanel: eccentricPanelRef.current,
       eccentricSelect: eccentricSelectRef.current,
@@ -910,7 +916,8 @@ function useWorkoutEngine(params) {
     elements.startToggle.addEventListener('click', handleWorkoutToggle);
 
     const handleForceSelectChange = (event) => {
-      if (updateForceProfileLockState()) {
+      const bypassLock = Boolean(event?.detail?.bypassLock || event?.isTrusted === false);
+      if (!bypassLock && updateForceProfileLockState()) {
         event.target.value = lastForceCurveMode;
         notifyForceProfileLock();
         return;
@@ -926,6 +933,29 @@ function useWorkoutEngine(params) {
     };
 
     elements.forceSelect.addEventListener('change', handleForceSelectChange);
+
+    const handleForceModePill = () => {
+      if (!elements.forceSelect) return;
+      const optionCount = elements.forceSelect.options.length;
+      if (!optionCount) return;
+      const nextIndex = (elements.forceSelect.selectedIndex + 1) % optionCount;
+      elements.forceSelect.selectedIndex = nextIndex;
+      elements.forceSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+
+    const handleEccentricPill = () => {
+      applyEccentricToggle();
+    };
+
+    const handleEccentricModePill = () => {
+      if (!eccentricOverrideEnabled) return;
+      if (!elements.eccentricSelect) return;
+      const optionCount = elements.eccentricSelect.options.length;
+      if (!optionCount) return;
+      const nextIndex = (elements.eccentricSelect.selectedIndex + 1) % optionCount;
+      elements.eccentricSelect.selectedIndex = nextIndex;
+      elements.eccentricSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    };
 
     function setForceCurveIntensity(value) {
       const numeric = Number(value);
@@ -959,13 +989,7 @@ function useWorkoutEngine(params) {
       elements.forceCurveIntensity.addEventListener('change', handleForceIntensityInput);
     }
 
-    const handleEccentricToggle = (event) => {
-      if (updateForceProfileLockState()) {
-        event.preventDefault();
-        notifyForceProfileLock();
-        return;
-      }
-
+    const applyEccentricToggle = () => {
       eccentricOverrideEnabled = !eccentricOverrideEnabled;
       eccentricEnabledRef.current = eccentricOverrideEnabled;
       setEccentricEnabled(eccentricOverrideEnabled);
@@ -996,12 +1020,24 @@ function useWorkoutEngine(params) {
       });
     };
 
+    const handleEccentricToggle = (event) => {
+      const bypassLock = Boolean(event?.detail?.bypassLock || event?.isTrusted === false);
+      if (!bypassLock && updateForceProfileLockState()) {
+        event.preventDefault();
+        notifyForceProfileLock();
+        return;
+      }
+
+      applyEccentricToggle();
+    };
+
     if (elements.eccentricToggle) {
       elements.eccentricToggle.addEventListener('click', handleEccentricToggle);
     }
 
     const handleEccentricSelectChange = (event) => {
-      if (updateForceProfileLockState()) {
+      const bypassLock = Boolean(event?.detail?.bypassLock || event?.isTrusted === false);
+      if (!bypassLock && updateForceProfileLockState()) {
         event.target.value = lastEccentricMode;
         notifyForceProfileLock();
         return;
@@ -1276,6 +1312,9 @@ function useWorkoutEngine(params) {
     if (elements.setToggle) {
       elements.setToggle.addEventListener('click', handleSetToggle);
     }
+    window.addEventListener('dg:forceModeCycle', handleForceModePill);
+    window.addEventListener('dg:eccentricToggle', handleEccentricPill);
+    window.addEventListener('dg:eccentricModeCycle', handleEccentricModePill);
     if (elements.pauseIcon) {
       elements.pauseIcon.addEventListener('click', handlePauseToggle);
     }
@@ -1467,18 +1506,55 @@ function useWorkoutEngine(params) {
     }
 
     function updateForceCurveLabel() {
-      if (!elements.forceLabel) return;
       const concentricLabel = elements.forceSelect
         ? elements.forceSelect.options[elements.forceSelect.selectedIndex].text
-        : 'Linear';
+        : 'Disabled';
+      const normalizedMode = concentricLabel.trim().toLowerCase().replace(/\s+/g, '-');
 
-      if (eccentricOverrideEnabled && elements.eccentricSelect) {
-        const eccentricLabel =
-          elements.eccentricSelect.options[elements.eccentricSelect.selectedIndex]
-            .text;
-        elements.forceLabel.textContent = `${concentricLabel} / ${eccentricLabel}`;
-      } else {
-        elements.forceLabel.textContent = concentricLabel;
+      if (elements.forceLabel) {
+        if (eccentricOverrideEnabled && elements.eccentricSelect) {
+          const eccentricLabel =
+            elements.eccentricSelect.options[elements.eccentricSelect.selectedIndex]
+              .text;
+          elements.forceLabel.textContent = `${concentricLabel} / ${eccentricLabel}`;
+        } else {
+          elements.forceLabel.textContent = concentricLabel;
+        }
+      }
+
+      if (elements.forceCurveModePill) {
+        elements.forceCurveModePill.textContent = concentricLabel;
+        elements.forceCurveModePill.setAttribute('data-mode', normalizedMode);
+        elements.forceCurveModePill.classList.toggle(
+          'is-active',
+          normalizedMode !== 'disabled' && normalizedMode !== 'linear'
+        );
+      }
+      if (elements.eccentricTogglePill) {
+        elements.eccentricTogglePill.textContent = 'Eccentric';
+        elements.eccentricTogglePill.classList.toggle('is-active', eccentricOverrideEnabled);
+        elements.eccentricTogglePill.setAttribute(
+          'aria-pressed',
+          eccentricOverrideEnabled ? 'true' : 'false'
+        );
+      }
+      if (elements.eccentricModePill) {
+        const eccentricLabel = elements.eccentricSelect
+          ? elements.eccentricSelect.options[elements.eccentricSelect.selectedIndex].text
+          : 'Linear';
+        const eccentricMode = eccentricLabel.trim().toLowerCase().replace(/\s+/g, '-');
+        elements.eccentricModePill.textContent = eccentricOverrideEnabled
+          ? eccentricLabel
+          : 'Linear';
+        elements.eccentricModePill.setAttribute(
+          'data-mode',
+          eccentricOverrideEnabled ? eccentricMode : 'linear'
+        );
+        elements.eccentricModePill.classList.toggle('is-active', eccentricOverrideEnabled);
+        elements.eccentricModePill.setAttribute(
+          'aria-pressed',
+          eccentricOverrideEnabled ? 'true' : 'false'
+        );
       }
     }
 
@@ -2240,6 +2316,9 @@ function useWorkoutEngine(params) {
       if (elements.pauseIcon) {
         elements.pauseIcon.removeEventListener('click', handlePauseToggle);
       }
+      window.removeEventListener('dg:forceModeCycle', handleForceModePill);
+      window.removeEventListener('dg:eccentricToggle', handleEccentricPill);
+      window.removeEventListener('dg:eccentricModeCycle', handleEccentricModePill);
 
       if (elements.reset) {
         elements.reset.disabled = true;

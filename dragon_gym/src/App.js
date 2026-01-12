@@ -62,6 +62,9 @@ function App() {
   const forceLabelRef = useRef(null);
   const forceCurveConcentricRef = useRef(null);
   const forceCurveEccentricRef = useRef(null);
+  const forceCurveModePillRef = useRef(null);
+  const eccentricTogglePillRef = useRef(null);
+  const eccentricModePillRef = useRef(null);
   const eccentricToggleRef = useRef(null);
   const eccentricPanelRef = useRef(null);
   const eccentricSelectRef = useRef(null);
@@ -185,6 +188,9 @@ function App() {
     forceLabelRef,
     forceCurveConcentricRef,
     forceCurveEccentricRef,
+    forceCurveModePillRef,
+    eccentricTogglePillRef,
+    eccentricModePillRef,
     eccentricToggleRef,
     eccentricPanelRef,
     eccentricSelectRef,
@@ -241,6 +247,9 @@ function App() {
     forceLabelRef,
     forceCurveConcentricRef,
     forceCurveEccentricRef,
+    forceCurveModePillRef,
+    eccentricTogglePillRef,
+    eccentricModePillRef,
     eccentricToggleRef,
     eccentricPanelRef,
     eccentricSelectRef,

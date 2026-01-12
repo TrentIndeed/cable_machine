@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 
 function HomePage({
   isActive,
@@ -13,6 +13,8 @@ function HomePage({
   videoSrc,
   refs,
 }) {
+  const [forceCurveSpin, setForceCurveSpin] = useState(false);
+  const lastForceCurveToggleRef = useRef(0);
   const {
     workoutStateRef,
     startToggleRef,
@@ -56,6 +58,9 @@ function HomePage({
     forceLabelRef,
     forceCurveConcentricRef,
     forceCurveEccentricRef,
+    forceCurveModePillRef,
+    eccentricTogglePillRef,
+    eccentricModePillRef,
     eccentricToggleRef,
     eccentricPanelRef,
     eccentricSelectRef,
@@ -66,6 +71,41 @@ function HomePage({
     exerciseSelectRef,
     exerciseTitleRef,
   } = refs;
+  const handleForceModeCycle = () => {
+    window.dispatchEvent(new Event('dg:forceModeCycle'));
+    const select = forceSelectRef?.current || document.getElementById('forceCurve');
+    if (select && select.options.length && forceCurveModePillRef?.current) {
+      forceCurveModePillRef.current.textContent =
+        select.options[select.selectedIndex].text;
+    }
+  };
+
+  const handleEccentricTogglePill = (event) => {
+    window.dispatchEvent(new Event('dg:eccentricToggle'));
+    void event;
+  };
+
+  const handleEccentricModeCycle = () => {
+    window.dispatchEvent(new Event('dg:eccentricModeCycle'));
+    const select =
+      eccentricSelectRef?.current || document.getElementById('eccentricCurve');
+    if (select && select.options.length && eccentricModePillRef?.current) {
+      eccentricModePillRef.current.textContent =
+        select.options[select.selectedIndex].text;
+    }
+  };
+
+  const handleForceCurveToggle = (event) => {
+    event.preventDefault();
+    const now = window.performance?.now ? window.performance.now() : Date.now();
+    if (now - lastForceCurveToggleRef.current < 250) {
+      return;
+    }
+    lastForceCurveToggleRef.current = now;
+    setForceCurveOpen((prev) => !prev);
+    setForceCurveSpin(true);
+    window.setTimeout(() => setForceCurveSpin(false), 320);
+  };
 
   return (
     <main
@@ -410,9 +450,14 @@ function HomePage({
             type="button"
             aria-expanded={forceCurveOpen}
             aria-controls="forceCurveBody"
-            onClick={() => setForceCurveOpen((prev) => !prev)}
+            onClick={handleForceCurveToggle}
           >
-            <span>Force Curve Profiles</span>
+            <span>Force Curve</span>
+            <img
+              className={`card-toggle-icon${forceCurveSpin ? ' is-spinning' : ''}`}
+              src="/assets/icons/settings.png"
+              alt=""
+            />
           </button>
           <div id="forceCurveBody" className="card-body" hidden={!forceCurveOpen}>
             <p
@@ -430,7 +475,7 @@ function HomePage({
                   <label>
                     <span>Force curve mode</span>
                     <select id="forceCurve" ref={forceSelectRef} defaultValue="linear">
-                      <option value="linear">Linear</option>
+                      <option value="linear">Disabled</option>
                       <option value="chain">Chain mode</option>
                       <option value="band">Band mode</option>
                       <option value="reverse-chain">Reverse chain</option>
@@ -482,7 +527,7 @@ function HomePage({
                 <label>
                   <span>Eccentric profile</span>
                   <select id="eccentricCurve" ref={eccentricSelectRef} defaultValue="eccentric">
-                    <option value="eccentric">Eccentric mode</option>
+                    <option value="eccentric">Linear</option>
                     <option value="chain">Chain mode</option>
                     <option value="band">Band mode</option>
                     <option value="reverse-chain">Reverse chain</option>
@@ -493,6 +538,40 @@ function HomePage({
                 </p>
               </div>
             </div>
+          </div>
+          <div
+            className="force-curve-summary"
+            hidden={forceCurveOpen}
+          >
+            <button
+              className="force-pill mode"
+              type="button"
+              ref={forceCurveModePillRef}
+              data-action="mode"
+              onClick={handleForceModeCycle}
+            >
+              Disabled
+            </button>
+            <button
+              className="force-pill eccentric"
+              type="button"
+              ref={eccentricTogglePillRef}
+              data-action="eccentric"
+              aria-pressed="false"
+              onClick={handleEccentricTogglePill}
+            >
+              Eccentric
+            </button>
+            <button
+              className="force-pill eccentric-mode"
+              type="button"
+              ref={eccentricModePillRef}
+              data-action="eccentric-mode"
+              aria-pressed="false"
+              onClick={handleEccentricModeCycle}
+            >
+              Linear
+            </button>
           </div>
         </section>
         
