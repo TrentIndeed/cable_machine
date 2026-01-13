@@ -93,6 +93,9 @@ function useWorkoutEngine(params) {
     forceCurveIntensityRefElement,
     forcePanelRef,
     forceLockHintRef,
+    setCompleteOverlayRef,
+    setCompleteFireworksRef,
+    setCompleteSuccessRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,
@@ -158,6 +161,9 @@ function useWorkoutEngine(params) {
       forceCurveIntensity: forceCurveIntensityRefElement.current,
       forcePanel: forcePanelRef.current,
       forceLockHint: forceLockHintRef.current,
+      setCompleteOverlay: setCompleteOverlayRef.current,
+      setCompleteFireworks: setCompleteFireworksRef.current,
+      setCompleteSuccess: setCompleteSuccessRef.current,
       powerToggle: powerToggleRef.current,
       adsReset: adsResetRef.current,
       syncMotors: syncMotorsRef.current,
@@ -1101,7 +1107,41 @@ function useWorkoutEngine(params) {
         `Set ${currentSet} complete. Press Start Set when you are ready for the next round.`
       );
       recordWorkoutSet();
+      showSetCompleteOverlay();
       updateStatuses();
+    }
+
+    let setCompleteTimer = null;
+    function showSetCompleteOverlay() {
+      const overlay = elements.setCompleteOverlay;
+      if (!overlay) return;
+      overlay.classList.remove('is-visible');
+      void overlay.offsetWidth;
+      overlay.classList.add('is-visible');
+      const fireworks = elements.setCompleteFireworks;
+      const success = elements.setCompleteSuccess;
+      if (fireworks && fireworks._lottie) {
+        fireworks._lottie.setSpeed(1.5);
+        fireworks._lottie.stop();
+        fireworks._lottie.play();
+      }
+      if (success && success._lottie) {
+        success._lottie.setSpeed(4);
+        success._lottie.stop(2);
+        success._lottie.play();
+      }
+      if (setCompleteTimer) {
+        clearTimeout(setCompleteTimer);
+      }
+      setCompleteTimer = setTimeout(() => {
+        if (fireworks && fireworks._lottie) {
+          fireworks._lottie.stop();
+        }
+        if (success && success._lottie) {
+          success._lottie.stop();
+        }
+        overlay.classList.remove('is-visible');
+      }, 1000);
     }
 
     function synchronizeRepProgress() {
@@ -1151,12 +1191,14 @@ function useWorkoutEngine(params) {
       setActive = false;
       updateSetToggleAppearance();
       const recorded = !partial ? false : currentRep > 0;
+      showSetCompleteOverlay();
       if (recorded) {
         recordWorkoutSet(true);
         if (elements.workoutState) {
           elements.workoutState.textContent = partial ? 'Set Logged' : 'Set Complete';
         }
         setStatusMessage('');
+        showSetCompleteOverlay();
       } else {
         if (elements.workoutState) {
           elements.workoutState.textContent = workoutActive

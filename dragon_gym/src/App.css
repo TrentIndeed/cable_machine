@@ -102,6 +102,50 @@ textarea {
   position: relative;
 }
 
+.set-complete-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: clamp(180px, 22vh, 260px);
+  display: grid;
+  place-items: center;
+  padding-top: var(--space-3);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 250ms ease, transform 250ms ease;
+  z-index: 6;
+}
+
+.set-complete-overlay.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.set-complete-fireworks,
+.set-complete-success {
+  width: min(2080px, 90vw);
+  height: 100%;
+}
+
+.set-complete-fireworks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+  transform: translateY(2vh) scale(3);
+  transform-origin: center top;
+}
+
+.set-complete-success {
+  position: relative;
+  width: min(1280px, 90vw);
+  height: min(800px, 60vh);
+  z-index: 1;
+}
+
 .app-header {
   display: grid;
   grid-template-columns: auto 1fr auto;

@@ -71,6 +71,9 @@ function App() {
   const forceCurveIntensityRefElement = useRef(null);
   const forcePanelRef = useRef(null);
   const forceLockHintRef = useRef(null);
+  const setCompleteOverlayRef = useRef(null);
+  const setCompleteFireworksRef = useRef(null);
+  const setCompleteSuccessRef = useRef(null);
   const powerToggleRef = useRef(null);
   const adsResetRef = useRef(null);
   const syncMotorsRef = useRef(null);
@@ -198,6 +201,9 @@ function App() {
     forceCurveIntensityRefElement,
     forcePanelRef,
     forceLockHintRef,
+    setCompleteOverlayRef,
+    setCompleteFireworksRef,
+    setCompleteSuccessRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,
@@ -257,6 +263,9 @@ function App() {
     forceCurveIntensityRefElement,
     forcePanelRef,
     forceLockHintRef,
+    setCompleteOverlayRef,
+    setCompleteFireworksRef,
+    setCompleteSuccessRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,

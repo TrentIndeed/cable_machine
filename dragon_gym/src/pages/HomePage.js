@@ -1,4 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import lottie from 'lottie-web';
 
 function HomePage({
   isActive,
@@ -68,6 +69,9 @@ function HomePage({
     forceCurveIntensityRefElement,
     forcePanelRef,
     forceLockHintRef,
+    setCompleteOverlayRef,
+    setCompleteFireworksRef,
+    setCompleteSuccessRef,
     exerciseSelectRef,
     exerciseTitleRef,
   } = refs;
@@ -107,11 +111,47 @@ function HomePage({
     window.setTimeout(() => setForceCurveSpin(false), 320);
   };
 
+  useEffect(() => {
+    const fireworksContainer = setCompleteFireworksRef?.current;
+    const successContainer = setCompleteSuccessRef?.current;
+    if (!fireworksContainer || !successContainer) {
+      return undefined;
+    }
+
+    const fireworksAnim = lottie.loadAnimation({
+      container: fireworksContainer,
+      renderer: 'svg',
+      loop: true,
+      autoplay: false,
+      path: '/assets/animations/Fireworks.json',
+    });
+
+    const successAnim = lottie.loadAnimation({
+      container: successContainer,
+      renderer: 'svg',
+      loop: false,
+      autoplay: false,
+      path: '/assets/animations/Successful.json',
+    });
+
+    fireworksContainer._lottie = fireworksAnim;
+    successContainer._lottie = successAnim;
+
+    return () => {
+      fireworksAnim.destroy();
+      successAnim.destroy();
+    };
+  }, [setCompleteFireworksRef, setCompleteSuccessRef]);
+
   return (
     <main
       className={`app-shell ${motorsSyncedState ? 'is-synced' : ''}`}
       hidden={!isActive}
     >
+      <div className="set-complete-overlay" ref={setCompleteOverlayRef} aria-hidden="true">
+        <div className="set-complete-fireworks" ref={setCompleteFireworksRef}></div>
+        <div className="set-complete-success" ref={setCompleteSuccessRef}></div>
+      </div>
       <section className="resistance-overview" aria-label="Resistance overview">
         <div className="rep-curve-label" aria-live="polite" ref={repCurveLabelRef}>
           <span className="rep-curve-text">Rep</span>
