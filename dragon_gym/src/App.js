@@ -5,6 +5,7 @@ import {
   FONT_OPTIONS,
 } from './constants/appConstants';
 import BottomNav from './components/BottomNav';
+import LoadScreen from './components/LoadScreen';
 import { useTelemetry } from './hooks/useTelemetry';
 import useWorkoutEngine from './hooks/useWorkoutEngine';
 import HomePage from './pages/HomePage';
@@ -30,6 +31,7 @@ function App() {
   const [commandMessage, setCommandMessage] = useState('');
   const [activePage, setActivePage] = useState('home');
   const [uiFont, setUiFont] = useState('sf');
+  const [showLoadScreen, setShowLoadScreen] = useState(true);
 
   const forceCurveModeRef = useRef(forceCurveMode);
   const forceCurveIntensityRef = useRef(forceCurveIntensity);
@@ -417,6 +419,9 @@ function App() {
 
   return (
     <>
+      {showLoadScreen ? (
+        <LoadScreen onBegin={() => setShowLoadScreen(false)} />
+      ) : null}
       <svg className="sr-only" width="0" height="0" aria-hidden="true">
         <defs>
           <clipPath id="concaveTopClip" clipPathUnits="objectBoundingBox">
