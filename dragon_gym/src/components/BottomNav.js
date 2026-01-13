@@ -6,8 +6,8 @@ const NAV_ITEMS = [
   { key: 'history', label: 'History', icon: '/assets/icons/fitness-time.png' },
   { key: 'achievements', label: 'Achievements', icon: '/assets/icons/chart-histogram.png' },
   { key: 'live', label: 'Live', icon: '/assets/icons/users-alt.png' },
-  { key: 'settings', label: 'Settings', icon: '/assets/icons/settings.png' },
   { key: 'profile', label: 'Profile', icon: '/assets/icons/user.png' },
+  { key: 'settings', label: 'Settings', icon: '/assets/icons/settings.png' },
 ];
 
 function BottomNav({ activePage, onNavigate }) {
