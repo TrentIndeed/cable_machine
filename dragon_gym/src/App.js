@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage';
 import ProgramsPage from './pages/ProgramsPage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementsPage from './pages/AchievementsPage';
+import ProfilePage from './pages/ProfilePage';
 import './App.css';
 
 function App() {
@@ -460,6 +461,7 @@ function App() {
         commandStatus={commandStatus}
         commandMessage={commandMessage}
       />
+      <ProfilePage isActive={activePage === 'profile'} />
       <BottomNav activePage={activePage} onNavigate={setActivePage} />
     </>
   );
