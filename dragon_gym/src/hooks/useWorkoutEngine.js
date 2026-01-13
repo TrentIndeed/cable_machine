@@ -63,6 +63,7 @@ function useWorkoutEngine(params) {
     startToggleRef,
     startToggleHomeSlotRef,
     pauseIconRef,
+    setStopwatchRef,
     setToggleRef,
     setControlRowRef,
     setControlGroupRef,
@@ -133,6 +134,7 @@ function useWorkoutEngine(params) {
       startToggle: startToggleRef.current,
       startToggleHomeSlot: startToggleHomeSlotRef.current,
       pauseIcon: pauseIconRef.current,
+      setStopwatch: setStopwatchRef.current,
       setToggle: setToggleRef.current,
       setControlRow: setControlRowRef.current,
       setControlGroup: setControlGroupRef.current,
@@ -179,6 +181,8 @@ function useWorkoutEngine(params) {
     }
 
     let pauseActive = false;
+    let setElapsedMs = 0;
+    let setClockLastTimestamp = null;
 
     function updatePauseIconAppearance() {
       if (!elements.pauseIcon) return;
@@ -191,6 +195,38 @@ function useWorkoutEngine(params) {
       elements.pauseIcon.classList.remove('is-flash');
       void elements.pauseIcon.offsetWidth;
       elements.pauseIcon.classList.add('is-flash');
+    }
+
+    function formatStopwatch(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function updateStopwatchDisplay() {
+      if (!elements.setStopwatch) return;
+      elements.setStopwatch.textContent = formatStopwatch(setElapsedMs);
+    }
+
+    function resetStopwatch() {
+      setElapsedMs = 0;
+      setClockLastTimestamp = null;
+      updateStopwatchDisplay();
+    }
+
+    function tickStopwatch(timestamp) {
+      if (!setActive || pauseActive) {
+        setClockLastTimestamp = null;
+        return;
+      }
+      if (setClockLastTimestamp === null) {
+        setClockLastTimestamp = timestamp;
+        return;
+      }
+      setElapsedMs += timestamp - setClockLastTimestamp;
+      setClockLastTimestamp = timestamp;
+      updateStopwatchDisplay();
     }
 
     function setStatusMessage(message, options = {}) {
@@ -824,6 +860,12 @@ function useWorkoutEngine(params) {
           updatePauseIconAppearance();
         }
       }
+      if (elements.setStopwatch) {
+        elements.setStopwatch.hidden = !setActive;
+        if (!setActive) {
+          resetStopwatch();
+        }
+      }
     }
 
     function updateWorkoutToggleAppearance() {
@@ -919,6 +961,9 @@ function useWorkoutEngine(params) {
     const handlePauseToggle = () => {
       if (!setActive) return;
       pauseActive = !pauseActive;
+      if (pauseActive) {
+        setClockLastTimestamp = null;
+      }
       updatePauseIconAppearance();
     };
 
@@ -1072,6 +1117,7 @@ function useWorkoutEngine(params) {
       if (!workoutActive || !powerOn || setActive) return;
 
       setActive = true;
+      resetStopwatch();
       if (elements.workoutState) {
         elements.workoutState.textContent = 'Workout Started';
         elements.workoutState.classList.add('active');
@@ -1955,6 +2001,8 @@ function useWorkoutEngine(params) {
     function update(timestamp) {
       const delta = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
+      const pauseTracking = pauseActive && setActive;
+      tickStopwatch(timestamp);
 
       if (!powerOn) {
         motors.forEach((motor) => {
@@ -1966,7 +2014,9 @@ function useWorkoutEngine(params) {
         }
           drawGauge(motor);
         });
-        drawWaveCombined();
+        if (!pauseTracking) {
+          drawWaveCombined();
+        }
         updateForceProfileLockState();
         animationFrameRef.current = requestAnimationFrame(update);
         return;
@@ -2084,51 +2134,57 @@ function useWorkoutEngine(params) {
           motor.cableLabel.textContent = travel.toFixed(1);
         }
 
-        motor.trail.push(travel);
-        if (motor.trail.length > TRAIL_LENGTH) {
-          motor.trail.shift();
-        }
-
-        if (motorsRunning && setActive && motor.engaged) {
-          const deltaTravel = travel - motor.lastTravel;
+        if (pauseTracking) {
           motor.lastTravel = travel;
-          if (Math.abs(deltaTravel) > MOVEMENT_EPSILON) {
-            motor.direction = deltaTravel > 0 ? 1 : -1;
-            motor.forceDirection = motor.direction;
-          }
-
-          if (motor.direction >= 0) {
-            if (motor.phase !== 'ascending') {
-              motor.phase = 'ascending';
-              motor.lastPeak = travel;
-              motor.lastTrough = travel;
-              motor.repCounted = false;
-            } else {
-              motor.lastPeak = Math.max(motor.lastPeak, travel);
-            }
-          } else if (motor.direction < 0) {
-            if (motor.phase !== 'descending') {
-              motor.phase = 'descending';
-              motor.lastTrough = travel;
-            } else {
-              motor.lastTrough = Math.min(motor.lastTrough, travel);
-            }
-
-            const span = motor.lastPeak - motor.lastTrough;
-            if (!motor.repCounted && span >= REP_SPAN_THRESHOLD) {
-              motor.reps += 1;
-              motor.repCounted = true;
-              synchronizeRepProgress();
-            }
-          }
         } else {
-          resetMotorTracking(motor, travel);
+          motor.trail.push(travel);
+          if (motor.trail.length > TRAIL_LENGTH) {
+            motor.trail.shift();
+          }
+
+          if (motorsRunning && setActive && motor.engaged) {
+            const deltaTravel = travel - motor.lastTravel;
+            motor.lastTravel = travel;
+            if (Math.abs(deltaTravel) > MOVEMENT_EPSILON) {
+              motor.direction = deltaTravel > 0 ? 1 : -1;
+              motor.forceDirection = motor.direction;
+            }
+
+            if (motor.direction >= 0) {
+              if (motor.phase !== 'ascending') {
+                motor.phase = 'ascending';
+                motor.lastPeak = travel;
+                motor.lastTrough = travel;
+                motor.repCounted = false;
+              } else {
+                motor.lastPeak = Math.max(motor.lastPeak, travel);
+              }
+            } else if (motor.direction < 0) {
+              if (motor.phase !== 'descending') {
+                motor.phase = 'descending';
+                motor.lastTrough = travel;
+              } else {
+                motor.lastTrough = Math.min(motor.lastTrough, travel);
+              }
+
+              const span = motor.lastPeak - motor.lastTrough;
+              if (!motor.repCounted && span >= REP_SPAN_THRESHOLD) {
+                motor.reps += 1;
+                motor.repCounted = true;
+                synchronizeRepProgress();
+              }
+            }
+          } else {
+            resetMotorTracking(motor, travel);
+          }
         }
 
         drawGauge(motor);
       });
 
-      drawWaveCombined();
+      if (!pauseTracking) {
+        drawWaveCombined();
+      }
       updateForceProfileLockState();
 
       animationFrameRef.current = requestAnimationFrame(update);
@@ -2187,6 +2243,7 @@ function useWorkoutEngine(params) {
           }
           return;
         }
+        const pauseTracking = pauseActive && setActive;
         const sliderDistance = Number(motor.simSlider.value);
         const normalized = Math.max(
           0,
@@ -2204,18 +2261,24 @@ function useWorkoutEngine(params) {
         motor.normalized = normalized;
         const travel = normalized * MAX_TRAVEL_INCHES;
         ensureWaveScaleForTravel(travel);
-        motor.trail.push(travel);
-        if (motor.trail.length > TRAIL_LENGTH) {
-          motor.trail.shift();
+        if (!pauseTracking) {
+          motor.trail.push(travel);
+          if (motor.trail.length > TRAIL_LENGTH) {
+            motor.trail.shift();
+          }
+        } else {
+          motor.lastTravel = travel;
         }
         if (motor.cableLabel) {
           motor.cableLabel.textContent = (normalized * MAX_TRAVEL_INCHES).toFixed(1);
         }
         motor.lastForceTravel = sliderDistance;
         if (motorsSyncedRef.current && motor.id === 'left') {
-          syncRightSimSlider(sliderDistance, { updateTrail: true });
+          syncRightSimSlider(sliderDistance, { updateTrail: !pauseTracking });
         }
-        drawWaveCombined();
+        if (!pauseTracking) {
+          drawWaveCombined();
+        }
         refreshMotorResistance(motor);
         updateForceProfileLockState();
       };

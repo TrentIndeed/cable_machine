@@ -21,6 +21,7 @@ function HomePage({
     startToggleRef,
     startToggleHomeSlotRef,
     pauseIconRef,
+    setStopwatchRef,
     setToggleRef,
     setControlRowRef,
     setControlGroupRef,
@@ -351,6 +352,9 @@ function HomePage({
                 >
                   Start Set
                 </button>
+                <div className="set-stopwatch" ref={setStopwatchRef} aria-live="polite">
+                  00:00
+                </div>
                 <button
                   className="set-control-icon pause-toggle"
                   id="pauseToggle"

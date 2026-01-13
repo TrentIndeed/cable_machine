@@ -42,6 +42,7 @@ function App() {
   const startToggleRef = useRef(null);
   const startToggleHomeSlotRef = useRef(null);
   const pauseIconRef = useRef(null);
+  const setStopwatchRef = useRef(null);
   const setToggleRef = useRef(null);
   const setControlRowRef = useRef(null);
   const setControlGroupRef = useRef(null);
@@ -172,6 +173,7 @@ function App() {
     startToggleRef,
     startToggleHomeSlotRef,
     pauseIconRef,
+    setStopwatchRef,
     setToggleRef,
     setControlRowRef,
     setControlGroupRef,
@@ -233,6 +235,7 @@ function App() {
     startToggleRef,
     startToggleHomeSlotRef,
     pauseIconRef,
+    setStopwatchRef,
     setToggleRef,
     setControlRowRef,
     setControlGroupRef,
