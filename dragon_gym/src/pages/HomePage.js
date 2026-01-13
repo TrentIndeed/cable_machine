@@ -73,6 +73,16 @@ function HomePage({
     setCompleteOverlayRef,
     setCompleteFireworksRef,
     setCompleteSuccessRef,
+    workoutSummaryOverlayRef,
+    workoutSummaryFireworksRef,
+    workoutSummarySuccessRef,
+    workoutSummaryRepsRef,
+    workoutSummaryAvgLeftRef,
+    workoutSummaryAvgRightRef,
+    workoutSummaryPeakRef,
+    workoutSummaryTimeRef,
+    workoutSummaryXpRef,
+    workoutSummaryButtonRef,
     exerciseSelectRef,
     exerciseTitleRef,
   } = refs;
@@ -113,36 +123,51 @@ function HomePage({
   };
 
   useEffect(() => {
-    const fireworksContainer = setCompleteFireworksRef?.current;
-    const successContainer = setCompleteSuccessRef?.current;
-    if (!fireworksContainer || !successContainer) {
-      return undefined;
-    }
-
-    const fireworksAnim = lottie.loadAnimation({
-      container: fireworksContainer,
-      renderer: 'svg',
-      loop: true,
-      autoplay: false,
-      path: '/assets/animations/Fireworks.json',
-    });
-
-    const successAnim = lottie.loadAnimation({
-      container: successContainer,
-      renderer: 'svg',
-      loop: false,
-      autoplay: false,
-      path: '/assets/animations/Successful.json',
-    });
-
-    fireworksContainer._lottie = fireworksAnim;
-    successContainer._lottie = successAnim;
+    const targets = [
+      {
+        container: setCompleteFireworksRef?.current,
+        path: '/assets/animations/Fireworks.json',
+        loop: true,
+      },
+      {
+        container: setCompleteSuccessRef?.current,
+        path: '/assets/animations/Successful.json',
+        loop: false,
+      },
+      {
+        container: workoutSummaryFireworksRef?.current,
+        path: '/assets/animations/Fireworks.json',
+        loop: true,
+      },
+      {
+        container: workoutSummarySuccessRef?.current,
+        path: '/assets/animations/Successful.json',
+        loop: false,
+      },
+    ];
+    const animations = targets
+      .filter((target) => target.container)
+      .map((target) => {
+        const animation = lottie.loadAnimation({
+          container: target.container,
+          renderer: 'svg',
+          loop: target.loop,
+          autoplay: false,
+          path: target.path,
+        });
+        target.container._lottie = animation;
+        return animation;
+      });
 
     return () => {
-      fireworksAnim.destroy();
-      successAnim.destroy();
+      animations.forEach((animation) => animation.destroy());
     };
-  }, [setCompleteFireworksRef, setCompleteSuccessRef]);
+  }, [
+    setCompleteFireworksRef,
+    setCompleteSuccessRef,
+    workoutSummaryFireworksRef,
+    workoutSummarySuccessRef,
+  ]);
 
   return (
     <main
@@ -152,6 +177,150 @@ function HomePage({
       <div className="set-complete-overlay" ref={setCompleteOverlayRef} aria-hidden="true">
         <div className="set-complete-fireworks" ref={setCompleteFireworksRef}></div>
         <div className="set-complete-success" ref={setCompleteSuccessRef}></div>
+      </div>
+      <div
+        className="workout-summary-overlay"
+        ref={workoutSummaryOverlayRef}
+        aria-hidden="true"
+      >
+        <div className="workout-summary-backdrop"></div>
+        <div className="workout-summary-fireworks" ref={workoutSummaryFireworksRef}></div>
+        <div className="workout-summary-success" ref={workoutSummarySuccessRef}></div>
+        <div className="workout-summary-content" role="dialog" aria-modal="true">
+          <div className="workout-summary-headline">Set Complete!</div>
+          <div className="workout-summary-card" aria-label="Workout summary">
+            <div className="workout-summary-header">
+              <div>Workout Summary</div>
+              <div className="workout-summary-share" aria-label="Share">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M14 9V5l7 7-7 7v-4H8a5 5 0 0 1-5-5V7h2v3a3 3 0 0 0 3 3h6v-4Z"
+                    fill="rgba(255,255,255,.95)"
+                  />
+                </svg>
+                <span>Share</span>
+                <span className="workout-summary-share-badge">1</span>
+              </div>
+            </div>
+            <div className="workout-summary-body">
+              <div className="workout-summary-top">
+                <div>
+                  <div className="workout-summary-label">Total Reps</div>
+                  <div className="workout-summary-value">
+                    <span ref={workoutSummaryRepsRef}>0</span>
+                    <span className="workout-summary-unit">reps</span>
+                  </div>
+                </div>
+                <div className="workout-summary-status" aria-label="Set completion status and xp">
+                  <svg className="workout-summary-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M9.2 16.4 4.8 12l1.4-1.4 3 3 8.6-8.6L19.2 6l-10 10.4Z"
+                      fill="rgba(46, 229, 144, .95)"
+                    />
+                  </svg>
+                  <svg className="workout-summary-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M9.2 16.4 4.8 12l1.4-1.4 3 3 8.6-8.6L19.2 6l-10 10.4Z"
+                      fill="rgba(255,255,255,.7)"
+                    />
+                  </svg>
+                  <span>XP</span>
+                </div>
+              </div>
+              <div className="workout-summary-grid">
+                <div className="workout-summary-stat">
+                  <div className="workout-summary-icon-wrap is-blue" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M8.2 13.7c.8 1.6 2.3 2.3 4 2.3 2.2 0 3.5-1.1 4.6-2.4.5-.7.5-1.7 0-2.4-.6-.9-1.4-1.7-2.5-2.2-.6-.3-1.2-.3-1.7 0l-.7.4-.7-1.2c-.4-.7-1.2-1.1-2-1-1 .1-1.7 1-1.6 2l.2 1.3c-1.3.4-2 1.8-1.6 3.2Z"
+                        fill="rgba(255,255,255,.92)"
+                      />
+                      <path
+                        d="M4 16.5c1.4 1.6 3.2 2.5 5.8 2.5h5.1c1.2 0 2.1-.3 2.8-.9"
+                        stroke="rgba(255,255,255,.75)"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
+                  <div className="workout-summary-meta">
+                    <div className="workout-summary-key">Avg Load (L)</div>
+                    <div className="workout-summary-stat-value">
+                      <span ref={workoutSummaryAvgLeftRef}>0</span>
+                      <span className="workout-summary-unit">lb</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="workout-summary-stat">
+                  <div className="workout-summary-icon-wrap is-green" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M9 5 12 7.2 15 5l3 2.2 3 2.1-2.4 3.2-1.6-1V20H7V11.5l-1.6 1L3 9.3 6 7.2 9 5Z"
+                        fill="rgba(255,255,255,.92)"
+                      />
+                    </svg>
+                  </div>
+                  <div className="workout-summary-meta">
+                    <div className="workout-summary-key">Avg Load (R)</div>
+                    <div className="workout-summary-stat-value">
+                      <span ref={workoutSummaryAvgRightRef}>0</span>
+                      <span className="workout-summary-unit">lb</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="workout-summary-stat">
+                  <div className="workout-summary-icon-wrap is-red" aria-hidden="true">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"
+                        fill="rgba(255,255,255,.92)"
+                      />
+                    </svg>
+                  </div>
+                  <div className="workout-summary-meta">
+                    <div className="workout-summary-key">Peak Load</div>
+                    <div className="workout-summary-stat-value">
+                      <span ref={workoutSummaryPeakRef}>0</span>
+                      <span className="workout-summary-unit">lb</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="workout-summary-stat">
+                  <div className="workout-summary-icon-wrap is-neutral" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"
+                        stroke="rgba(255,255,255,.88)"
+                        strokeWidth="1.7"
+                      />
+                      <path
+                        d="M12 6v6l4 2"
+                        stroke="rgba(255,255,255,.88)"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <div className="workout-summary-meta">
+                    <div className="workout-summary-key">Time</div>
+                    <div className="workout-summary-stat-value">
+                      <span ref={workoutSummaryTimeRef}>0:00</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button className="workout-summary-cta" ref={workoutSummaryButtonRef} type="button">
+            <svg className="workout-summary-bolt" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" fill="rgba(255,255,255,.98)" />
+            </svg>
+            <span>
+              Level Up +<span ref={workoutSummaryXpRef}>0</span> XP
+            </span>
+          </button>
+        </div>
       </div>
       <section className="resistance-overview" aria-label="Resistance overview">
         <div className="rep-curve-label" aria-live="polite" ref={repCurveLabelRef}>
