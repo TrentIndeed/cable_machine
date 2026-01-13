@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage';
 import ProgramsPage from './pages/ProgramsPage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementsPage from './pages/AchievementsPage';
+import ProfilePage from './pages/ProfilePage';
 import './App.css';
 
 function App() {
@@ -449,6 +450,7 @@ function App() {
         isActive={activePage === 'achievements'}
         onBack={() => setActivePage('home')}
       />
+      <ProfilePage isActive={activePage === 'profile'} />
       <SettingsPage
         isActive={activePage === 'settings'}
         uiFont={uiFont}
