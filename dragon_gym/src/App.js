@@ -10,6 +10,7 @@ import useWorkoutEngine from './hooks/useWorkoutEngine';
 import HomePage from './pages/HomePage';
 import ProgramsPage from './pages/ProgramsPage';
 import SettingsPage from './pages/SettingsPage';
+import AchievementsPage from './pages/AchievementsPage';
 import './App.css';
 
 function App() {
@@ -443,6 +444,10 @@ function App() {
         selectorOpen={selectorOpen}
         setSelectorOpen={setSelectorOpen}
         videoSrc={videoSrc}
+      />
+      <AchievementsPage
+        isActive={activePage === 'achievements'}
+        onBack={() => setActivePage('home')}
       />
       <SettingsPage
         isActive={activePage === 'settings'}

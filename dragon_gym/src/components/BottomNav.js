@@ -4,6 +4,7 @@ const NAV_ITEMS = [
   { key: 'home', label: 'Home', icon: '/assets/icons/home.png' },
   { key: 'programs', label: 'Programs', icon: '/assets/icons/dumbbell-fitness.png' },
   { key: 'history', label: 'History', icon: '/assets/icons/fitness-time.png' },
+  { key: 'achievements', label: 'Achievements', icon: '/assets/icons/chart-histogram.png' },
   { key: 'live', label: 'Live', icon: '/assets/icons/users-alt.png' },
   { key: 'settings', label: 'Settings', icon: '/assets/icons/settings.png' },
   { key: 'profile', label: 'Profile', icon: '/assets/icons/user.png' },
