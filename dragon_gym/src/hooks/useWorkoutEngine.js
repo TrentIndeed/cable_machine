@@ -96,6 +96,16 @@ function useWorkoutEngine(params) {
     setCompleteOverlayRef,
     setCompleteFireworksRef,
     setCompleteSuccessRef,
+    workoutSummaryOverlayRef,
+    workoutSummaryFireworksRef,
+    workoutSummarySuccessRef,
+    workoutSummaryRepsRef,
+    workoutSummaryAvgLeftRef,
+    workoutSummaryAvgRightRef,
+    workoutSummaryPeakRef,
+    workoutSummaryTimeRef,
+    workoutSummaryXpRef,
+    workoutSummaryButtonRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,
@@ -121,10 +131,10 @@ function useWorkoutEngine(params) {
     rightRepCountRef,
     rightCableDistanceRef,
     rightResistanceValueRef,
-      rightEngageDisplayRef,
-      rightSetCableLengthRef,
-      rightRetractCableRef,
-      animationFrameRef,
+    rightEngageDisplayRef,
+    rightSetCableLengthRef,
+    rightRetractCableRef,
+    animationFrameRef,
   } = refs;
 
   useEffect(() => {
@@ -165,6 +175,16 @@ function useWorkoutEngine(params) {
       setCompleteOverlay: setCompleteOverlayRef.current,
       setCompleteFireworks: setCompleteFireworksRef.current,
       setCompleteSuccess: setCompleteSuccessRef.current,
+      workoutSummaryOverlay: workoutSummaryOverlayRef.current,
+      workoutSummaryFireworks: workoutSummaryFireworksRef.current,
+      workoutSummarySuccess: workoutSummarySuccessRef.current,
+      workoutSummaryReps: workoutSummaryRepsRef.current,
+      workoutSummaryAvgLeft: workoutSummaryAvgLeftRef.current,
+      workoutSummaryAvgRight: workoutSummaryAvgRightRef.current,
+      workoutSummaryPeak: workoutSummaryPeakRef.current,
+      workoutSummaryTime: workoutSummaryTimeRef.current,
+      workoutSummaryXp: workoutSummaryXpRef.current,
+      workoutSummaryButton: workoutSummaryButtonRef.current,
       powerToggle: powerToggleRef.current,
       adsReset: adsResetRef.current,
       syncMotors: syncMotorsRef.current,
@@ -182,6 +202,8 @@ function useWorkoutEngine(params) {
     let pauseActive = false;
     let setElapsedMs = 0;
     let setClockLastTimestamp = null;
+    let workoutStartTime = null;
+    let workoutElapsedMs = 0;
 
     function updatePauseIconAppearance() {
       if (!elements.pauseIcon) return;
@@ -900,6 +922,80 @@ function useWorkoutEngine(params) {
       }
     }
 
+    function formatWorkoutDuration(ms) {
+      const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    function updateWorkoutSummaryValues() {
+      const totalReps = workoutLog.reduce((sum, entry) => sum + entry.reps, 0);
+      const totalLeft = workoutLog.reduce((sum, entry) => sum + entry.left * entry.reps, 0);
+      const totalRight = workoutLog.reduce((sum, entry) => sum + entry.right * entry.reps, 0);
+      const avgLeft = totalReps ? Math.round(totalLeft / totalReps) : 0;
+      const avgRight = totalReps ? Math.round(totalRight / totalReps) : 0;
+      const peakLoad = workoutLog.reduce(
+        (maxLoad, entry) => Math.max(maxLoad, entry.left, entry.right),
+        0
+      );
+      const xpEarned = totalReps ? Math.max(5, Math.round(totalReps * 0.5)) : 0;
+
+      if (elements.workoutSummaryReps) {
+        elements.workoutSummaryReps.textContent = totalReps.toString();
+      }
+      if (elements.workoutSummaryAvgLeft) {
+        elements.workoutSummaryAvgLeft.textContent = avgLeft.toString();
+      }
+      if (elements.workoutSummaryAvgRight) {
+        elements.workoutSummaryAvgRight.textContent = avgRight.toString();
+      }
+      if (elements.workoutSummaryPeak) {
+        elements.workoutSummaryPeak.textContent = peakLoad.toString();
+      }
+      if (elements.workoutSummaryTime) {
+        elements.workoutSummaryTime.textContent = formatWorkoutDuration(workoutElapsedMs);
+      }
+      if (elements.workoutSummaryXp) {
+        elements.workoutSummaryXp.textContent = xpEarned.toString();
+      }
+    }
+
+    function showWorkoutSummary() {
+      const overlay = elements.workoutSummaryOverlay;
+      if (!overlay) return;
+      updateWorkoutSummaryValues();
+      overlay.classList.add('is-visible');
+      overlay.setAttribute('aria-hidden', 'false');
+      const fireworks = elements.workoutSummaryFireworks;
+      const success = elements.workoutSummarySuccess;
+      if (fireworks && fireworks._lottie) {
+        fireworks._lottie.setSpeed(1.2);
+        fireworks._lottie.stop();
+        fireworks._lottie.play();
+      }
+      if (success && success._lottie) {
+        success._lottie.setSpeed(3);
+        success._lottie.stop(2);
+        success._lottie.play();
+      }
+    }
+
+    function hideWorkoutSummary() {
+      const overlay = elements.workoutSummaryOverlay;
+      if (!overlay) return;
+      overlay.classList.remove('is-visible');
+      overlay.setAttribute('aria-hidden', 'true');
+      const fireworks = elements.workoutSummaryFireworks;
+      const success = elements.workoutSummarySuccess;
+      if (fireworks && fireworks._lottie) {
+        fireworks._lottie.stop();
+      }
+      if (success && success._lottie) {
+        success._lottie.stop();
+      }
+    }
+
     function toggleWorkout() {
       workoutActive = !workoutActive;
       if (elements.forcePanel) {
@@ -917,6 +1013,7 @@ function useWorkoutEngine(params) {
         currentSet = 0;
         currentRep = 0;
         totalReps = DEFAULT_REP_TARGET;
+        workoutElapsedMs = workoutStartTime ? Date.now() - workoutStartTime : 0;
         if (elements.workoutState) {
           elements.workoutState.classList.remove('active');
           elements.workoutState.textContent = 'Workout Not Started';
@@ -933,10 +1030,18 @@ function useWorkoutEngine(params) {
           elements.eccentricPanel.hidden = true;
         }
         updateStatuses();
+        showWorkoutSummary();
       } else {
         totalReps = DEFAULT_REP_TARGET;
         currentSet = 0;
         currentRep = 0;
+        workoutStartTime = Date.now();
+        workoutElapsedMs = 0;
+        workoutLog.length = 0;
+        if (elements.logList) {
+          elements.logList.innerHTML = '';
+        }
+        hideWorkoutSummary();
         if (elements.workoutState) {
           elements.workoutState.classList.add('active');
           elements.workoutState.textContent = 'Workout Started';
@@ -967,6 +1072,9 @@ function useWorkoutEngine(params) {
     };
 
     elements.startToggle.addEventListener('click', handleWorkoutToggle);
+    if (elements.workoutSummaryButton) {
+      elements.workoutSummaryButton.addEventListener('click', hideWorkoutSummary);
+    }
 
     const handleForceSelectChange = (event) => {
       const bypassLock = Boolean(event?.detail?.bypassLock || event?.isTrusted === false);
@@ -2342,6 +2450,9 @@ function useWorkoutEngine(params) {
       }
       if (elements.pauseIcon) {
         elements.pauseIcon.removeEventListener('click', handlePauseToggle);
+      }
+      if (elements.workoutSummaryButton) {
+        elements.workoutSummaryButton.removeEventListener('click', hideWorkoutSummary);
       }
       window.removeEventListener('dg:forceModeCycle', handleForceModePill);
       window.removeEventListener('dg:eccentricToggle', handleEccentricPill);

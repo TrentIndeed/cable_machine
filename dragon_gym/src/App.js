@@ -75,6 +75,16 @@ function App() {
   const setCompleteOverlayRef = useRef(null);
   const setCompleteFireworksRef = useRef(null);
   const setCompleteSuccessRef = useRef(null);
+  const workoutSummaryOverlayRef = useRef(null);
+  const workoutSummaryFireworksRef = useRef(null);
+  const workoutSummarySuccessRef = useRef(null);
+  const workoutSummaryRepsRef = useRef(null);
+  const workoutSummaryAvgLeftRef = useRef(null);
+  const workoutSummaryAvgRightRef = useRef(null);
+  const workoutSummaryPeakRef = useRef(null);
+  const workoutSummaryTimeRef = useRef(null);
+  const workoutSummaryXpRef = useRef(null);
+  const workoutSummaryButtonRef = useRef(null);
   const powerToggleRef = useRef(null);
   const adsResetRef = useRef(null);
   const syncMotorsRef = useRef(null);
@@ -202,6 +212,16 @@ function App() {
     setCompleteOverlayRef,
     setCompleteFireworksRef,
     setCompleteSuccessRef,
+    workoutSummaryOverlayRef,
+    workoutSummaryFireworksRef,
+    workoutSummarySuccessRef,
+    workoutSummaryRepsRef,
+    workoutSummaryAvgLeftRef,
+    workoutSummaryAvgRightRef,
+    workoutSummaryPeakRef,
+    workoutSummaryTimeRef,
+    workoutSummaryXpRef,
+    workoutSummaryButtonRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,
@@ -265,6 +285,16 @@ function App() {
     setCompleteOverlayRef,
     setCompleteFireworksRef,
     setCompleteSuccessRef,
+    workoutSummaryOverlayRef,
+    workoutSummaryFireworksRef,
+    workoutSummarySuccessRef,
+    workoutSummaryRepsRef,
+    workoutSummaryAvgLeftRef,
+    workoutSummaryAvgRightRef,
+    workoutSummaryPeakRef,
+    workoutSummaryTimeRef,
+    workoutSummaryXpRef,
+    workoutSummaryButtonRef,
     powerToggleRef,
     adsResetRef,
     syncMotorsRef,
