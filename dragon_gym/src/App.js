@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { sendCommand } from './api/sendCommand';
-import { COMMAND_TYPES } from './constants/appConstants';
+import { COMMAND_TYPES, FONT_OPTIONS } from './constants/appConstants';
 import BottomNav from './components/BottomNav';
+import LoadScreen from './components/LoadScreen';
 import { useTelemetry } from './hooks/useTelemetry';
 import useWorkoutEngine from './hooks/useWorkoutEngine';
 import HomePage from './pages/HomePage';
@@ -26,6 +27,8 @@ function App() {
   const [syncHidden, setSyncHidden] = useState(false);
   const [commandResistance, setCommandResistance] = useState(1);
   const [activePage, setActivePage] = useState('home');
+  const [uiFont, setUiFont] = useState('sf');
+  const [showLoadScreen, setShowLoadScreen] = useState(true);
 
   const forceCurveModeRef = useRef(forceCurveMode);
   const forceCurveIntensityRef = useRef(forceCurveIntensity);
@@ -142,6 +145,13 @@ function App() {
     ],
     []
   );
+
+  useEffect(() => {
+    const selected = FONT_OPTIONS.find((option) => option.value === uiFont);
+    if (selected) {
+      document.documentElement.style.setProperty('--ui-font', selected.stack);
+    }
+  }, [uiFont]);
 
   useEffect(() => {
     telemetryRef.current = telemetry;
@@ -393,6 +403,9 @@ function App() {
 
   return (
     <>
+      {showLoadScreen ? (
+        <LoadScreen onBegin={() => setShowLoadScreen(false)} />
+      ) : null}
       <svg className="sr-only" width="0" height="0" aria-hidden="true">
         <defs>
           <clipPath id="concaveTopClip" clipPathUnits="objectBoundingBox">
@@ -400,6 +413,10 @@ function App() {
           </clipPath>
         </defs>
       </svg>
+      <LoadScreen
+        isActive={showLoadScreen}
+        onBegin={() => setShowLoadScreen(false)}
+      />
       <HomePage
         isActive={activePage === 'home'}
         motorsSyncedState={motorsSyncedState}
@@ -432,6 +449,8 @@ function App() {
       />
       <SettingsPage
         isActive={activePage === 'settings'}
+        uiFont={uiFont}
+        onFontChange={(event) => setUiFont(event.target.value)}
         onBack={() => setActivePage('home')}
       />
       <ProfilePage
