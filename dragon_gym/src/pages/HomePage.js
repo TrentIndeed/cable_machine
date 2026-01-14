@@ -309,14 +309,16 @@ function HomePage({
                   </button>
                 </div>
               </header>
-              <canvas
-                className="wave-canvas"
-                id="combinedWave"
-                ref={waveCombinedRef}
-                width="960"
-                height="520"
-                aria-hidden="true"
-              ></canvas>
+              <div className="wave-graph-wrap">
+                <canvas
+                  className="wave-canvas"
+                  id="combinedWave"
+                  ref={waveCombinedRef}
+                  width="960"
+                  height="520"
+                  aria-hidden="true"
+                ></canvas>
+              </div>
             </article>
           </div>
         </article>

@@ -27,7 +27,6 @@ import {
 import { getGaugeHandlePosition } from '../utils/gaugeUtils';
 import { clamp, formatMotorLabel, quantize } from '../utils/mathUtils';
 import { getMotorPalette } from '../utils/paletteUtils';
-import { getWaveFillContext } from '../utils/waveUtils';
 
 function useWorkoutEngine(params) {
   const {
@@ -1776,16 +1775,6 @@ function useWorkoutEngine(params) {
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
-      const topPadding = 20;
-      const bottomPadding = 24;
-      const usableHeight = height - topPadding - bottomPadding;
-      const circleRadius = 16;
-      const circleX = width - 46;
-      const labelPadding = 60;
-      const plotLeft = labelPadding;
-      const availableWidth = circleX - circleRadius - plotLeft;
-      const axisColor = 'rgba(220, 220, 220, 0.45)';
-      const gridColor = 'rgba(220, 220, 220, 0.2)';
       const synced = motorsSyncedRef.current;
       const motorsToPlot = synced
         ? (() => {
@@ -1840,162 +1829,92 @@ function useWorkoutEngine(params) {
         waveScaleMaxRef.current = scaleMax;
         waveScaleMinRef.current = Math.max(0, scaleMin);
       }
-      const scaleValue = (inches) =>
-        Math.min(1, Math.max(0, (inches - scaleMin) / scaleSpan));
-      const yLabels = Array.from({ length: 6 }, (_, idx) =>
-        Number((scaleMin + scaleSpan * (idx / 5)).toFixed(1))
-      );
-      const yLineCount = yLabels.length - 1;
+      const padL = 38;
+      const padR = 16;
+      const padT = 16;
+      const padB = 22;
+      const px = padL;
+      const py = padT;
+      const pw = Math.max(0, width - padL - padR);
+      const ph = Math.max(0, height - padT - padB);
+      const axisColor = 'rgba(190, 220, 255, 0.16)';
+      const gridColor = 'rgba(190, 220, 255, 0.1)';
+      const labelColor = 'rgba(220, 238, 255, 0.55)';
+      const gridCountY = 5;
+      const gridCountX = 7;
+
+      const yFromValue = (value) => {
+        const clamped = Math.max(scaleMin, Math.min(scaleMax, value));
+        const normalized = (clamped - scaleMin) / Math.max(0.0001, scaleSpan);
+        return py + ph * (1 - normalized);
+      };
 
       ctx.save();
-      ctx.strokeStyle = axisColor;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(plotLeft, height - bottomPadding);
-      ctx.lineTo(circleX - circleRadius, height - bottomPadding);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(plotLeft, topPadding);
-      ctx.lineTo(plotLeft, height - bottomPadding);
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(220, 220, 220, 0.85)';
-      ctx.font = '18px "SF Pro Display", "SF Pro Text", -apple-system, "Segoe UI", sans-serif';
-      ctx.textAlign = 'left';
+      ctx.font = '12px "SF Pro Display", "SF Pro Text", -apple-system, "Segoe UI", sans-serif';
+      ctx.fillStyle = labelColor;
+      ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
 
-      for (let i = 0; i <= yLineCount; i += 1) {
-        const y = height - bottomPadding - (usableHeight / yLineCount) * i;
-        ctx.strokeStyle = i === 0 ? axisColor : gridColor;
+      for (let i = 0; i < gridCountY; i += 1) {
+        const n = i / (gridCountY - 1);
+        const value = scaleMin + scaleSpan * n;
+        const y = py + ph * (1 - n);
+        ctx.strokeStyle = i === 0 || i === gridCountY - 1 ? axisColor : gridColor;
         ctx.beginPath();
-        ctx.moveTo(plotLeft, y);
-        ctx.lineTo(circleX - circleRadius, y);
+        ctx.moveTo(px, y);
+        ctx.lineTo(px + pw, y);
         ctx.stroke();
-        const labelValue = yLabels[i] ?? 0;
-        ctx.fillText(`${labelValue.toFixed(1)} in`, 8, y);
+        ctx.fillText(`${value.toFixed(0)} in`, px - 6, y);
       }
 
-      ctx.strokeStyle = gridColor;
-      for (let i = 1; i < yLineCount; i += 1) {
-        const x = plotLeft + (availableWidth / yLineCount) * i;
+      for (let i = 0; i < gridCountX; i += 1) {
+        const n = i / (gridCountX - 1);
+        const x = px + pw * n;
+        ctx.strokeStyle = i === 0 || i === gridCountX - 1 ? axisColor : gridColor;
         ctx.beginPath();
-        ctx.moveTo(x, topPadding);
-        ctx.lineTo(x, height - bottomPadding);
+        ctx.moveTo(x, py);
+        ctx.lineTo(x, py + ph);
         ctx.stroke();
       }
       ctx.restore();
 
-      motorsToPlot.forEach((motor) => {
-        const headY =
-          topPadding +
-          (1 - scaleValue(motor.normalized * MAX_TRAVEL_INCHES)) *
-            usableHeight;
-        const palette = getMotorPalette(motor.id === 'combined' ? 'left' : motor.id);
-        const fillAlpha =
-          motor.id === 'right' ? 0.38 : motor.id === 'combined' ? 0.3 : 0.22;
-        ctx.lineWidth = 12;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
-        const gradient = ctx.createLinearGradient(0, 0, circleX - circleRadius, 0);
-        gradient.addColorStop(0, palette.primary);
-        gradient.addColorStop(1, palette.primary);
-        ctx.strokeStyle = gradient;
-        ctx.beginPath();
-
-        const points = motor.trail;
-        const len = points.length;
-        if (len > 0) {
-          for (let i = 0; i < len; i += 1) {
-            const progress = i / (len - 1 || 1);
-            const x = plotLeft + progress * availableWidth;
-            const y = topPadding + (1 - scaleValue(points[i])) * usableHeight;
-            if (i === 0) {
-              ctx.moveTo(x, y);
-            } else {
-              ctx.lineTo(x, y);
-            }
-          }
-        } else {
-          ctx.moveTo(plotLeft, headY);
+      const plotSeries = (series, palette) => {
+        if (!series.length) {
+          return;
         }
-        ctx.lineTo(circleX - circleRadius, headY);
-        ctx.lineTo(circleX - circleRadius, height - bottomPadding);
-        ctx.lineTo(plotLeft, height - bottomPadding);
-        ctx.closePath();
-        const fillLayer = getWaveFillContext(canvas, width, height);
-        if (fillLayer) {
-          const { fillCanvas, fillCtx } = fillLayer;
-          fillCtx.clearRect(0, 0, width, height);
-          fillCtx.beginPath();
-          if (len > 0) {
-            for (let i = 0; i < len; i += 1) {
-              const progress = i / (len - 1 || 1);
-              const x = plotLeft + progress * availableWidth;
-              const y = topPadding + (1 - scaleValue(points[i])) * usableHeight;
-              if (i === 0) {
-                fillCtx.moveTo(x, y);
-              } else {
-                fillCtx.lineTo(x, y);
-              }
-            }
-          } else {
-            fillCtx.moveTo(plotLeft, headY);
-          }
-          fillCtx.lineTo(circleX - circleRadius, headY);
-          fillCtx.lineTo(circleX - circleRadius, height - bottomPadding);
-          fillCtx.lineTo(plotLeft, height - bottomPadding);
-          fillCtx.closePath();
-          const fillGradient = fillCtx.createLinearGradient(0, 0, circleX - circleRadius, 0);
-          fillGradient.addColorStop(0, palette.waveFade);
-          fillGradient.addColorStop(1, palette.waveFade);
-          fillCtx.globalAlpha = fillAlpha;
-          fillCtx.fillStyle = fillGradient;
-          fillCtx.fill();
-          fillCtx.globalAlpha = 1;
-          fillCtx.globalCompositeOperation = 'destination-in';
-          const verticalFade = fillCtx.createLinearGradient(
-            0,
-            topPadding,
-            0,
-            height - bottomPadding
-          );
-          verticalFade.addColorStop(0, 'rgba(0, 0, 0, 1)');
-          verticalFade.addColorStop(0.5, 'rgba(0, 0, 0, 0)');
-          verticalFade.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          fillCtx.fillStyle = verticalFade;
-          fillCtx.fillRect(0, topPadding, width, height - topPadding - bottomPadding);
-          fillCtx.globalCompositeOperation = 'source-over';
-          ctx.drawImage(fillCanvas, 0, 0);
-        }
-        ctx.beginPath();
-        if (len > 0) {
-          for (let i = 0; i < len; i += 1) {
-            const progress = i / (len - 1 || 1);
-            const x = plotLeft + progress * availableWidth;
-            const y = topPadding + (1 - scaleValue(points[i])) * usableHeight;
-            if (i === 0) {
-              ctx.moveTo(x, y);
-            } else {
-              ctx.lineTo(x, y);
-            }
-          }
-        } else {
-          ctx.moveTo(plotLeft, headY);
-        }
-        ctx.lineTo(circleX - circleRadius, headY);
-        ctx.stroke();
-
-        ctx.fillStyle = palette.waveDot;
-        ctx.beginPath();
-        ctx.arc(circleX, headY, circleRadius, 0, TWO_PI);
-        ctx.fill();
-        ctx.lineWidth = 2;
+        ctx.save();
         ctx.strokeStyle = palette.primary;
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        series.forEach((value, idx) => {
+          const progress = series.length > 1 ? idx / (series.length - 1) : 1;
+          const x = px + pw * progress;
+          const y = yFromValue(value);
+          if (idx === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
         ctx.stroke();
-        ctx.shadowBlur = 0;
+
+        const lastIndex = series.length - 1;
+        const dotX = px + pw;
+        const dotY = yFromValue(series[lastIndex]);
+        ctx.fillStyle = palette.primary;
+        ctx.shadowColor = palette.glow;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 4, 0, TWO_PI);
+        ctx.fill();
+        ctx.restore();
+      };
+
+      motorsToPlot.forEach((motor) => {
+        const palette = getMotorPalette(motor.id === 'combined' ? 'left' : motor.id);
+        plotSeries(motor.trail, palette);
       });
     }
     function update(timestamp) {
