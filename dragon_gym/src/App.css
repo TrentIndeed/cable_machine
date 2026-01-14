@@ -210,6 +210,7 @@ textarea {
   background: radial-gradient(100% 80% at 30% 20%, var(--rgba-blue-18), transparent 55%),
     radial-gradient(100% 80% at 70% 80%, var(--rgba-green-50), transparent 58%),
     linear-gradient(180deg, rgba(5, 7, 12, 0.82), rgba(3, 4, 10, 0.95));
+  z-index: 1;
 }
 
 .workout-summary-fireworks,
@@ -217,11 +218,12 @@ textarea {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 2;
 }
 
 .workout-summary-fireworks {
   opacity: 0.7;
-  transform: translateY(2vh) scale(2.4);
+  transform: translateY(-12vh) scale(2.4);
   transform-origin: center top;
 }
 
@@ -229,16 +231,17 @@ textarea {
   width: min(1200px, 90vw);
   height: min(720px, 70vh);
   margin: auto;
+  transform: translateY(-10vh);
 }
 
 .workout-summary-content {
   position: relative;
-  width: min(420px, 90vw);
+  width: min(840px, 92vw);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  z-index: 2;
+  z-index: 3;
   animation: summary-pop 450ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
 }
 
@@ -252,12 +255,12 @@ textarea {
 
 .workout-summary-card {
   width: 100%;
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(12, 18, 33, 0.88), rgba(8, 12, 24, 0.94));
+  border-radius: 32px;
+  background: linear-gradient(180deg, rgba(12, 18, 33, 0.7), rgba(8, 12, 24, 0.82));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55);
   overflow: hidden;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(18px);
 }
 
 .workout-summary-header {
@@ -294,7 +297,7 @@ textarea {
 }
 
 .workout-summary-body {
-  padding: var(--space-2);
+  padding: var(--space-3);
   background: linear-gradient(180deg, rgba(12, 18, 33, 0.55), rgba(8, 12, 24, 0.76));
 }
 
@@ -346,8 +349,8 @@ textarea {
 .workout-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-  padding-top: var(--space-1);
+  gap: var(--space-3);
+  padding-top: var(--space-2);
 }
 
 .workout-summary-stat {
@@ -3073,6 +3076,5 @@ button.is-flash {
     align-items: flex-start;
   }
 }
-
 
 
