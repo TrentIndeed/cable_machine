@@ -2816,6 +2816,8 @@ button.is-flash {
 .load-screen {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: 999;
   background:
     radial-gradient(1200px 1200px at 50% 35%, rgba(0, 140, 255, 0.12), transparent 60%),
@@ -2954,10 +2956,8 @@ button.is-flash {
 }
 
 .load-screen .cardWrap {
-  width: 76vw;
-  max-width: 380px;
-  height: 70vh;
-  max-height: 620px;
+  width: min(86vw, 840px);
+  height: min(78vh, 1200px);
   margin: 0 18px;
   position: relative;
   flex: 0 0 auto;
@@ -3129,8 +3129,8 @@ button.is-flash {
 
 @media (min-width: 520px) {
   .load-screen .cardWrap {
-    width: 360px;
-    height: 610px;
+    width: min(72vw, 840px);
+    height: min(78vh, 1200px);
   }
 
   .load-screen .bottom {
