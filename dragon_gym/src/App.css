@@ -3263,7 +3263,7 @@ button.is-flash {
 .league-kicker {
   margin: 0 0 8px;
   color: var(--text-muted);
-  font-size: var(--font-sm);
+  font-size: calc(var(--font-sm) * 2);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -3276,14 +3276,14 @@ button.is-flash {
 
 .league-title {
   margin: 0;
-  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-size: clamp(3rem, 4.5vw, 4.125rem);
   line-height: var(--line-tight);
   text-shadow: 0 6px 18px rgba(45, 163, 255, 0.2);
 }
 
 .league-trophy {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   filter: drop-shadow(0 10px 22px rgba(255, 176, 32, 0.3));
 }
 
@@ -3291,8 +3291,8 @@ button.is-flash {
   display: flex;
   gap: 8px;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
-  padding: 6px;
+  border-radius: 28px;
+  padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: var(--card-shadow);
 }
@@ -3302,9 +3302,9 @@ button.is-flash {
   border: none;
   background: transparent;
   color: rgba(234, 242, 255, 0.8);
-  padding: 10px 14px;
-  border-radius: 16px;
-  font-size: var(--font-sm);
+  padding: 16px 18px;
+  border-radius: 22px;
+  font-size: calc(var(--font-sm) * 2);
   font-weight: 600;
   cursor: pointer;
   transition: background var(--transition), color var(--transition), transform var(--transition);
@@ -3327,29 +3327,30 @@ button.is-flash {
   padding: 16px;
   display: grid;
   gap: 12px;
+  min-height: 60vh;
   box-shadow: var(--card-shadow);
   backdrop-filter: blur(14px);
 }
 
 .league-row {
   display: grid;
-  grid-template-columns: 40px 44px 1fr auto;
+  grid-template-columns: 56px 64px 1fr auto;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 18px;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 24px;
   background: rgba(10, 19, 38, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .league-rank {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   font-weight: 700;
-  font-size: var(--font-sm);
+  font-size: calc(var(--font-sm) * 2);
   color: rgba(255, 255, 255, 0.95);
   position: relative;
 }
@@ -3357,9 +3358,9 @@ button.is-flash {
 .league-rank::after {
   content: "";
   position: absolute;
-  inset: -4px;
+  inset: -6px;
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 3px solid rgba(255, 255, 255, 0.1);
 }
 
 .league-rank--gold {
@@ -3384,8 +3385,8 @@ button.is-flash {
 }
 
 .league-avatar {
-  width: 42px;
-  height: 42px;
+  width: 64px;
+  height: 64px;
   border-radius: 999px;
   border: 2px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
@@ -3406,13 +3407,13 @@ button.is-flash {
 .league-who {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
 }
 
 .league-name {
   font-weight: 700;
-  font-size: var(--font-sm);
+  font-size: calc(var(--font-sm) * 2);
   line-height: var(--line-tight);
   white-space: nowrap;
   overflow: hidden;
@@ -3420,7 +3421,7 @@ button.is-flash {
 }
 
 .league-bar {
-  height: 8px;
+  height: 16px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
   position: relative;
@@ -3435,7 +3436,7 @@ button.is-flash {
 
 .league-lbs {
   font-weight: 700;
-  font-size: var(--font-sm);
+  font-size: calc(var(--font-sm) * 2);
   color: rgba(234, 242, 255, 0.92);
   white-space: nowrap;
 }
@@ -3443,7 +3444,7 @@ button.is-flash {
 .league-lbs span {
   color: rgba(234, 242, 255, 0.65);
   font-weight: 600;
-  margin-left: 4px;
+  margin-left: 6px;
 }
 
 .league-timeline {
@@ -3453,12 +3454,12 @@ button.is-flash {
   padding: 0 12px;
   color: rgba(234, 242, 255, 0.5);
   font-weight: 600;
-  font-size: var(--font-xs);
+  font-size: calc(var(--font-xs) * 2);
 }
 
 .league-dot {
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 999px;
   background: rgba(45, 163, 255, 0.75);
   box-shadow: 0 10px 22px rgba(45, 163, 255, 0.25);
