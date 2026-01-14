@@ -39,7 +39,8 @@ const WEEKLY_NOW = 872;
 const WEEKLY_GOAL = 1500;
 const MAX_BAR_PX = 800;
 
-function ProfilePage({ isActive }) {
+function ProfilePage({ isActive, onSettings }) {
+  const handleSettings = onSettings || (() => {});
   const trackRef = useRef(null);
   const labelRef = useRef(null);
 
@@ -88,7 +89,7 @@ function ProfilePage({ isActive }) {
     <main className="app-shell profile-shell" hidden={!isActive}>
       <header className="profile-header profile-header--floating">
         <div className="profile-title-row">
-          <h1 className="profile-title">Session Summary</h1>
+          <h1 className="profile-title">Smart Gym Profile</h1>
           <svg
             className="profile-trophy"
             viewBox="0 0 24 24"
@@ -100,12 +101,20 @@ function ProfilePage({ isActive }) {
               d="M18 2H6v2H3v3a5 5 0 0 0 5 5h.1A6 6 0 0 0 11 14.7V18H8v2h8v-2h-3v-3.3A6 6 0 0 0 15.9 12H16a5 5 0 0 0 5-5V4h-3V2Zm-13 5V6h1v4a3 3 0 0 1-2-3Zm16 0a3 3 0 0 1-2 3V6h2v1Z"
             />
           </svg>
+          <button
+            type="button"
+            className="profile-settings"
+            onClick={handleSettings}
+            aria-label="Open settings"
+          >
+            <img src="/assets/icons/settings.png" alt="" aria-hidden="true" />
+          </button>
         </div>
       </header>
       <div
         className="profile-surface"
         role="application"
-        aria-label="Smart Gym Profile Session Summary"
+        aria-label="Smart Gym Profile"
       >
         <div className="profile-notch" aria-hidden="true" />
         <div className="profile-content">

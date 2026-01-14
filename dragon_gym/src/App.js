@@ -467,7 +467,10 @@ function App() {
         commandStatus={commandStatus}
         commandMessage={commandMessage}
       />
-      <ProfilePage isActive={activePage === 'profile'} />
+      <ProfilePage
+        isActive={activePage === 'profile'}
+        onSettings={() => setActivePage('settings')}
+      />
       <BottomNav activePage={activePage} onNavigate={setActivePage} />
     </>
   );
