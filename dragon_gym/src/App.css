@@ -2816,8 +2816,10 @@ button.is-flash {
 .load-screen {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   z-index: 999;
   background:
     radial-gradient(1200px 1200px at 50% 35%, rgba(0, 140, 255, 0.12), transparent 60%),
@@ -2837,7 +2839,10 @@ button.is-flash {
 }
 
 .load-screen .screen {
+  width: 100%;
   height: 100%;
+  min-height: 100vh;
+  min-width: 100vw;
   display: flex;
   flex-direction: column;
 }
@@ -2928,6 +2933,7 @@ button.is-flash {
   justify-content: center;
   padding: 10px 0 0;
   position: relative;
+  width: 100%;
 }
 
 .load-screen .carousel {
