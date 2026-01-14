@@ -223,7 +223,7 @@ textarea {
 
 .workout-summary-fireworks {
   opacity: 0.7;
-  transform: translateY(-12vh) scale(2.4);
+  transform: translateY(2vh) scale(2.4);
   transform-origin: center top;
 }
 
@@ -231,7 +231,6 @@ textarea {
   width: min(1200px, 90vw);
   height: min(720px, 70vh);
   margin: auto;
-  transform: translateY(-10vh);
 }
 
 .workout-summary-content {
@@ -3076,5 +3075,4 @@ button.is-flash {
     align-items: flex-start;
   }
 }
-
 
