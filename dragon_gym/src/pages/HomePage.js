@@ -171,7 +171,7 @@ function HomePage({
 
   return (
     <main
-      className={`app-shell ${motorsSyncedState ? 'is-synced' : ''}`}
+      className={`app-shell home-shell ${motorsSyncedState ? 'is-synced' : ''}`}
       hidden={!isActive}
     >
       <div className="set-complete-overlay" ref={setCompleteOverlayRef} aria-hidden="true">
