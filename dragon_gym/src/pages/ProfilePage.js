@@ -37,7 +37,7 @@ const TUNED_HEIGHTS = {
 
 const WEEKLY_NOW = 872;
 const WEEKLY_GOAL = 1500;
-const MAX_BAR_PX = 200;
+const MAX_BAR_PX = 800;
 
 function ProfilePage({ isActive }) {
   const trackRef = useRef(null);
@@ -54,31 +54,54 @@ function ProfilePage({ isActive }) {
   useEffect(() => {
     const track = trackRef.current;
     const label = labelRef.current;
-    if (!track || !label) {
+    if (!track || !label || !isActive) {
       return undefined;
     }
 
     const positionLabel = () => {
       const trackWidth = track.clientWidth;
+      if (!trackWidth) {
+        return;
+      }
       const fillWidth = trackWidth * weeklyProgress.pct;
       const padding = 8;
       const labelWidth = label.clientWidth;
-      const offset = Math.max(
-        padding,
-        Math.min(trackWidth - labelWidth - padding, fillWidth - labelWidth - 6)
+      const desiredCenter = fillWidth + 6;
+      const clamped = Math.max(
+        padding + labelWidth / 2,
+        Math.min(trackWidth - padding - labelWidth / 2, desiredCenter)
       );
-      label.style.left = `${offset}px`;
+      label.style.left = `${clamped}px`;
     };
 
-    positionLabel();
+    const rafId = window.requestAnimationFrame(positionLabel);
+    const timeoutId = window.setTimeout(positionLabel, 0);
     window.addEventListener('resize', positionLabel);
     return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
       window.removeEventListener('resize', positionLabel);
     };
-  }, [weeklyProgress.pct]);
+  }, [weeklyProgress.pct, isActive]);
 
   return (
     <main className="app-shell profile-shell" hidden={!isActive}>
+      <header className="profile-header profile-header--floating">
+        <div className="profile-title-row">
+          <h1 className="profile-title">Session Summary</h1>
+          <svg
+            className="profile-trophy"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <path
+              fill="#ffcc42"
+              d="M18 2H6v2H3v3a5 5 0 0 0 5 5h.1A6 6 0 0 0 11 14.7V18H8v2h8v-2h-3v-3.3A6 6 0 0 0 15.9 12H16a5 5 0 0 0 5-5V4h-3V2Zm-13 5V6h1v4a3 3 0 0 1-2-3Zm16 0a3 3 0 0 1-2 3V6h2v1Z"
+            />
+          </svg>
+        </div>
+      </header>
       <div
         className="profile-surface"
         role="application"
@@ -86,37 +109,6 @@ function ProfilePage({ isActive }) {
       >
         <div className="profile-notch" aria-hidden="true" />
         <div className="profile-content">
-          <header className="profile-header">
-            <svg
-              className="profile-ghost"
-              viewBox="0 0 64 64"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M32 6c-12.2 0-22 9.8-22 22v24c0 2.2 2.6 3.3 4.2 1.8l3.5-3.2 3.7 3.3c1.1 1 2.8 1 3.9 0l3.7-3.3 3.7 3.3c1.1 1 2.8 1 3.9 0l3.7-3.3 3.7 3.3c1.1 1 2.8 1 3.9 0l3.7-3.3 3.5 3.2c1.6 1.5 4.2.4 4.2-1.8V28C54 15.8 44.2 6 32 6Z"
-                fill="rgba(255, 255, 255, 0.92)"
-              />
-              <circle cx="24" cy="30" r="4.2" fill="rgba(0, 0, 0, 0.72)" />
-              <circle cx="40" cy="30" r="4.2" fill="rgba(0, 0, 0, 0.72)" />
-            </svg>
-            <div className="profile-title-row">
-              <h1 className="profile-title">Session Summary</h1>
-              <svg
-                className="profile-trophy"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <path
-                  fill="#ffcc42"
-                  d="M18 2H6v2H3v3a5 5 0 0 0 5 5h.1A6 6 0 0 0 11 14.7V18H8v2h8v-2h-3v-3.3A6 6 0 0 0 15.9 12H16a5 5 0 0 0 5-5V4h-3V2Zm-13 5V6h1v4a3 3 0 0 1-2-3Zm16 0a3 3 0 0 1-2 3V6h2v1Z"
-                />
-              </svg>
-            </div>
-          </header>
-
           <section className="profile-card profile-card--identity">
             <div className="profile-avatar">
               <img
