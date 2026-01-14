@@ -1,74 +1,38 @@
 import React from 'react';
+import { ChevronLeft, Trophy, Flame, Zap, Droplets, Dumbbell } from 'lucide-react';
 
-const ACHIEVEMENTS_WEEK = [
-  {
-    id: 'calories',
-    title: 'Total Calories',
-    value: '500',
-    status: 'Unlocked',
-    color: 'amber',
-    icon: 'F',
-  },
-  {
-    id: 'streak',
-    title: 'Current Streak',
-    value: '3 Days',
-    status: 'Unlocked',
-    color: 'gold',
-    icon: 'Z',
-  },
-];
-
-const ACHIEVEMENTS_STRENGTH = [
-  {
-    id: 'volume',
-    title: 'Volume Milestone',
-    value: '5k Lbs',
-    status: 'Unlocked',
-    color: 'blue',
-    icon: 'D',
-  },
-  {
-    id: 'longest',
-    title: 'Longest Set',
-    value: '10 Reps',
-    status: 'Unlocked',
-    color: 'violet',
-    icon: 'Z',
-  },
-  {
-    id: 'leg-press',
-    title: 'Heavy Leg Press',
-    value: '',
-    status: 'PR Set',
-    color: 'emerald',
-    icon: 'D',
-  },
-  {
-    id: 'bench',
-    title: 'Bench Press',
-    value: 'PB',
-    status: 'Unlocked',
-    color: 'indigo',
-    icon: 'T',
-  },
-];
-
-function AchievementCard({ icon, title, value, status, color, delay }) {
+function StatPill({ icon, title, value, subtitle, accentClass }) {
   return (
-    <div
-      className={`achievement-card achievement-card--${color}`}
-      style={{ animationDelay: `${delay}s` }}
-    >
-      <div className="achievement-icon" aria-hidden="true">
-        <span className="achievement-icon-letter">{icon}</span>
+    <div className="achievement-pill">
+      <div className="achievement-pill-icon">{icon}</div>
+      <div className="achievement-pill-copy">
+        <div className="achievement-pill-title">
+          <span>{title}</span>
+          {value ? <span className={accentClass}>{value}</span> : null}
+        </div>
+        <div className="achievement-pill-subtitle">{subtitle}</div>
       </div>
-      <div className="achievement-copy">
-        <h3 className="achievement-title">
-          {title}
-          {value ? <span className="achievement-value"> {value}</span> : null}
-        </h3>
-        <p className="achievement-status">{status}</p>
+    </div>
+  );
+}
+
+function BigAchievementCard() {
+  return (
+    <div className="achievement-hero">
+      <div className="achievement-hero-sheen" aria-hidden="true"></div>
+      <div className="achievement-badge">
+        <div className="achievement-confetti confetti-a" aria-hidden="true"></div>
+        <div className="achievement-confetti confetti-b" aria-hidden="true"></div>
+        <div className="achievement-confetti confetti-c" aria-hidden="true"></div>
+        <div className="achievement-confetti confetti-d" aria-hidden="true"></div>
+        <div className="achievement-badge-core">
+          <Trophy aria-hidden="true" strokeWidth={1.2} />
+        </div>
+      </div>
+      <div className="achievement-hero-title">First Push Workout</div>
+      <div className="achievement-hero-time">
+        <span>Time achieved</span>
+        <strong>7:42 AM</strong>
       </div>
     </div>
   );
@@ -77,59 +41,68 @@ function AchievementCard({ icon, title, value, status, color, delay }) {
 function AchievementsPage({ isActive, onBack }) {
   return (
     <main className="app-shell achievements-shell" hidden={!isActive}>
-      <header className="achievements-header">
+      <header className="achievements-top">
         <button className="achievements-back" type="button" onClick={onBack}>
-          <img src="/assets/icons/backButton.png" alt="" aria-hidden="true" />
+          <ChevronLeft aria-hidden="true" />
           Back
         </button>
         <h1>Achievements</h1>
-        <button className="achievements-share" type="button">
-          Share
-        </button>
+        <div className="achievements-top-spacer" aria-hidden="true"></div>
       </header>
 
-      <section className="achievements-hero">
-        <div className="achievements-hero-header">
-          <p>Today&apos;s Highlight</p>
-          <span className="achievements-hero-date">Today</span>
-        </div>
-        <div className="achievements-hero-card">
-          <div className="achievements-hero-glow achievements-hero-glow--left" />
-          <div className="achievements-hero-glow achievements-hero-glow--right" />
-          <div className="achievements-hero-trophy">
-            <span className="achievement-icon-letter">T</span>
-          </div>
-          <h2>First Push Workout</h2>
-          <div className="achievements-hero-pill">
-            <span>Time</span>
-            <strong>07:42 AM</strong>
-          </div>
-        </div>
-      </section>
+      <div className="achievements-content">
+        <div className="achievements-label">Today</div>
+        <BigAchievementCard />
 
-      <section className="achievements-section">
-        <div className="achievements-section-header">
-          <p>This Week</p>
-          <span>Activity</span>
+        <div className="achievements-label">This Week</div>
+        <div className="achievement-pill-grid">
+          <StatPill
+            icon={<Flame className="pill-icon flame" aria-hidden="true" />}
+            title="Calories Burned"
+            value="500"
+            subtitle="Unlocked"
+            accentClass="pill-accent"
+          />
+          <StatPill
+            icon={<Droplets className="pill-icon droplet" aria-hidden="true" />}
+            title="Streak 3 Days"
+            value=""
+            subtitle="Unlocked"
+            accentClass="pill-accent"
+          />
+          <StatPill
+            icon={<Flame className="pill-icon flame" aria-hidden="true" />}
+            title="5k Lbs Lifted"
+            value=""
+            subtitle="Unlocked"
+            accentClass="pill-accent"
+          />
+          <StatPill
+            icon={<Zap className="pill-icon bolt" aria-hidden="true" />}
+            title="Longest Set"
+            value="10"
+            subtitle="Unlocked"
+            accentClass="pill-accent"
+          />
+          <StatPill
+            icon={<Dumbbell className="pill-icon dumbbell" aria-hidden="true" />}
+            title="Hyrm Lonce Presd"
+            value=""
+            subtitle="Unlocked"
+            accentClass="pill-accent"
+          />
+          <StatPill
+            icon={<Zap className="pill-icon bolt" aria-hidden="true" />}
+            title="Bench Press"
+            value=""
+            subtitle="Dangles / Phn Rep P AM"
+            accentClass="pill-accent"
+          />
         </div>
-        <div className="achievements-grid">
-          {ACHIEVEMENTS_WEEK.map((item, index) => (
-            <AchievementCard key={item.id} {...item} delay={0.1 + index * 0.1} />
-          ))}
-        </div>
-      </section>
+      </div>
 
-      <section className="achievements-section">
-        <div className="achievements-section-header">
-          <p>Strength Milestones</p>
-          <span>Awards</span>
-        </div>
-        <div className="achievements-grid">
-          {ACHIEVEMENTS_STRENGTH.map((item, index) => (
-            <AchievementCard key={item.id} {...item} delay={0.3 + index * 0.1} />
-          ))}
-        </div>
-      </section>
+      <div className="achievements-home-indicator" aria-hidden="true"></div>
+      <div className="achievements-bg-sheen" aria-hidden="true"></div>
     </main>
   );
 }

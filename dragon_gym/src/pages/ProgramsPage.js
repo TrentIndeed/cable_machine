@@ -1,7 +1,7 @@
 import React from 'react';
 
 function ProgramsPage({ isActive, refs, exerciseCatalog, selectorOpen, setSelectorOpen, videoSrc }) {
-  const { logListRef, exerciseSelectRef, exerciseTitleRef } = refs;
+  const { exerciseSelectRef, exerciseTitleRef } = refs;
 
   return (
     <main className="app-shell" hidden={!isActive}>
@@ -40,13 +40,6 @@ function ProgramsPage({ isActive, refs, exerciseCatalog, selectorOpen, setSelect
             ></video>
           </div>
         </div>
-      </section>
-      <section className="log-panel" aria-label="Workout log">
-        <h3>Workout Log</h3>
-        <p className="log-description" id="logDescription">
-          Every set is recorded to see strength gains over time.
-        </p>
-        <ul className="log-list" id="workoutLogList" ref={logListRef}></ul>
       </section>
     </main>
   );

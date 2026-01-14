@@ -9,6 +9,7 @@ import { useTelemetry } from './hooks/useTelemetry';
 import useWorkoutEngine from './hooks/useWorkoutEngine';
 import HomePage from './pages/HomePage';
 import ProgramsPage from './pages/ProgramsPage';
+import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementsPage from './pages/AchievementsPage';
 import './App.css';
@@ -445,9 +446,14 @@ function App() {
         setSelectorOpen={setSelectorOpen}
         videoSrc={videoSrc}
       />
+      <HistoryPage
+        isActive={activePage === 'history'}
+        refs={homeRefs}
+        onAchievements={() => setActivePage('achievements')}
+      />
       <AchievementsPage
         isActive={activePage === 'achievements'}
-        onBack={() => setActivePage('home')}
+        onBack={() => setActivePage('history')}
       />
       <SettingsPage
         isActive={activePage === 'settings'}
