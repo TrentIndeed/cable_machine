@@ -403,9 +403,6 @@ function App() {
 
   return (
     <>
-      {showLoadScreen ? (
-        <LoadScreen onBegin={() => setShowLoadScreen(false)} />
-      ) : null}
       <svg className="sr-only" width="0" height="0" aria-hidden="true">
         <defs>
           <clipPath id="concaveTopClip" clipPathUnits="objectBoundingBox">
@@ -415,7 +412,10 @@ function App() {
       </svg>
       <LoadScreen
         isActive={showLoadScreen}
-        onBegin={() => setShowLoadScreen(false)}
+        onBegin={() => {
+          setShowLoadScreen(false);
+          setActivePage('home');
+        }}
       />
       <HomePage
         isActive={activePage === 'home'}

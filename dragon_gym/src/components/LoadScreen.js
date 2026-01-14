@@ -113,7 +113,7 @@ function getTransformX(element) {
   return matrix.m41 || 0;
 }
 
-function LoadScreen({ onBegin }) {
+function LoadScreen({ isActive = true, onBegin }) {
   const [index, setIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const indexRef = useRef(0);
@@ -271,6 +271,15 @@ function LoadScreen({ onBegin }) {
   const total = WORKOUTS.length;
   const prevIndex = (index - 1 + total) % total;
   const nextIndex = (index + 1) % total;
+  const handleBegin = useCallback(() => {
+    if (onBegin) {
+      onBegin();
+    }
+  }, [onBegin]);
+
+  if (!isActive) {
+    return null;
+  }
 
   return (
     <section className="load-screen" role="dialog" aria-label="Choose Exercise">
@@ -349,6 +358,15 @@ function LoadScreen({ onBegin }) {
                     className="cardWrap"
                     data-state={state}
                     key={workout.title}
+                    role="button"
+                    tabIndex={0}
+                    onClick={handleBegin}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleBegin();
+                      }
+                    }}
                   >
                     <div className="card">
                       <div
@@ -400,7 +418,7 @@ function LoadScreen({ onBegin }) {
         </main>
 
         <footer className="bottom">
-          <button className="beginBtn" type="button" onClick={onBegin}>
+          <button className="beginBtn" type="button" onClick={handleBegin}>
             Begin
           </button>
         </footer>

@@ -3999,7 +3999,7 @@ button.is-flash {
 }
 
 .load-screen .bottom {
-  padding: 0 18px 22px;
+  padding: 0 180px 180px;
   position: relative;
   z-index: 10;
   display: flex;
@@ -4007,14 +4007,14 @@ button.is-flash {
 }
 
 .load-screen .beginBtn {
-  width: 24%;
-  min-width: 120px;
+  width: 42%;
+  min-width: 252px;
   margin: 0 auto;
-  height: 44px;
+  height: 92px;
   border-radius: 999px;
   border: none;
   color: rgba(255, 255, 255, 0.96);
-  font-size: 15px;
+  font-size: 32px;
   font-weight: 700;
   letter-spacing: 0.2px;
   background: linear-gradient(180deg, rgba(34, 130, 255, 0.9), rgba(14, 90, 220, 0.9));
@@ -4045,6 +4045,6 @@ button.is-flash {
   }
 
   .load-screen .bottom {
-    padding-bottom: 26px;
+    padding-bottom: 200px;
   }
 }
