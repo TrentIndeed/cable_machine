@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { sendCommand } from './api/sendCommand';
-import {
-  COMMAND_TYPES,
-  FONT_OPTIONS,
-} from './constants/appConstants';
+import { COMMAND_TYPES } from './constants/appConstants';
 import BottomNav from './components/BottomNav';
 import { useTelemetry } from './hooks/useTelemetry';
 import useWorkoutEngine from './hooks/useWorkoutEngine';
@@ -26,10 +23,7 @@ function App() {
   const [motorsSyncedState, setMotorsSyncedState] = useState(false);
   const [syncHidden, setSyncHidden] = useState(false);
   const [commandResistance, setCommandResistance] = useState(1);
-  const [commandStatus, setCommandStatus] = useState('idle');
-  const [commandMessage, setCommandMessage] = useState('');
   const [activePage, setActivePage] = useState('home');
-  const [uiFont, setUiFont] = useState('sf');
 
   const forceCurveModeRef = useRef(forceCurveMode);
   const forceCurveIntensityRef = useRef(forceCurveIntensity);
@@ -148,13 +142,6 @@ function App() {
   );
 
   useEffect(() => {
-    const selected = FONT_OPTIONS.find((option) => option.value === uiFont);
-    if (selected) {
-      document.documentElement.style.setProperty('--ui-font', selected.stack);
-    }
-  }, [uiFont]);
-
-  useEffect(() => {
     telemetryRef.current = telemetry;
   }, [telemetry]);
 
@@ -162,10 +149,6 @@ function App() {
     typeof telemetry?.Connected === 'boolean'
       ? telemetry.Connected
       : telemetryStatus === 'connected';
-  const telemetryFault = Boolean(telemetry?.Fault);
-  const telemetryCmdStatus = Number.isFinite(telemetry?.CmdStatus)
-    ? telemetry.CmdStatus
-    : '--';
   const resistanceLabel = Number.isFinite(commandResistance)
     ? Math.round(commandResistance)
     : 0;
@@ -350,24 +333,15 @@ function App() {
   }, [motorsSyncedState]);
 
   const handleCommand = async (type, overrides = {}) => {
-    setCommandStatus('sending');
-    setCommandMessage('');
     try {
       const response = await sendCommand({
         type,
         axisMask,
         ...overrides,
       });
-      const ackMessage = response?.ack?.timedOut
-        ? 'Ack timed out'
-        : response?.seq !== undefined
-          ? `Seq ${response.seq}`
-          : 'Command sent';
-      setCommandStatus('sent');
-      setCommandMessage(ackMessage);
+      return response;
     } catch (error) {
-      setCommandStatus('error');
-      setCommandMessage(error.message || 'Command failed');
+      return error;
     }
   };
 
@@ -451,14 +425,7 @@ function App() {
       />
       <SettingsPage
         isActive={activePage === 'settings'}
-        uiFont={uiFont}
-        onFontChange={(event) => setUiFont(event.target.value)}
         onBack={() => setActivePage('home')}
-        telemetryConnected={telemetryConnected}
-        telemetryFault={telemetryFault}
-        telemetryCmdStatus={telemetryCmdStatus}
-        commandStatus={commandStatus}
-        commandMessage={commandMessage}
       />
       <BottomNav activePage={activePage} onNavigate={setActivePage} />
     </>
