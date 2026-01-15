@@ -3981,8 +3981,311 @@ button.is-flash {
     justify-content: flex-start;
   }
 
-  .template-status-pill {
-    align-items: flex-start;
+.template-status-pill {
+  align-items: flex-start;
+}
+}
+
+.exercise-library {
+  position: relative;
+  padding: var(--space-3) clamp(12px, 3vw, 20px) calc(var(--nav-height) + var(--space-3));
+  border-radius: 32px;
+  background:
+    radial-gradient(900px 600px at 35% -10%, rgba(80, 120, 255, 0.22), transparent 60%),
+    radial-gradient(700px 500px at 85% 20%, rgba(30, 200, 255, 0.12), transparent 55%),
+    linear-gradient(180deg, #060708 0%, #070809 35%, #050607 100%);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.exercise-library__header {
+  padding: var(--space-2) 2px var(--space-2);
+}
+
+.exercise-library__title {
+  font-weight: 800;
+  font-size: clamp(3rem, 6vw, 3rem);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 6px 0 14px;
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+}
+
+.exercise-library__searchRow {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.exercise-library__search {
+  flex: 1;
+  height: 104px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.exercise-library__search input {
+  border: none;
+  outline: none;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 32px;
+  letter-spacing: 0.01em;
+}
+
+.exercise-library__search input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.exercise-library__filterBtn {
+  width: 88px;
+  height: 88px;
+  border-radius: 28px;
+  border: 1px solid transparent;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.exercise-library__filterBtn svg {
+  width: 52px;
+  height: 52px;
+  fill: none;
+  stroke: rgba(80, 170, 255, 0.95);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 10px 18px rgba(40, 140, 255, 0.25));
+}
+
+.exercise-library__categories {
+  margin-top: 28px;
+  padding: 12px 4px 16px;
+  display: flex;
+  gap: 20px;
+  overflow: auto;
+  scrollbar-width: none;
+}
+
+.exercise-library__categories::-webkit-scrollbar {
+  display: none;
+}
+
+.exercise-library__pill {
+  flex: 0 0 auto;
+  height: 68px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 700;
+  font-size: 26px;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+.exercise-library__pill.is-on {
+  background: linear-gradient(180deg, rgba(60, 150, 255, 0.95), rgba(30, 110, 255, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 30px rgba(25, 110, 255, 0.22);
+}
+
+.exercise-library__pill.is-alt {
+  background: linear-gradient(180deg, rgba(55, 120, 255, 0.88), rgba(35, 95, 235, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 30px rgba(25, 110, 255, 0.18);
+}
+
+.exercise-library__grid {
+  margin-top: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px 28px;
+}
+
+.exercise-library__card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 40px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.exercise-library__card:active {
+  transform: scale(0.985);
+}
+
+.exercise-library__thumb {
+  border-radius: 32px;
+  height: 296px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+
+.exercise-library__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(1.02) contrast(1.05);
+  transform: scale(1.02);
+}
+
+.exercise-library__tag {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  height: 44px;
+  padding: 0 20px 0 16px;
+  border-radius: 999px;
+  background: rgba(20, 22, 25, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(10px);
+}
+
+.exercise-library__tagDot {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(90, 210, 255, 0.85);
+  box-shadow: 0 10px 18px rgba(40, 140, 255, 0.18);
+}
+
+.exercise-library__badges {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.exercise-library__badge {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: rgba(20, 22, 25, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+}
+
+.exercise-library__badgeDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 99px;
+  background: rgba(255, 150, 0, 0.95);
+  box-shadow: 0 10px 14px rgba(255, 150, 0, 0.12);
+}
+
+.exercise-library__badgeDot.is-cool {
+  background: rgba(60, 150, 255, 0.95);
+  box-shadow: 0 10px 14px rgba(60, 150, 255, 0.12);
+}
+
+.exercise-library__name {
+  margin-top: 20px;
+  font-weight: 900;
+  font-size: 32px;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exercise-library__sub {
+  margin-top: 8px;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.38);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exercise-library__fab {
+  position: absolute;
+  right: 36px;
+  bottom: calc(var(--nav-height) + 48px);
+  width: 136px;
+  height: 136px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(60, 160, 255, 0.95), rgba(40, 110, 255, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 26px 60px rgba(25, 110, 255, 0.3), 0 18px 40px rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.exercise-library__fab svg {
+  width: 56px;
+  height: 56px;
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
+}
+
+@media (max-width: 360px) {
+  .exercise-library__title {
+    font-size: 4.2rem;
+  }
+
+  .exercise-library__grid {
+    gap: 28px 24px;
+  }
+
+  .exercise-library__thumb {
+    height: 280px;
+  }
+
+  .exercise-library__fab {
+    width: 128px;
+    height: 128px;
   }
 }
 
