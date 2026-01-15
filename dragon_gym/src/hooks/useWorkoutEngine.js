@@ -1582,7 +1582,9 @@ function useWorkoutEngine(params) {
     }
 
     function renderExercisePreview() {
-      const selection = elements.exerciseSelect.value;
+      const selection = elements.exerciseSelect
+        ? elements.exerciseSelect.value
+        : Object.keys(exerciseCatalog)[0] || 'custom';
       const label = exerciseCatalog[selection] || 'Custom';
       if (elements.exerciseTitle) {
         elements.exerciseTitle.textContent = label;
@@ -1597,7 +1599,9 @@ function useWorkoutEngine(params) {
     if (elements.exerciseSelect) {
       elements.exerciseSelect.addEventListener('change', handleExerciseChange);
     }
-    renderExercisePreview();
+    if (elements.exerciseSelect || Object.keys(exerciseCatalog).length) {
+      renderExercisePreview();
+    }
 
     function updateStatuses() {
       elements.setStatus.textContent = `${currentSet}`;

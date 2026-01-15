@@ -10,6 +10,7 @@ import ProgramsPage from './pages/ProgramsPage';
 import HistoryPage from './pages/HistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import AchievementsPage from './pages/AchievementsPage';
+import LeaguePage from './pages/LeaguePage';
 import ProfilePage from './pages/ProfilePage';
 import './App.css';
 
@@ -477,6 +478,7 @@ function App() {
         isActive={activePage === 'achievements'}
         onBack={() => setActivePage('history')}
       />
+      <LeaguePage isActive={activePage === 'league'} />
       <SettingsPage
         isActive={activePage === 'settings'}
         uiFont={uiFont}

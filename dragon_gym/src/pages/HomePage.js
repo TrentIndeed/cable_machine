@@ -187,7 +187,7 @@ function HomePage({
         <div className="workout-summary-fireworks" ref={workoutSummaryFireworksRef}></div>
         <div className="workout-summary-success" ref={workoutSummarySuccessRef}></div>
         <div className="workout-summary-content" role="dialog" aria-modal="true">
-          <div className="workout-summary-headline">Set Complete!</div>
+          <div className="workout-summary-headline">Workout Complete!</div>
           <div className="workout-summary-card" aria-label="Workout summary">
             <div className="workout-summary-header">
               <div>Workout Summary</div>

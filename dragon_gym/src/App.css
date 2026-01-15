@@ -4445,6 +4445,245 @@ button.is-flash {
   opacity: 0.6;
 }
 
+.achievements-shell {
+  padding-top: var(--space-4);
+  padding-bottom: calc(var(--nav-height) + var(--space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.ach-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ach-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(120, 180, 255, 0.9);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ach-title {
+  margin: 0;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.ach-share {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.ach-hero {
+  display: grid;
+  gap: 16px;
+}
+
+.ach-hero__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ach-hero__card {
+  position: relative;
+  padding: 32px 24px;
+  border-radius: 40px;
+  background: linear-gradient(180deg, rgba(44, 44, 46, 0.8), rgba(28, 28, 30, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6);
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.ach-hero__glow {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.6;
+}
+
+.ach-hero__glow--blue {
+  top: -40%;
+  left: -10%;
+  background: rgba(59, 130, 246, 0.35);
+}
+
+.ach-hero__glow--purple {
+  bottom: -40%;
+  right: -10%;
+  background: rgba(124, 58, 237, 0.35);
+}
+
+.ach-hero__badge {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(140deg, rgba(59, 130, 246, 0.9), rgba(17, 24, 39, 0.95));
+  display: grid;
+  place-items: center;
+  color: rgba(255, 215, 110, 0.95);
+  z-index: 1;
+}
+
+.ach-hero__card h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.ach-hero__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.ach-hero__time strong {
+  color: rgba(80, 255, 170, 0.9);
+  font-size: 12px;
+}
+
+.ach-section {
+  display: grid;
+  gap: 14px;
+}
+
+.ach-section__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ach-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  background: #15171c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+  animation: ach-slide-up 0.5s ease-out both;
+}
+
+.ach-card__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+}
+
+.ach-card__meta {
+  display: grid;
+  gap: 6px;
+}
+
+.ach-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.ach-card__value {
+  margin-left: 6px;
+  color: rgba(96, 165, 250, 0.95);
+  font-size: 13px;
+}
+
+.ach-card__status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.ach-card--orange .ach-card__icon {
+  background: rgba(245, 158, 11, 0.2);
+  color: rgba(251, 191, 36, 0.9);
+}
+
+.ach-card--yellow .ach-card__icon {
+  background: rgba(234, 179, 8, 0.18);
+  color: rgba(250, 204, 21, 0.9);
+}
+
+.ach-card--blue .ach-card__icon {
+  background: rgba(59, 130, 246, 0.18);
+  color: rgba(96, 165, 250, 0.95);
+}
+
+.ach-card--purple .ach-card__icon {
+  background: rgba(168, 85, 247, 0.18);
+  color: rgba(216, 180, 254, 0.95);
+}
+
+.ach-card--green .ach-card__icon {
+  background: rgba(16, 185, 129, 0.18);
+  color: rgba(52, 211, 153, 0.95);
+}
+
+.ach-card--indigo .ach-card__icon {
+  background: rgba(99, 102, 241, 0.18);
+  color: rgba(129, 140, 248, 0.95);
+}
+
+@keyframes ach-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .exercise-selected-overlay {
   position: fixed;
   inset: 0;
