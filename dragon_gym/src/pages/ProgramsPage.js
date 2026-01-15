@@ -4,6 +4,8 @@ function ProgramsPage({ isActive, refs, exerciseCatalog, selectorOpen, setSelect
   const { exerciseSelectRef, exerciseTitleRef } = refs;
   const [primaryCat, setPrimaryCat] = useState('All');
   const [query, setQuery] = useState('');
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [showSelectedCard, setShowSelectedCard] = useState(false);
 
   const categories = useMemo(
     () => [
@@ -221,6 +223,10 @@ function ProgramsPage({ isActive, refs, exerciseCatalog, selectorOpen, setSelect
               key={`${exercise.name}-${exercise.sub}`}
               className="exercise-library__card"
               type="button"
+              onClick={() => {
+                setSelectedExercise(exercise);
+                setShowSelectedCard(true);
+              }}
             >
               <div className="exercise-library__thumb">
                 <img src={exercise.img} alt="" />
@@ -251,6 +257,135 @@ function ProgramsPage({ isActive, refs, exerciseCatalog, selectorOpen, setSelect
           </svg>
         </button>
       </section>
+      {showSelectedCard && selectedExercise ? (
+        <section className="exercise-selected-overlay" aria-label="Selected exercise">
+          <div className="exercise-selected-dim" aria-hidden="true"></div>
+          <div className="exercise-selected-card">
+            <div className="exercise-selected-topRow">
+              <div className="exercise-selected-title">{selectedExercise.name}</div>
+              <button
+                className="exercise-selected-close"
+                type="button"
+                aria-label="Close"
+                onClick={() => setShowSelectedCard(false)}
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path
+                    d="M3 3L11 11M11 3L3 11"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="exercise-selected-chipRow">
+              <div className="exercise-selected-pill" aria-label="Muscle group chips">
+                <div className="exercise-selected-dots" aria-hidden="true">
+                  <span className="exercise-selected-dot"></span>
+                  <span className="exercise-selected-dot is-pink"></span>
+                </div>
+                <div className="exercise-selected-pillText">
+                  Vlol deer 51 eq Roighte Riete
+                </div>
+              </div>
+              <div className="exercise-selected-actions" aria-label="Quick actions">
+                <button className="exercise-selected-iconBtn" type="button" aria-label="Power">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 2v10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path
+                      d="M7.5 4.8A8.5 8.5 0 1 0 16.5 4.8"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+                <button className="exercise-selected-iconBtn" type="button" aria-label="Start set">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M13 5l-2 5 3 3-2 6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 8l-2 2 3 3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M15 14h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+                <button className="exercise-selected-iconBtn" type="button" aria-label="Add">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <button className="exercise-selected-thumb" type="button" aria-label="Open exercise demo">
+              <div className="exercise-selected-play">
+                <div className="exercise-selected-playBtn" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M10 8l8 4-8 4V8z" fill="rgba(255,255,255,.92)" />
+                  </svg>
+                </div>
+              </div>
+              <div className="exercise-selected-brand">
+                <div className="exercise-selected-mark" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 3c4.8 0 9 3.7 9 9s-4.2 9-9 9-9-4.2-9-9 4.2-9 9-9Z"
+                      fill="rgba(255,255,255,.14)"
+                    />
+                    <path
+                      d="M8.4 14.8c.7 1.5 2.1 2.5 3.8 2.5 2.3 0 4.2-1.9 4.2-4.2 0-2.2-1.7-4-3.8-4.2"
+                      stroke="rgba(255,255,255,.75)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+                <div className="exercise-selected-brandText">
+                  <div className="exercise-selected-brandName">Sora</div>
+                  <div className="exercise-selected-brandHandle">@trentindeed</div>
+                </div>
+              </div>
+            </button>
+            <div className="exercise-selected-scrub">
+              <div className="exercise-selected-track">
+                <div className="exercise-selected-fill"></div>
+              </div>
+            </div>
+            <div className="exercise-selected-actionsRow">
+              <button className="exercise-selected-primary" type="button">
+                Add to Workout
+              </button>
+              <button
+                className="exercise-selected-confirm"
+                type="button"
+                aria-label="Confirm"
+                onClick={() => setShowSelectedCard(false)}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M5 13l4 4L19 7"
+                    stroke="rgba(255,255,255,.92)"
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="exercise-selected-homeBar" aria-hidden="true"></div>
+        </section>
+      ) : null}
     </main>
   );
 }

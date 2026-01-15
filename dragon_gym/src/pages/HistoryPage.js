@@ -12,6 +12,9 @@ function HistoryPage({ isActive, refs, onAchievements }) {
       const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
       const { width, height } = canvas.getBoundingClientRect();
+      if (!width || !height) {
+        return;
+      }
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       ctx.scale(dpr, dpr);
@@ -71,6 +74,9 @@ function HistoryPage({ isActive, refs, onAchievements }) {
       const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
       const { width, height } = canvas.getBoundingClientRect();
+      if (!width || !height) {
+        return;
+      }
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
       ctx.scale(dpr, dpr);
@@ -109,17 +115,34 @@ function HistoryPage({ isActive, refs, onAchievements }) {
       });
     };
 
-    drawLineChart(lineChartRef.current);
-    drawBarChart(barChartRef.current);
-
-    const handleResize = () => {
+    const renderCharts = () => {
       drawLineChart(lineChartRef.current);
       drawBarChart(barChartRef.current);
     };
 
+    const rafId = window.requestAnimationFrame(renderCharts);
+
+    const handleResize = () => {
+      renderCharts();
+    };
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [isActive]);
+
+  useEffect(() => {
+    if (!isActive) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const event = new Event('resize');
+      window.dispatchEvent(event);
+    }, 50);
+    return () => window.clearTimeout(timer);
+  }, [isActive]);
 
   return (
     <main className="app-shell" hidden={!isActive}>
