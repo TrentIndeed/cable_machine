@@ -4270,6 +4270,181 @@ button.is-flash {
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.35));
 }
 
+.session-summary {
+  margin-top: var(--panel-gap);
+  padding: 40px 36px 64px;
+  background: linear-gradient(180deg, #0a0b0e, #000);
+  border-radius: 56px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6);
+}
+
+.session-summary__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.session-summary__back {
+  background: #111319;
+  border-radius: 28px;
+  padding: 12px 28px;
+  font-size: 26px;
+  color: #8fbaff;
+  border: none;
+}
+
+.session-summary__title {
+  font-size: 36px;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.session-summary__dots {
+  font-size: 44px;
+  opacity: 0.6;
+}
+
+.session-summary__totals {
+  text-align: center;
+  margin: 20px 0 36px;
+}
+
+.session-summary__totals small {
+  color: #9aa0aa;
+  display: block;
+  margin-bottom: 12px;
+  letter-spacing: 0.8px;
+  font-size: 24px;
+}
+
+.session-summary__totalRow {
+  display: flex;
+  justify-content: center;
+  gap: 52px;
+  align-items: baseline;
+}
+
+.session-summary__totalMain {
+  font-size: 88px;
+  font-weight: 700;
+}
+
+.session-summary__totalSub {
+  font-size: 52px;
+  color: #7fa7ff;
+  font-weight: 500;
+}
+
+.session-summary__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+
+.session-summary__card {
+  background: linear-gradient(180deg, #171a21, #12141a);
+  border-radius: 40px;
+  padding: 32px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.session-summary__card h4 {
+  margin: 0 0 16px;
+  font-size: 26px;
+  color: #9aa0aa;
+  font-weight: 500;
+}
+
+.session-summary__big {
+  font-size: 84px;
+  font-weight: 700;
+}
+
+.session-summary__unit {
+  font-size: 28px;
+  color: #9aa0aa;
+  margin-left: 8px;
+}
+
+.session-summary__card.is-blue {
+  background: linear-gradient(160deg, #2f8cff, #2262d8);
+}
+
+.session-summary__card.is-green {
+  background: linear-gradient(160deg, #2ecc71, #1f9d55);
+}
+
+.session-summary__tempo {
+  font-size: 68px;
+  font-weight: 700;
+}
+
+.session-summary__tempoSub {
+  font-size: 24px;
+  color: #9aa0aa;
+  margin-top: 8px;
+}
+
+.session-summary__ringWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 192px;
+}
+
+.session-summary__ring {
+  width: 172px;
+  height: 172px;
+  border-radius: 50%;
+  background: conic-gradient(#2d8cff 82%, #2a2d35 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-summary__ring span {
+  background: #15171c;
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 28px;
+}
+
+.session-summary__chartCard {
+  grid-column: 1 / -1;
+  padding: 28px 24px 36px;
+}
+
+.session-summary__chartTitle {
+  font-size: 26px;
+  color: #9aa0aa;
+  margin-bottom: 16px;
+}
+
+.session-summary__chart {
+  width: 100%;
+  height: 280px;
+}
+
+.session-summary__chartCard.is-bar .session-summary__chart {
+  height: 240px;
+}
+
+.session-summary__watermark {
+  text-align: right;
+  font-size: 24px;
+  color: #9aa0aa;
+  margin-top: 20px;
+  opacity: 0.6;
+}
+
 @media (max-width: 360px) {
   .exercise-library__title {
     font-size: 4.2rem;
