@@ -147,20 +147,17 @@ textarea {
 }
 
 .set-complete-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: clamp(180px, 22vh, 260px);
+  position: fixed;
+  inset: 0;
+  height: 100vh;
   display: grid;
-  place-items: center;
+  place-items: start center;
   padding-top: var(--space-3);
   pointer-events: none;
   opacity: 0;
   transform: translateY(-12px);
   transition: opacity 250ms ease, transform 250ms ease;
-  overflow: hidden;
-  z-index: 6;
+  z-index: 1100;
 }
 
 .set-complete-overlay.is-visible {
@@ -192,7 +189,7 @@ textarea {
 }
 
 .workout-summary-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
@@ -201,8 +198,7 @@ textarea {
   opacity: 0;
   pointer-events: none;
   transition: opacity 250ms ease;
-  overflow: hidden;
-  z-index: 8;
+  z-index: 1110;
 }
 
 .workout-summary-overlay.is-visible {
