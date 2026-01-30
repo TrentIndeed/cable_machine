@@ -6,6 +6,10 @@ VAR_GLOBAL
     // UI / App interface (you already have these DUTs)
     Cmd       : ST_UI_Command;
     Telemetry : ST_UI_Telemetry;
+    // UI settings / modes
+    BarbellMode       : BOOL := FALSE;
+    CurveMode         : INT := 0;    // 0=Linear, 1=Chain, 2=EccentricPlus
+    EccentricEnabled  : BOOL := FALSE;
 END_VAR
 ]]></Declaration>
   </GVL>

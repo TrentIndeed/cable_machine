@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="ST_AxisOut" Id="{4775c6ea-53db-41f7-b7db-e2e263821e45}">
+    <Declaration><![CDATA[TYPE ST_AxisOut :
+STRUCT
+    // Map these outputs from Master -> Drive (PDOs)
+    ControlWord  : WORD;   // 0x6040 (UNSIGNED16)
+    OpMode       : SINT;   // 0x6060 (INTEGER8)
+    TargetTorque : INT;    // 0x6071 (INTEGER16)
+    TorqueSlope  : UDINT;  // 0x6087 (UNSIGNED32, optional)
+    PositionOffset : DINT; // 0x607C (INTEGER32)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

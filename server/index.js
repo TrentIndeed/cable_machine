@@ -31,6 +31,7 @@ const COMMAND_TYPE_MAP = {
   SetResistance: 4,
   SetForce: 5,
   Reset: 6,
+  Retract: 7,
 };
 
 const ADS_CONFIG = {
@@ -313,6 +314,8 @@ wss.on('connection', (socket, req) => {
   socket.send(JSON.stringify({ Connected: adsConnected }));
 });
 
+const TELEMETRY_INTERVAL_MS = 1000 / 30;
+
 setInterval(async () => {
   if (wss.clients.size === 0) {
     return;
@@ -327,7 +330,7 @@ setInterval(async () => {
       clientSocket.send(payload);
     }
   });
-}, 1000);
+}, TELEMETRY_INTERVAL_MS);
 
 setInterval(() => {
   if (!adsConnected && !adsConnecting) {

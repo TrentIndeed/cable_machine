@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="ST_AxisIn" Id="{6566c802-68df-4c42-8fe9-00b13fbb4aca}">
+    <Declaration><![CDATA[TYPE ST_AxisIn :
+STRUCT
+    // Map these inputs from Drive -> Master (PDOs)
+    StatusWord     : WORD;   // 0x6041 (UNSIGNED16)
+    OpModeDisplay  : SINT;   // 0x6061 (INTEGER8)
+    ErrorCode      : WORD;   // 0x603F (UNSIGNED16)
+    PosAct         : DINT;   // 0x6064 (INTEGER32)
+    VelAct         : DINT;   // 0x606C (INTEGER32)
+    TorqueAct      : INT;    // 0x6077 (INTEGER16)
+    FollowingError : DINT;   // 0x60F4 (INTEGER32)
+    // Optional debug inputs
+    PosDemand      : DINT;   // 0x6062 (INTEGER32)
+    VelDemand      : DINT;   // 0x606B (INTEGER32)
+    TorqueDemand   : INT;    // 0x6071 (INTEGER16)
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

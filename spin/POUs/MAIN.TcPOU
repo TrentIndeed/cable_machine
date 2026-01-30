@@ -3,178 +3,576 @@
   <POU Name="MAIN" Id="{260f120f-39ab-4c67-b134-4b51b0e2a29b}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
-    axis_left  : AXIS_REF;
-    axis_right : AXIS_REF;
-    fbResetL : MC_Reset;
-    fbResetR : MC_Reset;
-
     lastSeq        : DINT := -1;
+
     bEnableL       : BOOL := FALSE;
     bEnableR       : BOOL := FALSE;
-    fForceL        : REAL := 0.0;
-    fForceR        : REAL := 0.0;
+    bEnableLPrev   : BOOL := FALSE;
+    bEnableRPrev   : BOOL := FALSE;
+    fForceCmdL     : REAL := 0.0;
+    fForceCmdR     : REAL := 0.0;
 
     // Brake logic trackers
     bBrakeEngagedL : BOOL := TRUE;
     bBrakeEngagedR : BOOL := TRUE;
 
-    bDoResetL      : BOOL := FALSE;
-    bDoResetR      : BOOL := FALSE;
+    // Safety / trip state
+    bTripL         : BOOL := FALSE;
+    bTripR         : BOOL := FALSE;
+    bTripSlackL    : BOOL := FALSE;
+    bTripSlackR    : BOOL := FALSE;
+    bTripLetGoL    : BOOL := FALSE;
+    bTripLetGoR    : BOOL := FALSE;
+    bTripFollowL   : BOOL := FALSE;
+    bTripFollowR   : BOOL := FALSE;
+    bTripCmdWatchL : BOOL := FALSE;
+    bTripCmdWatchR : BOOL := FALSE;
+    bZeroReqL      : BOOL := FALSE;
+    bZeroReqR      : BOOL := FALSE;
+    bRetractL      : BOOL := FALSE;
+    bRetractR      : BOOL := FALSE;
+    bRetractMovedL : BOOL := FALSE;
+    bRetractMovedR : BOOL := FALSE;
+    bInitDone      : BOOL := FALSE;
 
     nStateL : INT := 0;
     nStateR : INT := 0;
 
-    fLeftPos  : LREAL;
-    fRightPos : LREAL;
-    fLeftVelo  : LREAL;
-    fRightVelo : LREAL;
-    fLeftCableIn  : LREAL;
-    fRightCableIn : LREAL;
+    fZeroPosL : LREAL := 0.0;
+    fZeroPosR : LREAL := 0.0;
+    nPosOffsetL : DINT := 0;
+    nPosOffsetR : DINT := 0;
 
-    cDegPerRev : LREAL := 360.0;
-    cDrumDiameterIn : LREAL := 4.0;
-    cDrumCircumferenceIn : LREAL := 12.5663706143592; // PI * 4.0 in
+    fLeftPosCounts       : LREAL;
+    fRightPosCounts      : LREAL;
+    fLeftVelCounts       : LREAL;
+    fRightVelCounts      : LREAL;
+    fLeftFollowCounts    : LREAL;
+    fRightFollowCounts   : LREAL;
+
+    fLeftPos        : LREAL;
+    fRightPos       : LREAL;
+    fLeftVelo       : LREAL;
+    fRightVelo      : LREAL;
+    fLeftFollowErr  : LREAL;
+    fRightFollowErr : LREAL;
+
+    fLeftCableIn     : LREAL;
+    fRightCableIn    : LREAL;
+    fLeftCableRelIn  : LREAL;
+    fRightCableRelIn : LREAL;
+    fLeftVelIn       : LREAL;
+    fRightVelIn      : LREAL;
+    fLeftAcc         : LREAL;
+    fRightAcc        : LREAL;
+    fLeftVelLast     : LREAL := 0.0;
+    fRightVelLast    : LREAL := 0.0;
+
+    bEngagedL       : BOOL := FALSE;
+    bEngagedR       : BOOL := FALSE;
+    bEverEngagedL   : BOOL := FALSE;
+    bEverEngagedR   : BOOL := FALSE;
+    bTorqueAllowedL : BOOL := FALSE;
+    bTorqueAllowedR : BOOL := FALSE;
+
+    bBarbellMode      : BOOL := FALSE;
+    nCurveMode        : INT := 0;
+    bEccentricEnabled : BOOL := FALSE;
+
+    fForceBaseL : REAL := 0.0;
+    fForceBaseR : REAL := 0.0;
+    fForceOutL  : REAL := 0.0;
+    fForceOutR  : REAL := 0.0;
+    fCorr       : REAL := 0.0;
+    fDefaultForce : REAL := 1.0;
+    cForceCal       : REAL := 0.5;
+
+    bLetGoCondL  : BOOL := FALSE;
+    bLetGoCondR  : BOOL := FALSE;
+    bFollowCondL : BOOL := FALSE;
+    bFollowCondR : BOOL := FALSE;
+    bCmdActiveL  : BOOL := FALSE;
+    bCmdActiveR  : BOOL := FALSE;
+
+    fbLetGoL    : TON;
+    fbLetGoR    : TON;
+    fbFollowL   : TON;
+    fbFollowR   : TON;
+    fbCmdWatchL : TON;
+    fbCmdWatchR : TON;
+    fbRetractStopL : TON;
+    fbRetractStopR : TON;
+
+    bUseCmdWatchdog : BOOL := FALSE;
+    bUseLetGoTrip   : BOOL := TRUE;
+    bUseFollowTrip  : BOOL := TRUE;
+
+    fEngageMinIn      : LREAL := 0.25;
+    fSlackKillIn      : LREAL := 0.05;
+    fSlackKillInDyn   : LREAL := 0.0;
+    fVeloLetGoDegS    : LREAL := 1200.0;
+    fAccLetGoDegS2    : LREAL := 25000.0;
+    fFollowErrTripDeg : LREAL := 15.0;
+    tLetGoHold        : TIME := T#250ms;
+    tFollowErrHold    : TIME := T#30ms;
+    tCmdWatchHold     : TIME := T#100ms;
+    tRetractStopHold  : TIME := T#500ms;
+
+    cCycleSec         : LREAL := 0.01;
+    cDegPerRev        : LREAL := 360.0;
+    cDrumDiameterIn   : LREAL := 3.0;
+    cDrumCircumferenceIn : LREAL := 9.42477796076938; // PI * 3.0 in
+    cTorqueScale      : LREAL := 70.0;
+    cTorqueScaleMult  : LREAL := 0.1;
+    cMaxTorqueCounts  : LREAL := 3500.0;
+    cOpModeTorque     : SINT := 10;
+    cCountsPerMotorRev : LREAL := 16777216.0; // 24-bit encoder (2^24) counts per motor rev
+    cGearRatio         : LREAL := 10.0; // motor revs per drum rev (e.g., 10.0 for 10:1)
+    cPosSignL          : LREAL := -1.0;
+    cPosSignR          : LREAL := 1.0;
+
+    fCountsPerDrumRev : LREAL;
+    fDegPerCount      : LREAL;
+    fInPerCount       : LREAL;
+    fTorqueCmdL       : LREAL;
+    fTorqueCmdR       : LREAL;
+
+    // Force curve / barbell sync tuning
+    fChainSlope    : REAL := 0.0;
+    fEccMultiplier : REAL := 1.2;
+    KpSync         : REAL := 15.0;
+    KdSync         : REAL := 2.0;
+    FcorrMax       : REAL := 10.0;
+    fRetractForce  : REAL := 0.5;
+    fRetractStopVelDegS : LREAL := 5.0;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[// --- 1. COMMAND HANDLING ---
 IF GVL_UI.Cmd.Seq <> lastSeq THEN
     lastSeq := GVL_UI.Cmd.Seq;
-    bDoResetL := FALSE;
-    bDoResetR := FALSE;
 
     CASE GVL_UI.Cmd.CmdType OF
-        1: // ENABLE (Default to Clamp)
-            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bEnableL := TRUE; bBrakeEngagedL := TRUE; END_IF
-            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bEnableR := TRUE; bBrakeEngagedR := TRUE; END_IF
-            
-        2, 3: // DISABLE or STOP (Always Clamp)
-            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bEnableL := FALSE; fForceL := 0.0; bBrakeEngagedL := TRUE; END_IF
-            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bEnableR := FALSE; fForceR := 0.0; bBrakeEngagedR := TRUE; END_IF
-            
-        4, 5: // SET FORCE (Auto-Release)
-            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN 
-                fForceL := GVL_UI.Cmd.Param1; 
-                bBrakeEngagedL := (fForceL < 0.01); // Release brake even for very small force
+        1: // ENABLE (apply default torque if none set yet)
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN
+                bEnableL := TRUE;
+                bZeroReqL := TRUE;
+                IF ABS(fForceCmdL) < 0.01 THEN
+                    fForceCmdL := fDefaultForce;
+                END_IF
+                bBrakeEngagedL := (ABS(fForceCmdL) < 0.01);
             END_IF
-            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN 
-                fForceR := GVL_UI.Cmd.Param1; 
-                bBrakeEngagedR := (fForceR < 0.01);
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN
+                bEnableR := TRUE;
+                bZeroReqR := TRUE;
+                IF ABS(fForceCmdR) < 0.01 THEN
+                    fForceCmdR := fDefaultForce;
+                END_IF
+                bBrakeEngagedR := (ABS(fForceCmdR) < 0.01);
             END_IF
-            
-        6: // RESET
-            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN bDoResetL := TRUE; END_IF
-            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN bDoResetR := TRUE; END_IF
+
+        2, 3: // DISABLE or STOP
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN
+                bEnableL := FALSE;
+                bRetractL := FALSE;
+                bRetractMovedL := FALSE;
+                fForceCmdL := 0.0;
+                bBrakeEngagedL := TRUE;
+            END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN
+                bEnableR := FALSE;
+                bRetractR := FALSE;
+                bRetractMovedR := FALSE;
+                fForceCmdR := 0.0;
+                bBrakeEngagedR := TRUE;
+            END_IF
+
+        4, 5: // SET FORCE
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN
+                fForceCmdL := GVL_UI.Cmd.Param1;
+                IF NOT bRetractL THEN
+                    bRetractMovedL := FALSE;
+                    bBrakeEngagedL := (ABS(fForceCmdL) < 0.01);
+                END_IF
+            END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN
+                fForceCmdR := GVL_UI.Cmd.Param1;
+                IF NOT bRetractR THEN
+                    bRetractMovedR := FALSE;
+                    bBrakeEngagedR := (ABS(fForceCmdR) < 0.01);
+                END_IF
+            END_IF
+
+        6: // RESET / ZERO
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN
+                bZeroReqL := TRUE;
+                bTripL := FALSE;
+                bTripSlackL := FALSE;
+                bTripLetGoL := FALSE;
+                bTripFollowL := FALSE;
+                bTripCmdWatchL := FALSE;
+                bRetractL := FALSE;
+                bRetractMovedL := FALSE;
+                bBrakeEngagedL := TRUE;
+            END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN
+                bZeroReqR := TRUE;
+                bTripR := FALSE;
+                bTripSlackR := FALSE;
+                bTripLetGoR := FALSE;
+                bTripFollowR := FALSE;
+                bTripCmdWatchR := FALSE;
+                bRetractR := FALSE;
+                bRetractMovedR := FALSE;
+                bBrakeEngagedR := TRUE;
+            END_IF
+        7: // RETRACT
+            IF GVL_UI.Cmd.Param1 > 0.0 THEN
+                fRetractForce := GVL_UI.Cmd.Param1;
+            END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 1) = 1 THEN
+                bEnableL := TRUE;
+                bRetractL := TRUE;
+                bRetractMovedL := FALSE;
+                bTripL := FALSE;
+            END_IF
+            IF (GVL_UI.Cmd.AxisMask AND 2) = 2 THEN
+                bEnableR := TRUE;
+                bRetractR := TRUE;
+                bRetractMovedR := FALSE;
+                bTripR := FALSE;
+            END_IF
     END_CASE
     GVL_UI.Cmd.AckSeq := lastSeq;
 END_IF
 
-// --- 2. MAINTENANCE ---
-axis_left.ReadStatus();
-axis_right.ReadStatus();
-fbResetL(Axis := axis_left, Execute := bDoResetL);
-fbResetR(Axis := axis_right, Execute := bDoResetR);
-fLeftPos  := axis_left.NcToPlc.ActPos;
-fRightPos := axis_right.NcToPlc.ActPos;
-fLeftVelo  := axis_left.NcToPlc.ActVelo;
-fRightVelo := axis_right.NcToPlc.ActVelo;
+// Startup zero so cable length defaults to 0 before any commands.
+IF NOT bInitDone THEN
+    bZeroReqL := TRUE;
+    bZeroReqR := TRUE;
+    bInitDone := TRUE;
+END_IF
+
+// Auto-zero on power-on (rising edge)
+IF bEnableL AND NOT bEnableLPrev THEN
+    bZeroReqL := TRUE;
+END_IF
+IF bEnableR AND NOT bEnableRPrev THEN
+    bZeroReqR := TRUE;
+END_IF
+bEnableLPrev := bEnableL;
+bEnableRPrev := bEnableR;
+
+// --- 2. IO READ (GVL_IO PDOs) ---
+// Apply position offset from PDO outputs so UI uses corrected encoder position.
+fLeftPosCounts     := TO_LREAL(GVL_IO.LeftIn.PosAct + nPosOffsetL) * cPosSignL;
+fRightPosCounts    := TO_LREAL(GVL_IO.RightIn.PosAct + nPosOffsetR) * cPosSignR;
+fLeftVelCounts     := TO_LREAL(GVL_IO.LeftIn.VelAct) * cPosSignL;
+fRightVelCounts    := TO_LREAL(GVL_IO.RightIn.VelAct) * cPosSignR;
+fLeftFollowCounts  := TO_LREAL(GVL_IO.LeftIn.FollowingError) * cPosSignL;
+fRightFollowCounts := TO_LREAL(GVL_IO.RightIn.FollowingError) * cPosSignR;
+
+fCountsPerDrumRev := cCountsPerMotorRev * cGearRatio;
+IF fCountsPerDrumRev > 0.0 THEN
+    fDegPerCount := cDegPerRev / fCountsPerDrumRev;
+    fInPerCount  := cDrumCircumferenceIn / fCountsPerDrumRev;
+ELSE
+    fDegPerCount := 0.0;
+    fInPerCount  := 0.0;
+END_IF
+
+fLeftPos       := (fLeftPosCounts - fZeroPosL) * fDegPerCount;
+fRightPos      := (fRightPosCounts - fZeroPosR) * fDegPerCount;
+fLeftVelo      := fLeftVelCounts * fDegPerCount;
+fRightVelo     := fRightVelCounts * fDegPerCount;
+fLeftFollowErr := fLeftFollowCounts * fDegPerCount;
+fRightFollowErr := fRightFollowCounts * fDegPerCount;
+
+// Zero request (engagement zero)
+IF bZeroReqL THEN
+    fZeroPosL := fLeftPosCounts;
+    nPosOffsetL := -GVL_IO.LeftIn.PosAct;
+    bZeroReqL := FALSE;
+    bTripL := FALSE;
+    bTripSlackL := FALSE;
+    bTripLetGoL := FALSE;
+    bTripFollowL := FALSE;
+    bTripCmdWatchL := FALSE;
+    bEverEngagedL := FALSE;
+END_IF
+IF bZeroReqR THEN
+    fZeroPosR := fRightPosCounts;
+    nPosOffsetR := -GVL_IO.RightIn.PosAct;
+    bZeroReqR := FALSE;
+    bTripR := FALSE;
+    bTripSlackR := FALSE;
+    bTripLetGoR := FALSE;
+    bTripFollowR := FALSE;
+    bTripCmdWatchR := FALSE;
+    bEverEngagedR := FALSE;
+END_IF
 
 // Convert rotary position (deg) to cable length (in) for 4" drum.
-fLeftCableIn  := (fLeftPos / cDegPerRev) * cDrumCircumferenceIn;
-fRightCableIn := (fRightPos / cDegPerRev) * cDrumCircumferenceIn;
+fLeftCableIn  := fLeftPosCounts * fInPerCount;
+fRightCableIn := fRightPosCounts * fInPerCount;
+fLeftCableRelIn  := (fLeftPosCounts - fZeroPosL) * fInPerCount;
+fRightCableRelIn := (fRightPosCounts - fZeroPosR) * fInPerCount;
 
-// --- 3. STATE MACHINE (Optimized for Mechanical Brake Interaction) ---
-// TODO: Once 24V brake wiring is routed through Drive DO (DO1/DO2), 
-// re-enable the logic that drops ControlWord to 16#0000 during bBrakeEngaged.
-// Currently commented out to allow manual movement while 24V is hardwired.
+fLeftVelIn  := fLeftVelCounts * fInPerCount;
+fRightVelIn := fRightVelCounts * fInPerCount;
 
-Left_OpMode  := 10;
-Right_OpMode := 10;
+IF cCycleSec > 0.0 THEN
+    fLeftAcc  := (fLeftVelo - fLeftVelLast) / cCycleSec;
+    fRightAcc := (fRightVelo - fRightVelLast) / cCycleSec;
+ELSE
+    fLeftAcc  := 0.0;
+    fRightAcc := 0.0;
+END_IF
+fLeftVelLast  := fLeftVelo;
+fRightVelLast := fRightVelo;
 
-// LEFT Axis State Logic
-IF (Left_StatusWord AND 16#0008) = 16#0008 THEN // Fault detected
-    Left_ControlWord := 16#0080;
+// --- 3. FORCE CURVE BASE ---
+bBarbellMode := GVL_UI.BarbellMode;
+nCurveMode := GVL_UI.CurveMode;
+bEccentricEnabled := GVL_UI.EccentricEnabled;
+
+fForceBaseL := fForceCmdL * cForceCal;
+fForceBaseR := fForceCmdR * cForceCal;
+
+IF nCurveMode = 1 THEN
+    fForceBaseL := fForceCmdL + (fChainSlope * TO_REAL(fLeftCableRelIn));
+    fForceBaseR := fForceCmdR + (fChainSlope * TO_REAL(fRightCableRelIn));
+ELSIF nCurveMode = 2 THEN
+    fForceBaseL := fForceCmdL;
+    fForceBaseR := fForceCmdR;
+    IF bEccentricEnabled AND (fLeftVelIn < 0.0) THEN
+        fForceBaseL := fForceBaseL * fEccMultiplier;
+    END_IF
+    IF bEccentricEnabled AND (fRightVelIn < 0.0) THEN
+        fForceBaseR := fForceBaseR * fEccMultiplier;
+    END_IF
+END_IF
+
+// --- 4. BARBELL MODE SYNC ---
+IF bBarbellMode AND bEnableL AND bEnableR THEN
+    fCorr := (KpSync * TO_REAL(fLeftCableRelIn - fRightCableRelIn))
+           + (KdSync * TO_REAL(fLeftVelIn - fRightVelIn));
+    IF fCorr > FcorrMax THEN
+        fCorr := FcorrMax;
+    ELSIF fCorr < -FcorrMax THEN
+        fCorr := -FcorrMax;
+    END_IF
+    fForceOutL := ((fForceBaseL + fForceBaseR) / 2.0) - fCorr;
+    fForceOutR := ((fForceBaseL + fForceBaseR) / 2.0) + fCorr;
+ELSE
+    fForceOutL := fForceBaseL;
+    fForceOutR := fForceBaseR;
+END_IF
+
+IF bRetractL THEN
+    fForceOutL := fRetractForce;
+END_IF
+IF bRetractR THEN
+    fForceOutR := fRetractForce;
+END_IF
+
+
+// --- 5. SAFETY GATING ---
+fSlackKillInDyn := fEngageMinIn - 3.0;
+IF fSlackKillInDyn < 0.0 THEN
+    fSlackKillInDyn := 0.0;
+END_IF
+bEngagedL := fLeftCableRelIn >= fEngageMinIn;
+bEngagedR := fRightCableRelIn >= fEngageMinIn;
+
+IF bEngagedL THEN
+    bEverEngagedL := TRUE;
+END_IF
+IF bEngagedR THEN
+    bEverEngagedR := TRUE;
+END_IF
+
+IF bEverEngagedL AND (NOT bRetractL) AND (fLeftCableRelIn < fSlackKillInDyn) THEN
+    bTripSlackL := TRUE;
+    bTripL := TRUE;
+END_IF
+IF bEverEngagedR AND (NOT bRetractR) AND (fRightCableRelIn < fSlackKillInDyn) THEN
+    bTripSlackR := TRUE;
+    bTripR := TRUE;
+END_IF
+
+bLetGoCondL := bUseLetGoTrip
+    AND (nStateL = 3)
+    AND (ABS(fForceOutL) >= 1.0)
+    AND NOT bBrakeEngagedL
+    AND ((ABS(fLeftVelo) > fVeloLetGoDegS) OR (ABS(fLeftAcc) > fAccLetGoDegS2));
+bLetGoCondR := bUseLetGoTrip
+    AND (nStateR = 3)
+    AND (ABS(fForceOutR) >= 1.0)
+    AND NOT bBrakeEngagedR
+    AND ((ABS(fRightVelo) > fVeloLetGoDegS) OR (ABS(fRightAcc) > fAccLetGoDegS2));
+
+fbLetGoL(IN := bLetGoCondL, PT := tLetGoHold);
+fbLetGoR(IN := bLetGoCondR, PT := tLetGoHold);
+IF fbLetGoL.Q THEN bTripL := TRUE; END_IF
+IF fbLetGoR.Q THEN bTripR := TRUE; END_IF
+IF fbLetGoL.Q THEN bTripLetGoL := TRUE; END_IF
+IF fbLetGoR.Q THEN bTripLetGoR := TRUE; END_IF
+
+bFollowCondL := bUseFollowTrip AND (ABS(fLeftFollowErr) > fFollowErrTripDeg);
+bFollowCondR := bUseFollowTrip AND (ABS(fRightFollowErr) > fFollowErrTripDeg);
+fbFollowL(IN := bFollowCondL, PT := tFollowErrHold);
+fbFollowR(IN := bFollowCondR, PT := tFollowErrHold);
+IF fbFollowL.Q THEN bTripL := TRUE; END_IF
+IF fbFollowR.Q THEN bTripR := TRUE; END_IF
+IF fbFollowL.Q THEN bTripFollowL := TRUE; END_IF
+IF fbFollowR.Q THEN bTripFollowR := TRUE; END_IF
+
+bCmdActiveL := bEnableL AND (ABS(fForceCmdL) >= 1.0);
+bCmdActiveR := bEnableR AND (ABS(fForceCmdR) >= 1.0);
+fbCmdWatchL(IN := bUseCmdWatchdog AND bCmdActiveL AND (GVL_UI.Cmd.Seq = lastSeq), PT := tCmdWatchHold);
+fbCmdWatchR(IN := bUseCmdWatchdog AND bCmdActiveR AND (GVL_UI.Cmd.Seq = lastSeq), PT := tCmdWatchHold);
+IF fbCmdWatchL.Q THEN bTripL := TRUE; END_IF
+IF fbCmdWatchR.Q THEN bTripR := TRUE; END_IF
+IF fbCmdWatchL.Q THEN bTripCmdWatchL := TRUE; END_IF
+IF fbCmdWatchR.Q THEN bTripCmdWatchR := TRUE; END_IF
+
+IF bTripL THEN fForceOutL := 0.0; END_IF
+IF bTripR THEN fForceOutR := 0.0; END_IF
+
+bBrakeEngagedL := (ABS(fForceOutL) < 0.01) OR (NOT bEnableL) OR bTripL;
+bBrakeEngagedR := (ABS(fForceOutR) < 0.01) OR (NOT bEnableR) OR bTripR;
+
+bTorqueAllowedL := bEnableL AND NOT bTripL AND (bEngagedL OR bRetractL);
+bTorqueAllowedR := bEnableR AND NOT bTripR AND (bEngagedR OR bRetractR);
+
+IF bRetractL AND (ABS(fLeftVelo) > fRetractStopVelDegS) THEN
+    bRetractMovedL := TRUE;
+END_IF
+IF bRetractR AND (ABS(fRightVelo) > fRetractStopVelDegS) THEN
+    bRetractMovedR := TRUE;
+END_IF
+
+fbRetractStopL(IN := bRetractL AND bRetractMovedL AND (ABS(fLeftVelo) <= fRetractStopVelDegS), PT := tRetractStopHold);
+fbRetractStopR(IN := bRetractR AND bRetractMovedR AND (ABS(fRightVelo) <= fRetractStopVelDegS), PT := tRetractStopHold);
+IF fbRetractStopL.Q THEN
+    bRetractL := FALSE;
+    bZeroReqL := TRUE;
+END_IF
+IF fbRetractStopR.Q THEN
+    bRetractR := FALSE;
+    bZeroReqR := TRUE;
+END_IF
+
+// --- 6. STATE MACHINE (PDO control) ---
+GVL_IO.LeftOut.OpMode := cOpModeTorque;
+GVL_IO.RightOut.OpMode := cOpModeTorque;
+GVL_IO.LeftOut.TorqueSlope := 0;
+GVL_IO.RightOut.TorqueSlope := 0;
+GVL_IO.LeftOut.PositionOffset := nPosOffsetL;
+GVL_IO.RightOut.PositionOffset := nPosOffsetR;
+
+IF (GVL_IO.LeftIn.StatusWord AND 16#0008) = 16#0008 THEN // Fault detected
+    GVL_IO.LeftOut.ControlWord := 16#0080;
     nStateL := 0;
-ELSIF NOT bEnableL THEN
-    Left_ControlWord := 16#0000;
+ELSIF NOT bEnableL OR bTripL THEN
+    GVL_IO.LeftOut.ControlWord := 16#0000;
     nStateL := 0;
-// ELSIF bBrakeEngagedL THEN
-    // Left_ControlWord := 16#0000; // Future Brake Clamp logic
-    // nStateL := 0;
 ELSE
     CASE nStateL OF
-        0: // Powering Up: Step 1
-            Left_ControlWord := 16#0006;
-            IF (Left_StatusWord AND 16#0021) = 16#0021 THEN nStateL := 1; END_IF
-        1: // Powering Up: Step 2
-            Left_ControlWord := 16#0007;
-            IF (Left_StatusWord AND 16#0023) = 16#0023 THEN nStateL := 2; END_IF
-        2: // Powering Up: Step 3 (Operation Enabled / Release Brake)
-            Left_ControlWord := 16#000F;
-            IF (Left_StatusWord AND 16#0027) = 16#0027 THEN nStateL := 3; END_IF
-        3: // In Motion / Applying Torque
-            Left_ControlWord := 16#000F;
-            // IF bBrakeEngagedL THEN nStateL := 0; END_IF // Future Brake Clamp transition
+        0:
+            GVL_IO.LeftOut.ControlWord := 16#0006;
+            IF (GVL_IO.LeftIn.StatusWord AND 16#0021) = 16#0021 THEN nStateL := 1; END_IF
+        1:
+            GVL_IO.LeftOut.ControlWord := 16#0007;
+            IF (GVL_IO.LeftIn.StatusWord AND 16#0023) = 16#0023 THEN nStateL := 2; END_IF
+        2:
+            GVL_IO.LeftOut.ControlWord := 16#000F;
+            IF (GVL_IO.LeftIn.StatusWord AND 16#0027) = 16#0027 THEN nStateL := 3; END_IF
+        3:
+            GVL_IO.LeftOut.ControlWord := 16#000F;
     END_CASE
 END_IF
 
-// RIGHT Axis State Logic
-IF (Right_StatusWord AND 16#0008) = 16#0008 THEN
-    Right_ControlWord := 16#0080;
+IF (GVL_IO.RightIn.StatusWord AND 16#0008) = 16#0008 THEN
+    GVL_IO.RightOut.ControlWord := 16#0080;
     nStateR := 0;
-ELSIF NOT bEnableR THEN
-    Right_ControlWord := 16#0000;
+ELSIF NOT bEnableR OR bTripR THEN
+    GVL_IO.RightOut.ControlWord := 16#0000;
     nStateR := 0;
-// ELSIF bBrakeEngagedR THEN
-    // Right_ControlWord := 16#0000;
-    // nStateR := 0;
 ELSE
     CASE nStateR OF
-        0: 
-            Right_ControlWord := 16#0006;
-            IF (Right_StatusWord AND 16#0021) = 16#0021 THEN nStateR := 1; END_IF
-        1: 
-            Right_ControlWord := 16#0007;
-            IF (Right_StatusWord AND 16#0023) = 16#0023 THEN nStateR := 2; END_IF
-        2: 
-            Right_ControlWord := 16#000F;
-            IF (Right_StatusWord AND 16#0027) = 16#0027 THEN nStateR := 3; END_IF
-        3: 
-            Right_ControlWord := 16#000F;
-            // IF bBrakeEngagedR THEN nStateR := 0; END_IF
+        0:
+            GVL_IO.RightOut.ControlWord := 16#0006;
+            IF (GVL_IO.RightIn.StatusWord AND 16#0021) = 16#0021 THEN nStateR := 1; END_IF
+        1:
+            GVL_IO.RightOut.ControlWord := 16#0007;
+            IF (GVL_IO.RightIn.StatusWord AND 16#0023) = 16#0023 THEN nStateR := 2; END_IF
+        2:
+            GVL_IO.RightOut.ControlWord := 16#000F;
+            IF (GVL_IO.RightIn.StatusWord AND 16#0027) = 16#0027 THEN nStateR := 3; END_IF
+        3:
+            GVL_IO.RightOut.ControlWord := 16#000F;
     END_CASE
 END_IF
 
-// --- 4. TORQUE ---
-// Multiplier set to 40.0 for 1.5kW motor on 4" drum
-// Note: If bBrakeEngaged is TRUE, we force torque to 0 even if state machine is enabled.
-IF nStateL = 3 AND NOT bBrakeEngagedL THEN 
-    Left_TargetTorque := TO_INT(fForceL * 40.0); 
-ELSE 
-    Left_TargetTorque := 0; 
+// --- 7. TORQUE OUTPUT ---
+IF nStateL = 3 AND NOT bBrakeEngagedL AND bTorqueAllowedL THEN
+    fTorqueCmdL := fForceOutL * cTorqueScale * cTorqueScaleMult;
+    IF fTorqueCmdL > cMaxTorqueCounts THEN
+        fTorqueCmdL := cMaxTorqueCounts;
+    ELSIF fTorqueCmdL < -cMaxTorqueCounts THEN
+        fTorqueCmdL := -cMaxTorqueCounts;
+    END_IF
+    GVL_IO.LeftOut.TargetTorque := TO_INT(fTorqueCmdL);
+ELSE
+    GVL_IO.LeftOut.TargetTorque := 0;
 END_IF
 
-IF nStateR = 3 AND NOT bBrakeEngagedR THEN 
-    Right_TargetTorque := TO_INT(fForceR * 40.0); 
-ELSE 
-    Right_TargetTorque := 0; 
+IF nStateR = 3 AND NOT bBrakeEngagedR AND bTorqueAllowedR THEN
+    fTorqueCmdR := fForceOutR * cTorqueScale * cTorqueScaleMult;
+    IF fTorqueCmdR > cMaxTorqueCounts THEN
+        fTorqueCmdR := cMaxTorqueCounts;
+    ELSIF fTorqueCmdR < -cMaxTorqueCounts THEN
+        fTorqueCmdR := -cMaxTorqueCounts;
+    END_IF
+    GVL_IO.RightOut.TargetTorque := TO_INT(fTorqueCmdR);
+ELSE
+    GVL_IO.RightOut.TargetTorque := 0;
 END_IF
 
-// --- 5. TELEMETRY ---
+// --- 8. TELEMETRY ---
 GVL_UI.Telemetry.Connected := TRUE;
-GVL_UI.Telemetry.LeftPos    := TO_REAL(fLeftCableIn);
-GVL_UI.Telemetry.LeftVel    := TO_REAL(fLeftVelo);
-GVL_UI.Telemetry.RightPos   := TO_REAL(fRightCableIn);
-GVL_UI.Telemetry.RightVel   := TO_REAL(fRightVelo);
-GVL_UI.Telemetry.LeftForce  := TO_REAL(Left_ActualTq);
-GVL_UI.Telemetry.RightForce := TO_REAL(Right_ActualTq);
+GVL_UI.Telemetry.LeftPos    := TO_REAL(fLeftCableRelIn);
+GVL_UI.Telemetry.LeftVel    := TO_REAL(fLeftVelIn);
+GVL_UI.Telemetry.RightPos   := TO_REAL(fRightCableRelIn);
+GVL_UI.Telemetry.RightVel   := TO_REAL(fRightVelIn);
+GVL_UI.Telemetry.LeftForce  := TO_REAL(GVL_IO.LeftIn.TorqueAct);
+GVL_UI.Telemetry.RightForce := TO_REAL(GVL_IO.RightIn.TorqueAct);
+GVL_UI.Telemetry.PdoActive := TRUE;
+GVL_UI.Telemetry.ControlWordActive := TRUE;
+GVL_UI.Telemetry.OpModeSet := (GVL_IO.LeftOut.OpMode = cOpModeTorque)
+    AND (GVL_IO.RightOut.OpMode = cOpModeTorque);
+GVL_UI.Telemetry.TorqueUpdated := TRUE;
+GVL_UI.Telemetry.AckSeq     := GVL_UI.Cmd.AckSeq;
 
-// Status Diagnostic
-GVL_UI.Telemetry.CmdStatus  := TO_INT( (TO_INT(Left_OpModeDisplay) * 1000) + (nStateL * 100) + (Left_StatusWord AND 16#00FF));]]></ST>
+// CmdStatus packs trip flags and low byte of left error code for UI debugging.
+GVL_UI.Telemetry.CmdStatus :=
+    SHL(WORD_TO_INT(GVL_IO.LeftIn.ErrorCode AND 16#00FF), 8)
+    + BOOL_TO_INT(bTripL)
+    + SHL(BOOL_TO_INT(bTripR), 1)
+    + SHL(BOOL_TO_INT(bTripSlackL), 2)
+    + SHL(BOOL_TO_INT(bTripSlackR), 3)
+    + SHL(BOOL_TO_INT(bTripLetGoL), 4)
+    + SHL(BOOL_TO_INT(bTripLetGoR), 5)
+    + SHL(BOOL_TO_INT(bTripFollowL), 6)
+    + SHL(BOOL_TO_INT(bTripFollowR), 7);]]></ST>
     </Implementation>
     <LineIds Name="MAIN">
       <LineId Id="4793" Count="126" />
       <LineId Id="3287" Count="0" />
+      <LineId Id="131" Count="227" />
+      <LineId Id="2" Count="0" />
     </LineIds>
   </POU>
 </TcPlcObject>

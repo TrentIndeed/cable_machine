@@ -1,4 +1,4 @@
-export const MAX_RESISTANCE = 5;
+export const MAX_RESISTANCE = 20;
 export const TWO_PI = Math.PI * 2;
 export const MAX_TRAVEL_INCHES = 24;
 export const ENGAGEMENT_RAMP_INCHES = 1;
@@ -13,6 +13,7 @@ export const RETRACTION_SPEED_IPS =
   (RETRACTION_SPEED_MPH * INCHES_PER_MILE) / SECONDS_PER_HOUR;
 export const SIM_SLIDER_STEP = 0.1;
 export const DEFAULT_RETRACTION_BOTTOM = 1;
+export const RETRACT_FORCE_LB = 0.5;
 export const INITIAL_BASE_RESISTANCE = 1;
 export const WEIGHT_ENGAGE_OFFSET = 1;
 export const AUTO_TORQUE_MIN_DELTA = 0.1;
@@ -24,6 +25,7 @@ export const COMMAND_TYPES = {
   STOP: 'Stop',
   RESET: 'Reset',
   SET_RESISTANCE: 'SetResistance',
+  RETRACT: 'Retract',
 };
 
 export const AXIS_OPTIONS = [

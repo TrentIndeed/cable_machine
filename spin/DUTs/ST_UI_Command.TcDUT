@@ -4,7 +4,7 @@
     <Declaration><![CDATA[TYPE ST_UI_Command :
 STRUCT
   Seq : DINT;
-  CmdType : INT;       // 1=Enable, 2=Disable, 3=Stop, 4=SetResistance, 5=SetForce
+  CmdType : INT;       // 1=Enable, 2=Disable, 3=Stop, 4=SetResistance, 5=SetForce, 6=Reset, 7=Retract
   AxisMask : BYTE;  // 1=Left, 2=Right, 3=Both
   Param1 : REAL;
   Param2 : REAL;

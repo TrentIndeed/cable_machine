@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   AUTO_TORQUE_MIN_DELTA,
   AUTO_TORQUE_MIN_MS,
@@ -11,6 +11,7 @@ import {
   MAX_TRAVEL_INCHES,
   MOVEMENT_EPSILON,
   REP_SPAN_THRESHOLD,
+  RETRACT_FORCE_LB,
   RETRACTION_SPEED_MPH,
   RETRACTION_SPEED_IPS,
   SIM_SLIDER_STEP,
@@ -56,6 +57,11 @@ function useWorkoutEngine(params) {
     setVideoSrc,
     refs,
   } = params;
+
+  const waveHistoryRef = useRef([]);
+  const waveLastSampleRef = useRef(0);
+  const waveCenterRef = useRef(10);
+  const waveRangeRef = useRef(20);
 
   const {
     workoutStateRef,
@@ -199,6 +205,8 @@ function useWorkoutEngine(params) {
       return undefined;
     }
 
+    const SIMULATOR_ENABLED = false;
+
     let pauseActive = false;
     let setElapsedMs = 0;
     let setClockLastTimestamp = null;
@@ -321,11 +329,39 @@ function useWorkoutEngine(params) {
       updateForceProfileLockState();
     }
 
+      const WAVE_HISTORY_SEC = 10;
+      const WAVE_TIME_FPS = 60;
+      const WAVE_VIEW_RANGE_INCHES = 20;
+      const WAVE_MAX_HISTORY = Math.max(
+        2,
+        Math.ceil(WAVE_HISTORY_SEC * WAVE_TIME_FPS)
+      );
+
+      const getNowSeconds = () => {
+        const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        return now / 1000;
+      };
+
+      const resetWaveHistory = () => {
+        waveHistoryRef.current = [];
+        waveLastSampleRef.current = 0;
+        waveCenterRef.current = 10;
+        waveRangeRef.current = WAVE_VIEW_RANGE_INCHES;
+      };
+
+    const buildTrailTimes = (nowSeconds) => {
+      const step = WAVE_HISTORY_SEC / Math.max(1, TRAIL_LENGTH - 1);
+      return Array.from({ length: TRAIL_LENGTH }, (_, index) => {
+        const offset = (TRAIL_LENGTH - 1 - index) * step;
+        return nowSeconds - offset;
+      });
+    };
+
     function createMotor(id, refs, initialResistance) {
       const gaugeCanvas = refs.gaugeCanvas;
       const gaugeCtx = gaugeCanvas ? gaugeCanvas.getContext('2d') : null;
 
-      const simSlider = refs.simSlider;
+      const simSlider = SIMULATOR_ENABLED ? refs.simSlider : null;
       const currentLabel = refs.currentLabel;
       const baseLabel = refs.baseLabel;
       const repsLabel = refs.repsLabel;
@@ -339,6 +375,8 @@ function useWorkoutEngine(params) {
         : DEFAULT_RETRACTION_BOTTOM;
       const normalized = Math.max(0, Math.min(1, initialTravel / MAX_TRAVEL_INCHES));
       const travelInches = normalized * MAX_TRAVEL_INCHES;
+
+      const nowSeconds = getNowSeconds();
 
       return {
         id,
@@ -361,9 +399,12 @@ function useWorkoutEngine(params) {
         retractionActive: false,
         retractionTarget: DEFAULT_RETRACTION_BOTTOM,
         retractionSpeed: RETRACTION_SPEED_IPS,
+        retractionStartTravel: null,
+        retractionMoved: false,
         normalized,
         direction: 1,
-        trail: new Array(TRAIL_LENGTH).fill(travelInches),
+        trail: [],
+        trailTimes: [],
         lastTravel: travelInches,
         phase: 'idle',
         lastPeak: travelInches,
@@ -428,12 +469,13 @@ function useWorkoutEngine(params) {
     };
 
     let workoutActive = false;
-    let setActive = false;
-    let currentSet = 0;
-    let currentRep = 0;
-    let totalReps = DEFAULT_REP_TARGET;
-    let lastTimestamp = performance.now();
-    let powerOn = true;
+      let setActive = false;
+      let currentSet = 0;
+      let currentRep = 0;
+      let totalReps = DEFAULT_REP_TARGET;
+      let lastTimestamp = performance.now();
+      let lastTripStatus = null;
+      let powerOn = true;
     let motorsRunning = true;
     let eccentricOverrideEnabled = eccentricEnabledRef.current;
     let forceCurveIntensityValue = forceCurveIntensityRef.current;
@@ -495,7 +537,23 @@ function useWorkoutEngine(params) {
       const data = telemetryRef.current;
       if (!data) return null;
       const value = motorId === 'right' ? data.RightPos : data.LeftPos;
-      return Number.isFinite(value) ? value : null;
+      let numeric = value;
+      if (typeof value === 'string') {
+        numeric = Number.isFinite(Number(value)) ? Number(value) : parseFloat(value);
+      }
+      return Number.isFinite(numeric) ? numeric : null;
+    }
+
+    function getMotorTravelInches(motor) {
+      if (!motor) return null;
+      const telemetryTravel = getTelemetryTravel(motor.id);
+      if (Number.isFinite(telemetryTravel)) {
+        return telemetryTravel;
+      }
+      if (motor.simSlider) {
+        return Number(motor.simSlider.value);
+      }
+      return motor.normalized * MAX_TRAVEL_INCHES;
     }
 
     function resetMotorTracking(motor, travel) {
@@ -543,10 +601,17 @@ function useWorkoutEngine(params) {
       if (!updateTrail) return;
       const normalized = Math.max(0, Math.min(1, value / MAX_TRAVEL_INCHES));
       const travel = normalized * MAX_TRAVEL_INCHES;
+      const waveTravel = Math.max(0, travel - rightMotor.engagementDistance);
       rightMotor.normalized = normalized;
-      rightMotor.trail.push(travel);
-      if (rightMotor.trail.length > TRAIL_LENGTH) {
+      rightMotor.trail.push(waveTravel);
+      rightMotor.trailTimes.push(getNowSeconds());
+      const maxPoints = Math.max(
+        TRAIL_LENGTH,
+        Math.ceil(WAVE_HISTORY_SEC * WAVE_TIME_FPS)
+      );
+      while (rightMotor.trail.length > maxPoints) {
         rightMotor.trail.shift();
+        rightMotor.trailTimes.shift();
       }
       rightMotor.lastForceTravel = value;
       if (rightMotor.cableLabel) {
@@ -656,6 +721,22 @@ function useWorkoutEngine(params) {
         motor.simSlider.value = quantized.toFixed(1);
       }
 
+      const shouldResetWave =
+        source === 'set-button' || source === 'live' || source === 'retraction';
+      if (shouldResetWave) {
+        const nowSeconds = getNowSeconds();
+        motor.trail = [0];
+        motor.trailTimes = [nowSeconds];
+        ensureWaveScaleForTravel(0);
+        resetWaveHistory();
+        drawWaveCombined();
+      }
+
+      if (source === 'set-button' || source === 'live') {
+        const axisMask = motor.id === 'left' ? 1 : 2;
+        handleCommand(COMMAND_TYPES.RESET, { axisMask });
+      }
+
       if (announce) {
         announceMotorEngagementChange(motor, quantized, source);
       }
@@ -686,8 +767,19 @@ function useWorkoutEngine(params) {
       }
       if (!motor.simSlider) {
         const label = formatMotorLabel(motor.id);
+        const travel = getMotorTravelInches(motor);
+        if (!Number.isFinite(travel)) {
+          setStatusMessage(
+            `${label} cable length unavailable without telemetry.`,
+            { tone: 'error' }
+          );
+          return;
+        }
+        const locked = setMotorEngagementDistance(motor, travel, {
+          source: 'live',
+        });
         setStatusMessage(
-          `${label} cable length can be set from the live encoder. Retract using the drive controls.`,
+          `${label} cable length set to ${locked.toFixed(1)} in from live encoder.`,
           { tone: 'info' }
         );
         return;
@@ -724,21 +816,61 @@ function useWorkoutEngine(params) {
       );
     }
 
+    function resolveRetractButton(motor) {
+      if (!motor) return null;
+      if (motor.retractCableButton && motor.retractCableButton.isConnected) {
+        return motor.retractCableButton;
+      }
+      const fallbackId = motor.id === 'left' ? 'leftRetractCable' : 'rightRetractCable';
+      const fallback = document.getElementById(fallbackId);
+      if (fallback) {
+        motor.retractCableButton = fallback;
+      }
+      return motor.retractCableButton || null;
+    }
+
     function markRetractActive(motor, active) {
-      if (!motor || !motor.retractCableButton) return;
-      toggleButtonPulse(motor.retractCableButton, active);
+      const button = resolveRetractButton(motor);
+      if (!button) return;
+      toggleButtonPulse(button, active);
     }
 
     function startMotorRetraction(motor) {
-      if (!powerOn || !motor) return false;
-      if (motor.retractionActive) return false;
-      if (!motor.simSlider) {
+      if (!motor) return false;
+      const axisMask = motor.id === 'left' ? 1 : 2;
+      if (!powerOn) {
+        powerOn = true;
+        motorsRunning = true;
+        applyPowerState();
+      }
+      handleCommand(COMMAND_TYPES.ENABLE, { axisMask });
+      handleCommand(COMMAND_TYPES.RETRACT, {
+        axisMask,
+        param1: RETRACT_FORCE_LB,
+      });
+      if (motor.retractionActive) {
         const label = formatMotorLabel(motor.id);
         setStatusMessage(
-          `${label} retraction is unavailable without the simulator slider.`,
+          `${label} retract already active at ${RETRACT_FORCE_LB.toFixed(2)} lb.`,
           { tone: 'info' }
         );
-        return false;
+        return true;
+      }
+      if (!motor.simSlider) {
+        motor.retractionActive = true;
+        motor.retractionTarget = DEFAULT_RETRACTION_BOTTOM;
+        motor.retractionSpeed = RETRACTION_SPEED_IPS;
+        motor.retractionStartTravel = getMotorTravelInches(motor);
+        motor.retractionMoved = false;
+        markRetractActive(motor, true);
+        const label = formatMotorLabel(motor.id);
+        setStatusMessage(
+          `${label} retracting at ${RETRACT_FORCE_LB.toFixed(
+            2
+          )} lb until motor stops, then zeroing.`,
+          { tone: 'info' }
+        );
+        return true;
       }
       disarmMotorCableSet(motor, { silent: true });
       const current = Number(motor.simSlider.value || 0);
@@ -754,6 +886,8 @@ function useWorkoutEngine(params) {
       motor.retractionActive = true;
       motor.retractionTarget = DEFAULT_RETRACTION_BOTTOM;
       motor.retractionSpeed = RETRACTION_SPEED_IPS;
+      motor.retractionStartTravel = current;
+      motor.retractionMoved = false;
       markRetractActive(motor, true);
 
       const label = formatMotorLabel(motor.id);
@@ -918,7 +1052,7 @@ function useWorkoutEngine(params) {
         elements.setControlGroup.hidden = !workoutActive;
       }
       if (elements.simPanel) {
-        elements.simPanel.hidden = !workoutActive;
+        elements.simPanel.hidden = !SIMULATOR_ENABLED || !workoutActive;
       }
     }
 
@@ -1319,8 +1453,10 @@ function useWorkoutEngine(params) {
 
     function recordWorkoutSet(partial = false) {
       if (!currentRep) return;
-      const exerciseKey = elements.exerciseSelect.value;
-      const exerciseLabel = exerciseCatalog[exerciseKey] || 'Custom';
+      const exerciseKey = elements.exerciseSelect ? elements.exerciseSelect.value : null;
+      const exerciseLabel = exerciseKey && exerciseCatalog[exerciseKey]
+        ? exerciseCatalog[exerciseKey]
+        : 'Custom';
       const entry = {
         set: currentSet,
         exercise: exerciseLabel,
@@ -1331,6 +1467,9 @@ function useWorkoutEngine(params) {
       };
       workoutLog.push(entry);
 
+      if (!elements.logList) {
+        return;
+      }
       const item = document.createElement('li');
       const partialBadge = entry.partial
         ? '<span class="log-partial">Partial</span>'
@@ -1421,9 +1560,6 @@ function useWorkoutEngine(params) {
         if (motor.setCableButton) {
           interactive.push(motor.setCableButton);
         }
-        if (motor.retractCableButton) {
-          interactive.push(motor.retractCableButton);
-        }
         if (motor.simSlider) {
           motor.simSlider.disabled = !powerOn;
         }
@@ -1439,6 +1575,14 @@ function useWorkoutEngine(params) {
             el.disabled = false;
           }
           delete el.dataset.prevDisabled;
+        }
+      });
+
+      motors.forEach((motor) => {
+        const retractButton = resolveRetractButton(motor);
+        if (retractButton) {
+          retractButton.disabled = false;
+          delete retractButton.dataset.prevDisabled;
         }
       });
 
@@ -1496,6 +1640,14 @@ function useWorkoutEngine(params) {
         setAxisMask(3);
         setCommandResistance(Math.round(getAppliedResistance(3)));
       }
+    };
+
+    const handleRetractButtonClick = (event) => {
+      const target = event.target.closest('#leftRetractCable, #rightRetractCable');
+      if (!target || target.disabled) return;
+      const motorId = target.id === 'leftRetractCable' ? 'left' : 'right';
+      const motor = motors.find((entry) => entry.id === motorId);
+      startMotorRetraction(motor);
     };
 
     const handleSetToggle = () => {
@@ -1562,6 +1714,8 @@ function useWorkoutEngine(params) {
     if (elements.adsReset) {
       elements.adsReset.addEventListener('click', handleAdsReset);
     }
+
+    document.addEventListener('click', handleRetractButtonClick);
 
     if (elements.powerToggle) {
       elements.powerToggle.addEventListener('click', handlePowerToggle);
@@ -1765,18 +1919,13 @@ function useWorkoutEngine(params) {
       let scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
       const scaleSpan = Math.max(1, scaleMax - scaleMin);
 
+      // Prefer keeping the top line visible; do not shift down when values dip.
       if (travelInches > scaleMax) {
         scaleMax = travelInches;
         scaleMin = Math.max(0, scaleMax - scaleSpan);
-      } else if (travelInches < scaleMin) {
-        scaleMin = travelInches;
-        scaleMax = scaleMin + scaleSpan;
-      } else {
-        return;
+        waveScaleMinRef.current = scaleMin;
+        waveScaleMaxRef.current = scaleMax;
       }
-
-      waveScaleMinRef.current = scaleMin;
-      waveScaleMaxRef.current = scaleMax;
     }
 
     function drawGauge(motor) {
@@ -1887,102 +2036,96 @@ function useWorkoutEngine(params) {
       const { width, height } = canvas;
       ctx.clearRect(0, 0, width, height);
 
-      const synced = motorsSyncedRef.current;
-      const motorsToPlot = synced
-        ? (() => {
-            const leftMotor = motors.find((entry) => entry.id === 'left');
-            const rightMotor = motors.find((entry) => entry.id === 'right');
-            if (!leftMotor || !rightMotor) {
-              return motors;
-            }
-            const len = Math.min(leftMotor.trail.length, rightMotor.trail.length);
-            const combinedTrail = [];
-            for (let i = 0; i < len; i += 1) {
-              combinedTrail.push((leftMotor.trail[i] + rightMotor.trail[i]) / 2);
-            }
-            const shouldShowCombined = showLeftWave || showRightWave;
-            return shouldShowCombined
-              ? [
-                  {
-                    id: 'combined',
-                    normalized: (leftMotor.normalized + rightMotor.normalized) / 2,
-                    trail: combinedTrail,
-                  },
-                ]
-              : [];
-          })()
-        : (() => {
-            const leftMotor = motors.find((entry) => entry.id === 'left');
-            const rightMotor = motors.find((entry) => entry.id === 'right');
-            if (!leftMotor || !rightMotor) {
-              return motors;
-            }
-            return [rightMotor, leftMotor].filter((motor) => {
-              if (motor.id === 'left') return showLeftWave;
-              if (motor.id === 'right') return showRightWave;
-              return true;
-            });
-          })();
-      let scaleMin = waveScaleMinRef.current || 0;
-      let scaleMax = waveScaleMaxRef.current || MAX_TRAVEL_INCHES;
-      const currentMaxTravel = Math.max(
-        ...motorsToPlot.map((motor) => motor.normalized * MAX_TRAVEL_INCHES)
-      );
-      const scaleSpan = Math.max(1, scaleMax - scaleMin);
-      if (currentMaxTravel > scaleMax) {
-        scaleMax = currentMaxTravel;
-        scaleMin = Math.max(0, scaleMax - scaleSpan);
-        waveScaleMaxRef.current = scaleMax;
-        waveScaleMinRef.current = scaleMin;
+      const nowSeconds = getNowSeconds();
+      const wavePaused = pauseActive && setActive;
+
+      const leftMotor = motors.find((entry) => entry.id === 'left');
+      const rightMotor = motors.find((entry) => entry.id === 'right');
+      const leftValue = getMotorTravelInches(leftMotor);
+      const rightValue = getMotorTravelInches(rightMotor);
+      const leftTravel = Number.isFinite(leftValue) ? leftValue : 0;
+      const rightTravel = Number.isFinite(rightValue) ? rightValue : 0;
+
+      if (!wavePaused && nowSeconds - waveLastSampleRef.current >= 1 / WAVE_TIME_FPS) {
+        waveLastSampleRef.current = nowSeconds;
+        waveHistoryRef.current.push({
+          t: nowSeconds,
+          left: leftTravel,
+          right: rightTravel,
+        });
+        while (waveHistoryRef.current.length > WAVE_MAX_HISTORY) {
+          waveHistoryRef.current.shift();
+        }
       }
-      if (currentMaxTravel < scaleMin) {
-        scaleMin = currentMaxTravel;
-        scaleMax = scaleMin + scaleSpan;
-        waveScaleMaxRef.current = scaleMax;
-        waveScaleMinRef.current = Math.max(0, scaleMin);
+
+      const showLeft = showLeftWave && Number.isFinite(leftValue);
+      const showRight = showRightWave && Number.isFinite(rightValue);
+      let targetCenter = 0;
+      let targetRange = WAVE_VIEW_RANGE_INCHES;
+
+      if (showLeft && showRight) {
+        targetCenter = (leftTravel + rightTravel) / 2;
+        targetRange = Math.max(
+          WAVE_VIEW_RANGE_INCHES,
+          Math.abs(leftTravel - rightTravel) * 1.6
+        );
+      } else if (showLeft) {
+        targetCenter = leftTravel;
+      } else if (showRight) {
+        targetCenter = rightTravel;
       }
-      const padL = 38;
-      const padR = 16;
+
+      waveCenterRef.current += (targetCenter - waveCenterRef.current) * 0.15;
+      waveRangeRef.current += (targetRange - waveRangeRef.current) * 0.15;
+      const center = waveCenterRef.current;
+      const range = Math.max(1, waveRangeRef.current);
+      const halfRange = range / 2;
+
+      const padL = 44;
+      const padR = 24;
       const padT = 16;
-      const padB = 22;
+      const padB = 24;
       const px = padL;
       const py = padT;
       const pw = Math.max(0, width - padL - padR);
       const ph = Math.max(0, height - padT - padB);
-      const axisColor = 'rgba(190, 220, 255, 0.16)';
-      const gridColor = 'rgba(190, 220, 255, 0.1)';
-      const labelColor = 'rgba(220, 238, 255, 0.55)';
-      const gridCountY = 5;
-      const gridCountX = 7;
 
-      const yFromValue = (value) => {
-        const clamped = Math.max(scaleMin, Math.min(scaleMax, value));
-        const normalized = (clamped - scaleMin) / Math.max(0.0001, scaleSpan);
-        return py + ph * (1 - normalized);
+      const gridMajor = 'rgba(190, 220, 255, 0.16)';
+      const gridMinor = 'rgba(190, 220, 255, 0.10)';
+      const labelColor = 'rgba(220, 238, 255, 0.55)';
+
+      const toY = (val) => {
+        const relative = (val - center) / halfRange;
+        return py + ph / 2 - relative * (ph / 2);
       };
 
       ctx.save();
-      ctx.font = '12px "SF Pro Display", "SF Pro Text", -apple-system, "Segoe UI", sans-serif';
+      ctx.font = 'bold 14px "SF Pro Display", "SF Pro Text", -apple-system, "Segoe UI", sans-serif';
       ctx.fillStyle = labelColor;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
 
+      const gridCountY = 5;
+      const gridCountX = 10;
       for (let i = 0; i < gridCountY; i += 1) {
         const n = i / (gridCountY - 1);
-        const value = scaleMin + scaleSpan * n;
-        const y = py + ph * (1 - n);
-        ctx.strokeStyle = i === 0 || i === gridCountY - 1 ? axisColor : gridColor;
+        const value = center + halfRange - range * n;
+        const y = py + ph * n;
+        const isMajor = i === 0 || i === gridCountY - 1 || i === 2;
+        ctx.strokeStyle = isMajor ? gridMajor : gridMinor;
         ctx.beginPath();
         ctx.moveTo(px, y);
         ctx.lineTo(px + pw, y);
         ctx.stroke();
-        ctx.fillText(`${value.toFixed(0)} in`, px - 6, y);
+        if (isMajor) {
+          ctx.fillText(`${value.toFixed(0)} in`, px - 6, y);
+        }
       }
 
-      for (let i = 0; i < gridCountX; i += 1) {
-        const n = i / (gridCountX - 1);
+      for (let i = 0; i <= gridCountX; i += 1) {
+        const n = i / gridCountX;
         const x = px + pw * n;
-        ctx.strokeStyle = i === 0 || i === gridCountX - 1 ? axisColor : gridColor;
+        ctx.strokeStyle = i === 0 || i === gridCountX ? gridMajor : gridMinor;
         ctx.beginPath();
         ctx.moveTo(x, py);
         ctx.lineTo(x, py + ph);
@@ -1990,61 +2133,163 @@ function useWorkoutEngine(params) {
       }
       ctx.restore();
 
-      const plotSeries = (series, palette) => {
-        if (!series.length) {
-          return;
+      const samples = waveHistoryRef.current;
+      if (!samples.length) {
+        return;
+      }
+
+      const rightPadding = Math.min(80, pw * 0.2);
+      const effectiveWidth = Math.max(1, pw - rightPadding);
+      const sampleStep = effectiveWidth / Math.max(1, WAVE_MAX_HISTORY - 1);
+
+      const buildSeries = (key, palette) => {
+        const points = samples
+          .map((sample) => ({
+            t: sample.t,
+            v: sample[key],
+          }))
+          .filter((sample) => Number.isFinite(sample.v))
+          .map((sample) => ({
+            t: sample.t,
+            v: sample.v,
+          }));
+        if (points.length < 2) {
+          return null;
         }
+        const plotted = points.map((sample, index) => ({
+          x: px + effectiveWidth - (points.length - 1 - index) * sampleStep,
+          y: toY(sample.v),
+        }));
+        return { id: key, plotted, palette };
+      };
+
+      const series = [];
+      if (showLeft) {
+        const leftSeries = buildSeries('left', getMotorPalette('left'));
+        if (leftSeries) series.push(leftSeries);
+      }
+      if (showRight) {
+        const rightSeries = buildSeries('right', getMotorPalette('right'));
+        if (rightSeries) series.push(rightSeries);
+      }
+
+      const drawPath = (plotted) => {
+        ctx.moveTo(plotted[0].x, plotted[0].y);
+        for (let i = 1; i < plotted.length - 2; i += 1) {
+          const xc = (plotted[i].x + plotted[i + 1].x) / 2;
+          const yc = (plotted[i].y + plotted[i + 1].y) / 2;
+          ctx.quadraticCurveTo(plotted[i].x, plotted[i].y, xc, yc);
+        }
+        ctx.quadraticCurveTo(
+          plotted[plotted.length - 2].x,
+          plotted[plotted.length - 2].y,
+          plotted[plotted.length - 1].x,
+          plotted[plotted.length - 1].y
+        );
+      };
+
+      series.forEach(({ plotted, palette }) => {
+        const fillGradient = ctx.createLinearGradient(0, py, 0, py + ph);
+        fillGradient.addColorStop(0, palette.waveFade);
+        fillGradient.addColorStop(0.45, 'rgba(0, 0, 0, 0.12)');
+        fillGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
         ctx.save();
+        ctx.beginPath();
+        ctx.rect(px, py, pw, ph);
+        ctx.clip();
+        ctx.beginPath();
+        drawPath(plotted);
+        ctx.lineTo(plotted[plotted.length - 1].x, py + ph);
+        ctx.lineTo(plotted[0].x, py + ph);
+        ctx.closePath();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = fillGradient;
+        ctx.fill();
+        ctx.restore();
+      });
+
+      const strokeSeries = series.slice().sort((a, b) => {
+        if (a.id === b.id) return 0;
+        return a.id === 'left' ? 1 : -1;
+      });
+
+      strokeSeries.forEach(({ plotted, palette }) => {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(px, py, pw, ph);
+        ctx.clip();
         ctx.strokeStyle = palette.primary;
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 6;
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
         ctx.beginPath();
-        series.forEach((value, idx) => {
-          const progress = series.length > 1 ? idx / (series.length - 1) : 1;
-          const x = px + pw * progress;
-          const y = yFromValue(value);
-          if (idx === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        });
+        drawPath(plotted);
         ctx.stroke();
 
-        const lastIndex = series.length - 1;
-        const dotX = px + pw;
-        const dotY = yFromValue(series[lastIndex]);
-        ctx.fillStyle = palette.primary;
-        ctx.shadowColor = palette.glow;
+        const head = plotted[plotted.length - 1];
         ctx.shadowBlur = 12;
+        ctx.shadowColor = palette.glow;
+        ctx.fillStyle = palette.primary;
         ctx.beginPath();
-        ctx.arc(dotX, dotY, 4, 0, TWO_PI);
+        ctx.arc(head.x, head.y, 8, 0, TWO_PI);
         ctx.fill();
         ctx.restore();
-      };
-
-      motorsToPlot.forEach((motor) => {
-        const palette = getMotorPalette(motor.id === 'combined' ? 'left' : motor.id);
-        plotSeries(motor.trail, palette);
       });
     }
+
     function update(timestamp) {
       const delta = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
+      const nowSeconds = timestamp / 1000;
       const pauseTracking = pauseActive && setActive;
       tickStopwatch(timestamp);
+
+      const cmdStatus = telemetryRef.current?.CmdStatus;
+      if (Number.isFinite(cmdStatus) && cmdStatus !== lastTripStatus) {
+        lastTripStatus = cmdStatus;
+        const reasons = [];
+        const leftTrip = (cmdStatus & 1) !== 0;
+        const rightTrip = (cmdStatus & 2) !== 0;
+        const leftSlack = (cmdStatus & 4) !== 0;
+        const rightSlack = (cmdStatus & 8) !== 0;
+        const leftLetGo = (cmdStatus & 16) !== 0;
+        const rightLetGo = (cmdStatus & 32) !== 0;
+        const leftFollow = (cmdStatus & 64) !== 0;
+        const rightFollow = (cmdStatus & 128) !== 0;
+        const errorCode = (cmdStatus >> 8) & 0xff;
+
+        if (leftSlack) reasons.push('Left slack trip');
+        if (rightSlack) reasons.push('Right slack trip');
+        if (leftLetGo) reasons.push('Left let-go trip');
+        if (rightLetGo) reasons.push('Right let-go trip');
+        if (leftFollow) reasons.push('Left follow error trip');
+        if (rightFollow) reasons.push('Right follow error trip');
+        if (leftTrip && !leftSlack && !leftLetGo && !leftFollow) {
+          reasons.push('Left trip');
+        }
+        if (rightTrip && !rightSlack && !rightLetGo && !rightFollow) {
+          reasons.push('Right trip');
+        }
+
+        if (reasons.length) {
+          const suffix = errorCode ? ` (Err ${errorCode})` : '';
+          setStatusMessage(`${reasons.join(' · ')}${suffix}`, { tone: 'error' });
+        }
+      }
 
       if (!powerOn) {
         motors.forEach((motor) => {
           motor.currentResistance = 0;
           motor.normalized = 0;
-          motor.trail.fill(0);
+          motor.trail = [];
+          motor.trailTimes = [];
         if (motor.cableLabel) {
           motor.cableLabel.textContent = '0.0';
         }
           drawGauge(motor);
         });
+        resetWaveHistory();
         if (!pauseTracking) {
           drawWaveCombined();
         }
@@ -2069,43 +2314,63 @@ function useWorkoutEngine(params) {
       }
 
       motors.forEach((motor) => {
-        if (motor.simSlider && motor.retractionActive) {
+        if (motor.retractionActive) {
           const tolerance = SIM_SLIDER_STEP / 2;
-          const currentValue = Number(motor.simSlider.value);
-          if (currentValue > motor.retractionTarget + tolerance) {
-            const next = Math.max(
-              motor.retractionTarget,
-              currentValue - motor.retractionSpeed * delta
-            );
-            const quantized = quantize(next, SIM_SLIDER_STEP);
-            motor.simSlider.value = quantized.toFixed(1);
-          } else if (currentValue > motor.retractionTarget) {
-            const quantized = quantize(motor.retractionTarget, SIM_SLIDER_STEP);
-            motor.simSlider.value = quantized.toFixed(1);
+          if (motor.simSlider) {
+            const currentValue = Number(motor.simSlider.value);
+            if (currentValue > motor.retractionTarget + tolerance) {
+              const next = Math.max(
+                motor.retractionTarget,
+                currentValue - motor.retractionSpeed * delta
+              );
+              const quantized = quantize(next, SIM_SLIDER_STEP);
+              motor.simSlider.value = quantized.toFixed(1);
+            } else if (currentValue > motor.retractionTarget) {
+              const quantized = quantize(motor.retractionTarget, SIM_SLIDER_STEP);
+              motor.simSlider.value = quantized.toFixed(1);
+            } else {
+              motor.retractionActive = false;
+              markRetractActive(motor, false);
+              setMotorEngagementDistance(motor, motor.retractionTarget, {
+                skipSimSync: true,
+                source: 'retraction',
+                announce: true,
+              });
+            }
           } else {
-            motor.retractionActive = false;
-            markRetractActive(motor, false);
-            setMotorEngagementDistance(motor, motor.retractionTarget, {
-              skipSimSync: true,
-              source: 'retraction',
-              announce: true,
-            });
+            const telemetryTravel = getMotorTravelInches(motor);
+            if (Number.isFinite(telemetryTravel)) {
+              const startTravel = Number.isFinite(motor.retractionStartTravel)
+                ? motor.retractionStartTravel
+                : telemetryTravel;
+              if (!motor.retractionMoved && Math.abs(telemetryTravel - startTravel) >= 0.1) {
+                motor.retractionMoved = true;
+              }
+              if (
+                motor.retractionMoved &&
+                telemetryTravel <= motor.retractionTarget + tolerance
+              ) {
+                motor.retractionActive = false;
+                markRetractActive(motor, false);
+                setMotorEngagementDistance(motor, motor.retractionTarget, {
+                  skipSimSync: true,
+                  source: 'retraction',
+                  announce: true,
+                });
+              }
+            }
           }
         }
 
-        const telemetryTravel = getTelemetryTravel(motor.id);
-        const sliderDistance = Number.isFinite(telemetryTravel)
-          ? telemetryTravel
-          : motor.simSlider
-            ? Number(motor.simSlider.value)
-            : motor.normalized * MAX_TRAVEL_INCHES;
-        const normalized = Math.max(
-          0,
-          Math.min(1, sliderDistance / MAX_TRAVEL_INCHES)
-        );
-        motor.normalized = normalized;
-        const travel = motor.normalized * MAX_TRAVEL_INCHES;
-        ensureWaveScaleForTravel(travel);
+        const sliderDistance = getMotorTravelInches(motor);
+        const travelRaw = Number.isFinite(sliderDistance)
+          ? sliderDistance
+          : motor.normalized * MAX_TRAVEL_INCHES;
+        const travelClamped = clamp(travelRaw, 0, MAX_TRAVEL_INCHES);
+        motor.normalized = travelClamped / MAX_TRAVEL_INCHES;
+        const travel = travelClamped;
+        const waveTravel = Math.max(0, travelRaw - motor.engagementDistance);
+        ensureWaveScaleForTravel(waveTravel);
         const forceDelta = travel - motor.lastForceTravel;
         if (Math.abs(forceDelta) > MOVEMENT_EPSILON) {
           motor.forceDirection = forceDelta > 0 ? 1 : -1;
@@ -2134,7 +2399,9 @@ function useWorkoutEngine(params) {
           );
         }
 
-        const resistance = resolveMotorResistance(motor, engageDistance, mode);
+        const retractOverride = motor.retractionActive ? RETRACT_FORCE_LB : null;
+        const resistance =
+          retractOverride !== null ? retractOverride : resolveMotorResistance(motor, engageDistance, mode);
 
         if (!setActive) {
           motor.engaged = false;
@@ -2146,7 +2413,13 @@ function useWorkoutEngine(params) {
         }
 
         motor.currentResistance = resistance;
-        if (motorsRunning && torqueEngaged) {
+        if (motor.id === 'left') {
+          leftResistanceValueRef.current = motor.currentResistance;
+        } else {
+          rightResistanceValueRef.current = motor.currentResistance;
+        }
+
+        if (motorsRunning && torqueEngaged && retractOverride === null) {
           if (motorsSyncedRef.current) {
             if (motor.id === 'left') {
               const rightMotor = motors.find((entry) => entry.id === 'right');
@@ -2162,15 +2435,21 @@ function useWorkoutEngine(params) {
         }
 
         if (motor.cableLabel) {
-          motor.cableLabel.textContent = travel.toFixed(1);
+          motor.cableLabel.textContent = travelRaw.toFixed(1);
         }
 
         if (pauseTracking) {
           motor.lastTravel = travel;
         } else {
-          motor.trail.push(travel);
-          if (motor.trail.length > TRAIL_LENGTH) {
+          motor.trail.push(waveTravel);
+          motor.trailTimes.push(nowSeconds);
+          const maxPoints = Math.max(
+            TRAIL_LENGTH,
+            Math.ceil(WAVE_HISTORY_SEC * WAVE_TIME_FPS)
+          );
+          while (motor.trail.length > maxPoints) {
             motor.trail.shift();
+            motor.trailTimes.shift();
           }
 
           if (motorsRunning && setActive && motor.engaged) {
@@ -2291,11 +2570,19 @@ function useWorkoutEngine(params) {
         }
         motor.normalized = normalized;
         const travel = normalized * MAX_TRAVEL_INCHES;
-        ensureWaveScaleForTravel(travel);
+        const waveTravel = Math.max(0, travel - motor.engagementDistance);
+        ensureWaveScaleForTravel(waveTravel);
         if (!pauseTracking) {
-          motor.trail.push(travel);
-          if (motor.trail.length > TRAIL_LENGTH) {
+          const nowSeconds = getNowSeconds();
+          motor.trail.push(waveTravel);
+          motor.trailTimes.push(nowSeconds);
+          const maxPoints = Math.max(
+            TRAIL_LENGTH,
+            Math.ceil(WAVE_HISTORY_SEC * WAVE_TIME_FPS)
+          );
+          while (motor.trail.length > maxPoints) {
             motor.trail.shift();
+            motor.trailTimes.shift();
           }
         } else {
           motor.lastTravel = travel;
@@ -2356,8 +2643,9 @@ function useWorkoutEngine(params) {
       if (motor.setCableButton) {
         motor.setCableButton.addEventListener('click', handleSetCableClick);
       }
-      if (motor.retractCableButton) {
-        motor.retractCableButton.addEventListener('click', handleRetractClick);
+      const retractButton = resolveRetractButton(motor);
+      if (retractButton) {
+        retractButton.addEventListener('click', handleRetractClick);
       }
 
       return {
@@ -2369,6 +2657,7 @@ function useWorkoutEngine(params) {
         handleSimChange,
         handleSetCableClick,
         handleRetractClick,
+        retractButton,
       };
     });
 
@@ -2474,6 +2763,8 @@ function useWorkoutEngine(params) {
         elements.adsReset.removeEventListener('click', handleAdsReset);
       }
 
+      document.removeEventListener('click', handleRetractButtonClick);
+
       if (elements.syncMotors) {
         elements.syncMotors.removeEventListener('click', handleSyncMotors);
       }
@@ -2502,8 +2793,8 @@ function useWorkoutEngine(params) {
         if (motor.setCableButton) {
           motor.setCableButton.removeEventListener('click', handler.handleSetCableClick);
         }
-        if (motor.retractCableButton) {
-          motor.retractCableButton.removeEventListener('click', handler.handleRetractClick);
+        if (handler.retractButton) {
+          handler.retractButton.removeEventListener('click', handler.handleRetractClick);
         }
       });
     };
@@ -2512,3 +2803,4 @@ function useWorkoutEngine(params) {
 }
 
 export default useWorkoutEngine;
+

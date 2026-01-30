@@ -18,6 +18,12 @@
     <LibraryReferences>{adfb26ca-2fa5-4e85-9a6c-23853bf84ae5}</LibraryReferences>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DUTs\ST_AxisIn.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="DUTs\ST_AxisOut.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="DUTs\ST_UI_Command.TcDUT">
       <SubType>Code</SubType>
     </Compile>
