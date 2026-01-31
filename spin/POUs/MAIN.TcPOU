@@ -530,7 +530,7 @@ ELSE
 END_IF
 
 IF nStateR = 3 AND NOT bBrakeEngagedR AND bTorqueAllowedR THEN
-    fTorqueCmdR := fForceOutR * cTorqueScale * cTorqueScaleMult;
+    fTorqueCmdR := -fForceOutR * cTorqueScale * cTorqueScaleMult;
     IF fTorqueCmdR > cMaxTorqueCounts THEN
         fTorqueCmdR := cMaxTorqueCounts;
     ELSIF fTorqueCmdR < -cMaxTorqueCounts THEN
